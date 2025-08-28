@@ -624,16 +624,6 @@ GLOBAL_LIST_EMPTY(loadout_items_by_name)
 	path = /obj/item/clothing/cloak/raincloak/furcloak
 	donatitem = TRUE
 
-/datum/loadout_item/donat/battleskirt
-	name = "Боевая юбка"
-	path = /obj/item/clothing/cloak/fauld/battleskirt
-	donatitem = TRUE
-
-/datum/loadout_item/donat/faulds
-	name = "Фольд"
-	path = /obj/item/clothing/cloak/fauld
-	donatitem = TRUE
-
 /datum/loadout_item/donat/tabard/astata
 	name = "Табард-плащ Астраты"
 	path = /obj/item/clothing/cloak/templar/astratan
