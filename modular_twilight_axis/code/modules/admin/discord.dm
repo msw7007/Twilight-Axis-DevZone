@@ -171,7 +171,7 @@
 		admin_notes_channel
 	)
 
-/world/proc/TgsAnnounceAdminMessageEntry(admin_ckey, target_key, type, text)
+/world/proc/TgsAnnounceAdminMessageEntry(admin_ckey, target_key, type, text, secret)
 	if(!TgsAvailable())
 		return
 
@@ -194,12 +194,18 @@
 		"Администратор", "`[admin_ckey]`"
 	)
 
+	var/datum/tgs_chat_embed/field/field_secret = new(
+		"Secret?", "[secret ? "Да" : "Нет"]"
+	)
+
 	field_player_ckey.is_inline = TRUE
 	field_admin_ckey.is_inline = TRUE
+	field_secret.is_inline = TRUE
 
 	embed.fields = list(
 		field_player_ckey,
 		field_admin_ckey,
+		field_secret,
 	)
 
 	var/datum/tgs_message_content/message = new("")
