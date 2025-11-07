@@ -9,7 +9,7 @@
 	cmode_music = 'modular_twilight_axis/firearms/sound/music/combat_gunslinger.ogg'
 	class_select_category = CLASS_CAT_OTAVA
 	category_tags = list(CTAG_MERCENARY)
-	traits_applied = list(TRAIT_MEDIUMARMOR)
+	traits_applied = list(TRAIT_FIREARMS_MARKSMAN, TRAIT_MEDIUMARMOR)
 	classes = list("Lone Wolf" = "With no allegiance but to self, you travel through many different lands, finding yourself in employ of those who can afford to pay for your meals and ammunition. Working for the Guild is a novelty for you, but perhaps this is where you'll find a camaraderie you've never known?",
 					"Otavan Dragoon" = "Having left the ranks of the Otavan militant orders, you set off into the wider world, selling your combat skills to the highest bidder. Your rare runelock firearm, once awarded to you for your service, is now your primary tool of the trade.")
 	subclass_stats = list(
