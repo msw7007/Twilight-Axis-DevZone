@@ -34,13 +34,15 @@
 	if(!loc)
 		return
 
+	//Breathing, if applicable - CURRENTLY NOT IMPLEMENTED
+	//handle_breathing(times_fired)
+
 	if(HAS_TRAIT(src, TRAIT_SIMPLE_WOUNDS))
 		handle_wounds()
 		handle_embedded_objects()
 		handle_blood()
 		//passively heal even wounds with no passive healing
-		for(var/datum/wound/wound as anything in get_wounds())
-			wound.heal_wound(1)
+		heal_wounds(1)
 
 	/// ENDVRE AS HE DOES.
 	if(!stat && HAS_TRAIT(src, TRAIT_PSYDONITE) && !HAS_TRAIT(src, TRAIT_PARALYSIS))
@@ -58,7 +60,7 @@
 			for(var/datum/wound/wound as anything in get_wounds())
 				wound.heal_wound(3)		
 
-	if(QDELETED(src)) // diseases can qdel the mob via transformations
+	if (QDELETED(src)) // diseases can qdel the mob via transformations
 		return
 
 	handle_environment()
@@ -134,14 +136,13 @@
 	return
 
 /mob/living/proc/handle_wounds()
-	if(stat >= DEAD)
-		for(var/datum/wound/wound in get_wounds())
-			wound.on_death()
+	for(var/datum/wound/wound as anything in get_wounds())
+		if(istype(wound, /datum/wound))
+			if (stat != DEAD)
+				wound.on_life()
+			else
+				wound.on_death()
 
-		return
-
-	for(var/datum/wound/wound in get_wounds())
-		wound.on_life()
 
 /obj/item/proc/on_embed_life(mob/living/user, obj/item/bodypart/bodypart)
 	return
