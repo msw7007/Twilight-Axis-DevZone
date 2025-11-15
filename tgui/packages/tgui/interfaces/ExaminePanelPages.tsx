@@ -17,7 +17,6 @@ export const FlavorTextPage = (props: any) => {
   } = data;
   const [oocNotesIndex, setOocNotesIndex] = useState('SFW');
   const [flavorTextIndex, setFlavorTextIndex] = useState('SFW');
-
   const flavorHTML = useMemo(() => ({
     __html: `<span className='Chat'>${flavor_text || ''}</span>`,
   }), [flavor_text]);
@@ -30,11 +29,12 @@ export const FlavorTextPage = (props: any) => {
   const oocnsfwHTML = useMemo(() => ({
     __html: `<span className='Chat'>${ooc_notes_nsfw || ''}</span>`,
   }), [ooc_notes_nsfw]);
-
   const handleImageError = (e: React.SyntheticEvent<HTMLImageElement>) => {
     console.warn('Image load failed:', e.currentTarget.src);
     e.currentTarget.style.display = 'none';
   };
+
+  const hasContent = (text: string | undefined) => (text || '').trim().length > 0;
 
   return (
     <Stack fill>
@@ -98,8 +98,8 @@ export const FlavorTextPage = (props: any) => {
                   </>
                 }
               >
-                {oocNotesIndex === 'SFW' && <Box dangerouslySetInnerHTML={oocHTML} />}
-                {oocNotesIndex === 'NSFW' && <Box dangerouslySetInnerHTML={oocnsfwHTML} />}
+                {oocNotesIndex === 'SFW' && hasContent(ooc_notes) && <Box dangerouslySetInnerHTML={oocHTML} />}
+                {oocNotesIndex === 'NSFW' && hasContent(ooc_notes_nsfw) && <Box dangerouslySetInnerHTML={oocnsfwHTML} />}
               </Section>
             </Stack.Item>
           </Stack>
@@ -135,8 +135,8 @@ export const FlavorTextPage = (props: any) => {
             </>
           }
         >
-          {flavorTextIndex === 'SFW' && <Box dangerouslySetInnerHTML={flavorHTML} />}
-          {flavorTextIndex === 'NSFW' && <Box dangerouslySetInnerHTML={nsfwHTML} />}
+          {flavorTextIndex === 'SFW' && hasContent(flavor_text) && <Box dangerouslySetInnerHTML={flavorHTML} />}
+          {flavorTextIndex === 'NSFW' && hasContent(flavor_text_nsfw) && <Box dangerouslySetInnerHTML={nsfwHTML} />}
         </Section>
       </Stack.Item>
     </Stack>
@@ -146,17 +146,14 @@ export const FlavorTextPage = (props: any) => {
 export const ImageGalleryPage = (props: any) => {
   const { data } = useBackend<ExaminePanelData>();
   const { img_gallery = [] } = data;
-
   const validGallery = useMemo(
     () => img_gallery.filter((val: string) => val && val.trim()),
     [img_gallery]
   );
-
   const handleImageError = (e: React.SyntheticEvent<HTMLImageElement>) => {
     console.warn('Gallery image load failed:', e.currentTarget.src);
     e.currentTarget.style.display = 'none';
   };
-
   return (
     <Stack fill justify="space-evenly">
       {validGallery.length > 0 ? (
@@ -204,12 +201,10 @@ export const ImageGalleryPage = (props: any) => {
 export const NSFWHeadshotPage = (props: any) => {
   const { data } = useBackend<ExaminePanelData>();
   const { nsfw_headshot } = data;
-
   const handleImageError = (e: React.SyntheticEvent<HTMLImageElement>) => {
     console.warn('NSFW headshot load failed:', e.currentTarget.src);
     e.currentTarget.style.display = 'none';
   };
-
   return (
     <Stack fill justify="space-evenly">
       <Stack.Item grow>
