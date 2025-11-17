@@ -1,0 +1,6 @@
+#define SEX_ORGAN_MOUTH (1<<0)
+#define SEX_ORGAN_HANDS (1<<1)
+#define SEX_ORGAN_PENIS (1<<2)
+#define SEX_ORGAN_VAGINA (1<<3)
+#define SEX_ORGAN_ANUS (1<<4)
+#define SEX_ORGAN_BREASTS (1<<5)
