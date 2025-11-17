@@ -66,7 +66,7 @@
 /obj/structure/mineral_door/onkick(mob/user)
 	if(isSwitchingStates)
 		return
-	if(brokenstate == 1)
+	if(brokenstate)
 		return
 	if(door_opened)
 		playsound(src, 'sound/combat/hits/onwood/woodimpact (1).ogg', 100)
