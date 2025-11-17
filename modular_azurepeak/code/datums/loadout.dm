@@ -178,6 +178,10 @@ GLOBAL_LIST_EMPTY(loadout_items_by_category)
 	category = "Плащи"
 	path = /obj/item/clothing/cloak/stabard/surcoat
 
+/datum/loadout_item/jupon_short
+	name = "Short Jupon"
+	path = /obj/item/clothing/cloak/stabard/surcoat/short
+
 /datum/loadout_item/cape
 	name = "Cape"
 	category = "Плащи"
@@ -866,6 +870,12 @@ GLOBAL_LIST_EMPTY(loadout_items_by_category)
 	name = "Donator Kit - Shroud of the Undermaiden - Required: Direbear Cloak"
 	category = list("Разное", "Донат")
 	path = /obj/item/enchantingkit/zoe
+	donatitem = TRUE
+
+/datum/loadout_item/donator_willmbrink
+	name = "Royal Gown"
+	path = /obj/item/clothing/suit/roguetown/shirt/dress/royal
+	category = list("Одежда", "Донат")
 	donatitem = TRUE
 
 /datum/loadout_item/donator_kumie

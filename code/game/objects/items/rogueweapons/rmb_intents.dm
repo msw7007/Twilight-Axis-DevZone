@@ -6,6 +6,8 @@
 	var/adjacency = TRUE
 	/// Determines whether this intent can be used during click cd
 	var/bypasses_click_cd = FALSE
+	/// Whether the rclick will try to get turfs as target.
+	var/prioritize_turfs = FALSE
 
 /mob/living/carbon/human/on_cmode()
 	if(!cmode)	//We just toggled it off.
@@ -107,6 +109,21 @@
 	name = "strong"
 	desc = "Your attacks have +1 strength but use more stamina. Higher critrate with brutal attacks. Intentionally fails surgery steps."
 	icon_state = "rmbstrong"
+	adjacency = FALSE
+	prioritize_turfs = TRUE
+
+/datum/rmb_intent/strong/special_attack(mob/living/user, atom/target)
+	if(!user)
+		return
+	if(user.incapacitated())
+		return
+	if(!user.mind)
+		return
+	if(user.has_status_effect(/datum/status_effect/debuff/specialcd))
+		return
+	var/obj/item/rogueweapon/W = user.get_active_held_item()
+	if(istype(W, /obj/item/rogueweapon) && W.special)
+		W.special.deploy(user, W, target)
 
 /datum/rmb_intent/swift
 	name = "swift"

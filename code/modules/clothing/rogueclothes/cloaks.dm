@@ -636,6 +636,11 @@
 /obj/item/clothing/cloak/stabard/surcoat/councillor
 	color = "#2d2d2d"
 
+/obj/item/clothing/cloak/stabard/surcoat/short
+	name = "short jupon"
+	icon_state = "surcoat_short"
+	body_parts_covered = CHEST
+
 /obj/item/clothing/cloak/stabard/surcoat/attack_right(mob/user)
 	if(picked)
 		return

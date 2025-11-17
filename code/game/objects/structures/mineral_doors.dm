@@ -225,6 +225,7 @@
 			if(istype(user.get_active_held_item(), /obj/item/roguekey) || istype(user.get_active_held_item(), /obj/item/storage/keyring))
 				src.attackby(user.get_active_held_item(), user, TRUE)
 				return
+			to_chat(user, span_notice("It's locked."))
 			door_rattle()
 			return
 		if(TryToSwitchState(user))
