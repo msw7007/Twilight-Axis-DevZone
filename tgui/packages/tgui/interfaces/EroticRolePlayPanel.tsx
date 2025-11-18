@@ -36,45 +36,37 @@ export type SexSessionData = {
 
   actor_name: string;
 
-  // партнёры для выпадающего списка
-  partners: PartnerEntry[];
+  partners?: PartnerEntry[];
   current_partner_ref?: string | null;
 
-  // органы
-  actor_organs: OrgNode[];
-  partner_organs: OrgNode[];
+  actor_organs?: OrgNode[];
+  partner_organs?: OrgNode[];
   selected_actor_organ?: string;
   selected_partner_organ?: string;
 
-  // скорость / сила
   speed: number;
   force: number;
   speed_names: string[];
   force_names: string[];
 
-  // возбуждение
-  actor_arousal: number;
-  partner_arousal: number;
+  actor_arousal?: number;
+  partner_arousal?: number;
 
   frozen?: boolean;
   do_until_finished?: boolean;
   has_knotted_penis?: boolean;
   do_knot_action?: boolean;
 
-  // действия
-  actions: SexAction[];
-  can_perform: string[];
+  actions?: SexAction[];
+  can_perform?: string[];
   available_tags?: string[];
   current_action?: string;
 
-  // настройка органа
   target_sensitivity?: number;
   target_pain?: number;
 
-  // “поддаться”
   yield_to_partner?: boolean;
 
-  // лог “роман”
   romance_log?: string[];
 };
 
@@ -288,7 +280,6 @@ const ActionControlRow: React.FC<{
 }) => (
   <Section>
     <Stack align="center" justify="space-between">
-      {/* Режим */}
       <Stack.Item grow>
         <Button
           inline
@@ -302,7 +293,6 @@ const ActionControlRow: React.FC<{
         </Button>
       </Stack.Item>
 
-      {/* Скорость */}
       <Stack.Item shrink>
         <Button inline compact onClick={() => onChangeSpeed(-1)}>
           {'<'}
@@ -324,7 +314,6 @@ const ActionControlRow: React.FC<{
         </Button>
       </Stack.Item>
 
-      {/* Название действия / стоп */}
       <Stack.Item grow>
         <Box textAlign="center">
           <Button
@@ -339,7 +328,6 @@ const ActionControlRow: React.FC<{
         </Box>
       </Stack.Item>
 
-      {/* Сила */}
       <Stack.Item shrink>
         <Button inline compact onClick={() => onChangeForce(-1)}>
           {'<'}
@@ -361,7 +349,6 @@ const ActionControlRow: React.FC<{
         </Button>
       </Stack.Item>
 
-      {/* Чувствительность / боль */}
       <Stack.Item shrink>
         <Stack vertical align="end">
           <OrganTuningControls
@@ -412,7 +399,7 @@ const ActionControlRow: React.FC<{
 const ActionsFilter: React.FC<{
   searchText: string;
   onSearchChange: (value: string) => void;
-  availableTags?: string[];
+  availableTags: string[];
   activeTags: string[];
   onToggleTag: (tag: string) => void;
 }> = ({ searchText, onSearchChange, availableTags, activeTags, onToggleTag }) => (
@@ -423,7 +410,7 @@ const ActionsFilter: React.FC<{
       value={searchText}
       onChange={onSearchChange}
     />
-    {!!availableTags?.length && (
+    {!!availableTags.length && (
       <Box mt={1}>
         <Stack wrap>
           {availableTags.map((tag) => (
@@ -512,9 +499,9 @@ const ActionsList: React.FC<{
   </Section>
 );
 
-const RomanceLogView: React.FC<{ log?: string[] }> = ({ log }) => (
+const RomanceLogView: React.FC<{ log: string[] }> = ({ log }) => (
   <Section fill>
-    {log && log.length ? (
+    {log.length ? (
       <Stack vertical>
         {log.map((line, idx) => (
           <Stack.Item key={idx}>
@@ -559,6 +546,16 @@ const BottomControls: React.FC<{
 
 export const EroticRolePlayPanel: React.FC = () => {
   const { act, data } = useBackend<SexSessionData>();
+
+  // нормализуем все потенциально пустые массивы
+  const partners = data.partners ?? [];
+  const actorOrgans = data.actor_organs ?? [];
+  const partnerOrgans = data.partner_organs ?? [];
+  const actions = data.actions ?? [];
+  const canPerform = data.can_perform ?? [];
+  const availableTags = data.available_tags ?? [];
+  const romanceLog = data.romance_log ?? [];
+
   const [searchText, setSearchText] = useState('');
   const [activeTags, setActiveTags] = useState<string[]>([]);
   const [activeTab, setActiveTab] = useState<'actions' | 'romance'>('actions');
@@ -570,39 +567,40 @@ export const EroticRolePlayPanel: React.FC = () => {
   };
 
   const actorSelected = useMemo(
-    () => data.actor_organs.find((o) => o.id === data.selected_actor_organ),
-    [data.actor_organs, data.selected_actor_organ],
+    () => actorOrgans.find((o) => o.id === data.selected_actor_organ),
+    [actorOrgans, data.selected_actor_organ],
   );
   const partnerSelected = useMemo(
-    () => data.partner_organs.find((o) => o.id === data.selected_partner_organ),
-    [data.partner_organs, data.selected_partner_organ],
+    () => partnerOrgans.find((o) => o.id === data.selected_partner_organ),
+    [partnerOrgans, data.selected_partner_organ],
   );
 
   const currentPartner = useMemo(() => {
-    if (!data.partners?.length) return null;
+    if (!partners.length) {
+      return null;
+    }
     return (
-      data.partners.find((p) => p.ref === data.current_partner_ref) ||
-      data.partners[0]
+      partners.find((p) => p.ref === data.current_partner_ref) || partners[0]
     );
-  }, [data.partners, data.current_partner_ref]);
+  }, [partners, data.current_partner_ref]);
 
   const currentActionObj = useMemo(
-    () => data.actions.find((a) => a.type === data.current_action),
-    [data.actions, data.current_action],
+    () => actions.find((a) => a.type === data.current_action),
+    [actions, data.current_action],
   );
 
   const filteredActions = useMemo(() => {
     const q = searchText.trim().toLowerCase();
-    return data.actions.filter((a) => {
+    return actions.filter((a) => {
       if (q && !a.name.toLowerCase().includes(q)) return false;
       if (activeTags.length && !(a.tags || []).some((t) => activeTags.includes(t))) {
         return false;
       }
-      if (!data.can_perform.includes(a.type)) return false;
+      if (!canPerform.includes(a.type)) return false;
       if (!actorSelected || !partnerSelected) return false;
       return true;
     });
-  }, [data.actions, data.can_perform, searchText, activeTags, actorSelected, partnerSelected]);
+  }, [actions, canPerform, searchText, activeTags, actorSelected, partnerSelected]);
 
   const leftColumn = filteredActions.filter((_, i) => i % 2 === 0);
   const rightColumn = filteredActions.filter((_, i) => i % 2 === 1);
@@ -635,7 +633,10 @@ export const EroticRolePlayPanel: React.FC = () => {
     });
   };
 
-  const actorArousalWidth = Math.max(0, Math.min(100, data.actor_arousal ?? 0));
+  const actorArousalWidth = Math.max(
+    0,
+    Math.min(100, data.actor_arousal ?? 0),
+  );
   const partnerArousalWidth = Math.max(
     0,
     Math.min(100, data.partner_arousal ?? 0),
@@ -645,30 +646,26 @@ export const EroticRolePlayPanel: React.FC = () => {
     <Window title="Утолить Желания" width={1000} height={720}>
       <Window.Content scrollable>
         <Stack fill>
-          {/* Левая колонка – органы актёра */}
           <Stack.Item basis="22%">
             <OrganList
               title={data.actor_name}
-              organs={data.actor_organs}
+              organs={actorOrgans}
               selectedId={data.selected_actor_organ}
               onSelect={(id) => act('select_organ', { side: 'actor', id })}
             />
           </Stack.Item>
 
-          {/* Центр */}
           <Stack.Item grow>
             <Stack vertical fill>
-              {/* Выбор партнёра */}
               <Stack.Item>
                 <PartnerSelector
                   actorName={data.actor_name}
-                  partners={data.partners}
+                  partners={partners}
                   currentRef={data.current_partner_ref}
                   onChange={(ref) => act('set_partner', { ref })}
                 />
               </Stack.Item>
 
-              {/* Две полосы возбуждения */}
               <Stack.Item>
                 <ArousalBars
                   actorName={data.actor_name}
@@ -678,7 +675,6 @@ export const EroticRolePlayPanel: React.FC = () => {
                 />
               </Stack.Item>
 
-              {/* Строка управления действием */}
               <Stack.Item>
                 <ActionControlRow
                   data={data}
@@ -707,7 +703,6 @@ export const EroticRolePlayPanel: React.FC = () => {
                 />
               </Stack.Item>
 
-              {/* Вкладки */}
               <Stack.Item>
                 <Section>
                   <Stack justify="center">
@@ -731,14 +726,13 @@ export const EroticRolePlayPanel: React.FC = () => {
                 </Section>
               </Stack.Item>
 
-              {/* Контент вкладок */}
               {activeTab === 'actions' ? (
                 <>
                   <Stack.Item>
                     <ActionsFilter
                       searchText={searchText}
                       onSearchChange={setSearchText}
-                      availableTags={data.available_tags}
+                      availableTags={availableTags}
                       activeTags={activeTags}
                       onToggleTag={toggleTag}
                     />
@@ -750,18 +744,17 @@ export const EroticRolePlayPanel: React.FC = () => {
                       leftColumn={leftColumn}
                       rightColumn={rightColumn}
                       currentAction={data.current_action}
-                      canPerform={data.can_perform}
+                      canPerform={canPerform}
                       onClickAction={onClickActionButton}
                     />
                   </Stack.Item>
                 </>
               ) : (
                 <Stack.Item grow>
-                  <RomanceLogView log={data.romance_log} />
+                  <RomanceLogView log={romanceLog} />
                 </Stack.Item>
               )}
 
-              {/* Нижняя панель */}
               <Stack.Item>
                 <BottomControls
                   yieldToPartner={data.yield_to_partner}
@@ -774,11 +767,10 @@ export const EroticRolePlayPanel: React.FC = () => {
             </Stack>
           </Stack.Item>
 
-          {/* Правая колонка – органы партнёра */}
           <Stack.Item basis="22%">
             <OrganList
               title={currentPartner?.name || 'Партнёр'}
-              organs={data.partner_organs}
+              organs={partnerOrgans}
               selectedId={data.selected_partner_organ}
               onSelect={(id) => act('select_organ', { side: 'partner', id })}
             />
