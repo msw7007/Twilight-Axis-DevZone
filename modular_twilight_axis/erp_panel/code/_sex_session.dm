@@ -142,9 +142,10 @@
 	return TRUE
 
 /datum/sex_session_tgui/proc/ui_key()
-		return "EroticRolePlay"
+	return "EroticRolePlayPanel"
+
 /datum/sex_session_tgui/ui_state(mob/user)
-		return GLOB.conscious_state
+	return GLOB.conscious_state
 
 /datum/sex_session_tgui/ui_interact(mob/user, datum/tgui/ui)
 	ui = SStgui.try_update_ui(user, src, ui)
