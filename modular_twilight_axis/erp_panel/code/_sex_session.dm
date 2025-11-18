@@ -22,6 +22,19 @@
 	var/list/speed_names = list("МЕДЛЕННО", "ПОСТЕПЕННО", "БЫСТРО", "НЕУМОЛИМО")
 	var/list/force_names = list("НЕЖНО", "НАСТОЙЧИВО", "ГРУБО", "ЖЕСТОКО")
 
+	/// список партнёров (кроме user); храним как слабые ссылки на мобов
+	var/list/partners = list()
+	/// текущий выбранный партнёр (REF() строки, чтобы удобно гонять в tgui)
+	var/current_partner_ref = null
+
+	/// лог “романа” — список строк
+	var/list/romance_log = list()
+	/// ограничение на длину лога
+	var/romance_log_max = 100
+
+	/// флаг “поддаться”
+	var/yield_to_partner = FALSE
+
 /datum/sex_session_tgui/New(mob/living/carbon/human/U, mob/living/carbon/human/T)
 	..()
 	user = U
@@ -45,6 +58,16 @@
 	current_actions.Cut()
 	locked_actor_categories.Cut()
 	return ..()
+
+/datum/sex_session_tgui/proc/add_partner(mob/living/carbon/human/M)
+	if(!M || M == user)
+		return
+
+	if(!(M in partners))
+		partners += M
+
+	if(!current_partner_ref)
+		current_partner_ref = REF(M)
 
 /datum/sex_session_tgui/proc/build_org_nodes(mob/living/carbon/human/M, side)
 	var/list/out = list()
@@ -193,6 +216,33 @@
 			break
 	D["current_action"] = cur
 
+	var/list/partners_data = list()
+
+	partners_data += list(list(
+		"ref" = REF(src.user),
+		"name" = "[src.user.name] (я)"
+	))
+
+	for(var/mob/living/carbon/human/M in partners)
+		if(QDELETED(M))
+			continue
+		partners_data += list(list(
+			"ref" = REF(M),
+			"name" = M.name
+		))
+
+	// если активный партнёр отвалился – самосвитч на себя
+	if(!current_partner_ref)
+		current_partner_ref = REF(src.user)
+
+	D["partners"] = partners_data
+	D["current_partner_ref"] = current_partner_ref
+	D["romance_log"] = romance_log.Copy()
+	
+	// имя активного партнёра для удобства
+	var/mob/living/carbon/human/active_partner = locate(current_partner_ref)
+	D["partner_name"] = active_partner ? active_partner.name : src.user.name
+
 	return D
 
 /datum/sex_session_tgui/ui_act(action, list/params)
@@ -255,7 +305,50 @@
 			SStgui.update_uis(src)
 			return TRUE
 
+		if("set_partner")
+			var/ref = params["ref"]
+			if(!ref)
+				return
+
+			// проверка, что такой партнёр вообще в списке
+			for(var/mob/living/carbon/human/M in partners + list(user))
+				if(REF(M) == ref)
+					current_partner_ref = ref
+					target = M
+					SStgui.update_uis(src)
+					return TRUE
+
 	return FALSE
+
+/datum/sex_session_tgui/proc/update_partners_proximity()
+	if(QDELETED(user))
+		return
+
+	var/list/new_partners = list()
+	for(var/mob/living/carbon/human/M in partners)
+		if(QDELETED(M))
+			continue
+		if(get_dist(user, M) > 2)
+			continue
+		new_partners += M
+
+	partners = new_partners
+
+	if(!length(partners))
+		current_partner_ref = REF(user)
+		target = user
+	else
+		if(!locate(current_partner_ref))
+			var/mob/living/carbon/human/N = partners[1]
+			current_partner_ref = REF(N)
+			target = N
+
+/datum/sex_session_tgui/proc/log_romance(message)
+	if(!message)
+		return
+	romance_log += message
+	if(length(romance_log) > romance_log_max)
+		romance_log.Cut(1, 2) // срезать самый старый
 
 /datum/sex_session_tgui/proc/try_start_action(action_type)
 	if (!selected_actor_organ_id || !selected_partner_organ_id)

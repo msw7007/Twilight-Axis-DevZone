@@ -4,3 +4,5 @@
 #define SEX_ORGAN_VAGINA (1<<3)
 #define SEX_ORGAN_ANUS (1<<4)
 #define SEX_ORGAN_BREASTS (1<<5)
+
+#define SEX_CHAT_FREQUENCY 3

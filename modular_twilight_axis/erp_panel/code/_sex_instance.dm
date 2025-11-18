@@ -13,6 +13,7 @@
 	var/speed = SEX_SPEED_MID
 	var/force = SEX_FORCE_MID
 	var/continous = TRUE
+	var/friction_count = 0
 
 	var/timer_id
 
@@ -102,3 +103,4 @@
 		if(SEX_FORCE_HIGH) return 2.0
 		if(SEX_FORCE_EXTREME) return 2.5
 	return 1.0
+

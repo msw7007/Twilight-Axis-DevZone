@@ -25,41 +25,57 @@ export type SexAction = {
   tags?: string[];
 };
 
+export type PartnerEntry = {
+  ref: string;
+  name: string;
+};
+
 export type SexSessionData = {
   title: string;
   session_name?: string;
 
   actor_name: string;
-  partner_name: string;
 
+  // партнёры для выпадающего списка
+  partners: PartnerEntry[];
+  current_partner_ref?: string | null;
+
+  // органы
   actor_organs: OrgNode[];
   partner_organs: OrgNode[];
   selected_actor_organ?: string;
   selected_partner_organ?: string;
 
+  // скорость / сила
   speed: number;
   force: number;
   speed_names: string[];
   force_names: string[];
 
+  // возбуждение
   actor_arousal: number;
   partner_arousal: number;
-  arousal?: number;
 
   frozen?: boolean;
   do_until_finished?: boolean;
   has_knotted_penis?: boolean;
   do_knot_action?: boolean;
 
+  // действия
   actions: SexAction[];
   can_perform: string[];
   available_tags?: string[];
   current_action?: string;
 
+  // настройка органа
   target_sensitivity?: number;
   target_pain?: number;
 
+  // “поддаться”
   yield_to_partner?: boolean;
+
+  // лог “роман”
+  romance_log?: string[];
 };
 
 const speedColors = ['#eac8de', '#e9a8d1', '#f05ee1', '#d146f5'];
@@ -111,12 +127,64 @@ const OrganList: React.FC<{
   </Section>
 );
 
+const PartnerSelector: React.FC<{
+  actorName: string;
+  partners: PartnerEntry[];
+  currentRef?: string | null;
+  onChange: (ref: string) => void;
+}> = ({ actorName, partners, currentRef, onChange }) => {
+  const [open, setOpen] = useState(false);
+
+  const current =
+    partners.find((p) => p.ref === currentRef) || partners[0] || null;
+
+  return (
+    <Section>
+      <Box textAlign="center" bold>
+        {actorName}{' '}
+        <Box as="span" color="label">
+          {' ↔ '}
+        </Box>
+        <Button
+          inline
+          compact
+          onClick={() => setOpen((prev) => !prev)}
+          selected={open}
+        >
+          {current ? current.name : '—'}
+        </Button>
+      </Box>
+      {open && partners.length > 1 && (
+        <Box mt={1}>
+          <Stack justify="center" wrap>
+            {partners.map((p) => (
+              <Stack.Item key={p.ref} style={{ margin: 2 }}>
+                <Button
+                  inline
+                  compact
+                  selected={current?.ref === p.ref}
+                  onClick={() => {
+                    onChange(p.ref);
+                    setOpen(false);
+                  }}
+                >
+                  {p.name}
+                </Button>
+              </Stack.Item>
+            ))}
+          </Stack>
+        </Box>
+      )}
+    </Section>
+  );
+};
+
 const ArousalBars: React.FC<{
   actorName: string;
-  partnerName: string;
+  partnerLabel: string;
   actorArousal: number;
   partnerArousal: number;
-}> = ({ actorName, partnerName, actorArousal, partnerArousal }) => (
+}> = ({ actorName, partnerLabel, actorArousal, partnerArousal }) => (
   <Section>
     <LabeledList>
       <LabeledList.Item label={actorName || 'Источник'}>
@@ -138,7 +206,7 @@ const ArousalBars: React.FC<{
           />
         </Box>
       </LabeledList.Item>
-      <LabeledList.Item label={partnerName || 'Цель'}>
+      <LabeledList.Item label={partnerLabel || 'Цель'}>
         <Box
           style={{
             height: 10,
@@ -198,17 +266,35 @@ const ActionControlRow: React.FC<{
   actorSelected?: OrgNode;
   partnerSelected?: OrgNode;
   currentActionName?: string;
-  onEditTuning: (field: 'sensitivity' | 'pain') => void;
+  onToggleFinished: () => void;
+  onChangeSpeed: (delta: number) => void;
+  onChangeForce: (delta: number) => void;
   onStopCurrent: () => void;
-}> = ({ data, actorSelected, partnerSelected, currentActionName, onEditTuning, onStopCurrent }) => (
+  onToggleFrozen: () => void;
+  onToggleKnot: () => void;
+  onEditTuning: (field: 'sensitivity' | 'pain') => void;
+}> = ({
+  data,
+  actorSelected,
+  partnerSelected,
+  currentActionName,
+  onToggleFinished,
+  onChangeSpeed,
+  onChangeForce,
+  onStopCurrent,
+  onToggleFrozen,
+  onToggleKnot,
+  onEditTuning,
+}) => (
   <Section>
     <Stack align="center" justify="space-between">
+      {/* Режим */}
       <Stack.Item grow>
         <Button
           inline
           compact
           color="transparent"
-          onClick={() => (window as any).act?.('toggle_finished')}
+          onClick={onToggleFinished}
         >
           {data.do_until_finished
             ? 'РЕЖИМ: ДО ЗАВЕРШЕНИЯ'
@@ -216,16 +302,9 @@ const ActionControlRow: React.FC<{
         </Button>
       </Stack.Item>
 
+      {/* Скорость */}
       <Stack.Item shrink>
-        <Button
-          inline
-          compact
-          onClick={() =>
-            (window as any).act?.('set_speed', {
-              value: Math.max(1, data.speed - 1),
-            })
-          }
-        >
+        <Button inline compact onClick={() => onChangeSpeed(-1)}>
           {'<'}
         </Button>{' '}
         <Box
@@ -240,19 +319,12 @@ const ActionControlRow: React.FC<{
         >
           {data.speed_names[data.speed - 1]}
         </Box>{' '}
-        <Button
-          inline
-          compact
-          onClick={() =>
-            (window as any).act?.('set_speed', {
-              value: Math.min(4, data.speed + 1),
-            })
-          }
-        >
+        <Button inline compact onClick={() => onChangeSpeed(1)}>
           {'>'}
         </Button>
       </Stack.Item>
 
+      {/* Название действия / стоп */}
       <Stack.Item grow>
         <Box textAlign="center">
           <Button
@@ -267,16 +339,9 @@ const ActionControlRow: React.FC<{
         </Box>
       </Stack.Item>
 
+      {/* Сила */}
       <Stack.Item shrink>
-        <Button
-          inline
-          compact
-          onClick={() =>
-            (window as any).act?.('set_force', {
-              value: Math.max(1, data.force - 1),
-            })
-          }
-        >
+        <Button inline compact onClick={() => onChangeForce(-1)}>
           {'<'}
         </Button>{' '}
         <Box
@@ -291,19 +356,12 @@ const ActionControlRow: React.FC<{
         >
           {data.force_names[data.force - 1]}
         </Box>{' '}
-        <Button
-          inline
-          compact
-          onClick={() =>
-            (window as any).act?.('set_force', {
-              value: Math.min(4, data.force + 1),
-            })
-          }
-        >
+        <Button inline compact onClick={() => onChangeForce(1)}>
           {'>'}
         </Button>
       </Stack.Item>
 
+      {/* Чувствительность / боль */}
       <Stack.Item shrink>
         <Stack vertical align="end">
           <OrganTuningControls
@@ -320,7 +378,7 @@ const ActionControlRow: React.FC<{
         inline
         compact
         color="transparent"
-        onClick={() => (window as any).act?.('freeze_arousal')}
+        onClick={onToggleFrozen}
       >
         {data.frozen ? 'НЕ ИЗМЕНЯТЬ' : 'ИЗМЕНЯТЬ'}
       </Button>
@@ -331,7 +389,7 @@ const ActionControlRow: React.FC<{
             inline
             compact
             color="transparent"
-            onClick={() => (window as any).act?.('toggle_knot')}
+            onClick={onToggleKnot}
           >
             <Box
               as="span"
@@ -454,6 +512,24 @@ const ActionsList: React.FC<{
   </Section>
 );
 
+const RomanceLogView: React.FC<{ log?: string[] }> = ({ log }) => (
+  <Section fill>
+    {log && log.length ? (
+      <Stack vertical>
+        {log.map((line, idx) => (
+          <Stack.Item key={idx}>
+            <Box>{line}</Box>
+          </Stack.Item>
+        ))}
+      </Stack>
+    ) : (
+      <Box italic color="label">
+        Здесь пока тихо.
+      </Box>
+    )}
+  </Section>
+);
+
 const BottomControls: React.FC<{
   yieldToPartner?: boolean;
   onFlipLeft: () => void;
@@ -485,8 +561,7 @@ export const EroticRolePlayPanel: React.FC = () => {
   const { act, data } = useBackend<SexSessionData>();
   const [searchText, setSearchText] = useState('');
   const [activeTags, setActiveTags] = useState<string[]>([]);
-
-  (window as any).act = act;
+  const [activeTab, setActiveTab] = useState<'actions' | 'romance'>('actions');
 
   const toggleTag = (tag: string) => {
     setActiveTags((prev) =>
@@ -502,6 +577,14 @@ export const EroticRolePlayPanel: React.FC = () => {
     () => data.partner_organs.find((o) => o.id === data.selected_partner_organ),
     [data.partner_organs, data.selected_partner_organ],
   );
+
+  const currentPartner = useMemo(() => {
+    if (!data.partners?.length) return null;
+    return (
+      data.partners.find((p) => p.ref === data.current_partner_ref) ||
+      data.partners[0]
+    );
+  }, [data.partners, data.current_partner_ref]);
 
   const currentActionObj = useMemo(
     () => data.actions.find((a) => a.type === data.current_action),
@@ -552,16 +635,17 @@ export const EroticRolePlayPanel: React.FC = () => {
     });
   };
 
-  const actorArousalWidth = Math.max(0, Math.min(120, data.actor_arousal ?? 0));
+  const actorArousalWidth = Math.max(0, Math.min(100, data.actor_arousal ?? 0));
   const partnerArousalWidth = Math.max(
     0,
-    Math.min(120, data.partner_arousal ?? 0),
+    Math.min(100, data.partner_arousal ?? 0),
   );
 
   return (
-    <Window title="Утолить Желания" width={300} height={720}>
+    <Window title="Утолить Желания" width={1000} height={720}>
       <Window.Content scrollable>
         <Stack fill>
+          {/* Левая колонка – органы актёра */}
           <Stack.Item basis="22%">
             <OrganList
               title={data.actor_name}
@@ -571,54 +655,113 @@ export const EroticRolePlayPanel: React.FC = () => {
             />
           </Stack.Item>
 
+          {/* Центр */}
           <Stack.Item grow>
             <Stack vertical fill>
+              {/* Выбор партнёра */}
+              <Stack.Item>
+                <PartnerSelector
+                  actorName={data.actor_name}
+                  partners={data.partners}
+                  currentRef={data.current_partner_ref}
+                  onChange={(ref) => act('set_partner', { ref })}
+                />
+              </Stack.Item>
+
+              {/* Две полосы возбуждения */}
               <Stack.Item>
                 <ArousalBars
                   actorName={data.actor_name}
-                  partnerName={data.partner_name}
+                  partnerLabel={currentPartner?.name || 'Цель'}
                   actorArousal={actorArousalWidth}
                   partnerArousal={partnerArousalWidth}
                 />
               </Stack.Item>
 
+              {/* Строка управления действием */}
               <Stack.Item>
                 <ActionControlRow
                   data={data}
                   actorSelected={actorSelected}
                   partnerSelected={partnerSelected}
                   currentActionName={currentActionObj?.name}
-                  onEditTuning={editTuning}
+                  onToggleFinished={() => act('toggle_finished')}
+                  onChangeSpeed={(delta) =>
+                    act('set_speed', {
+                      value: Math.max(1, Math.min(4, data.speed + delta)),
+                    })
+                  }
+                  onChangeForce={(delta) =>
+                    act('set_force', {
+                      value: Math.max(1, Math.min(4, data.force + delta)),
+                    })
+                  }
                   onStopCurrent={() => {
                     if (data.current_action) {
                       act('stop_action');
                     }
                   }}
+                  onToggleFrozen={() => act('freeze_arousal')}
+                  onToggleKnot={() => act('toggle_knot')}
+                  onEditTuning={editTuning}
                 />
               </Stack.Item>
 
+              {/* Вкладки */}
               <Stack.Item>
-                <ActionsFilter
-                  searchText={searchText}
-                  onSearchChange={setSearchText}
-                  availableTags={data.available_tags}
-                  activeTags={activeTags}
-                  onToggleTag={toggleTag}
-                />
+                <Section>
+                  <Stack justify="center">
+                    <Stack.Item style={{ marginInline: 4 }}>
+                      <Button
+                        selected={activeTab === 'actions'}
+                        onClick={() => setActiveTab('actions')}
+                      >
+                        ДЕЙСТВИЯ
+                      </Button>
+                    </Stack.Item>
+                    <Stack.Item style={{ marginInline: 4 }}>
+                      <Button
+                        selected={activeTab === 'romance'}
+                        onClick={() => setActiveTab('romance')}
+                      >
+                        РОМАН
+                      </Button>
+                    </Stack.Item>
+                  </Stack>
+                </Section>
               </Stack.Item>
 
-              <Stack.Item grow>
-                <ActionsList
-                  actorSelected={actorSelected}
-                  partnerSelected={partnerSelected}
-                  leftColumn={leftColumn}
-                  rightColumn={rightColumn}
-                  currentAction={data.current_action}
-                  canPerform={data.can_perform}
-                  onClickAction={onClickActionButton}
-                />
-              </Stack.Item>
+              {/* Контент вкладок */}
+              {activeTab === 'actions' ? (
+                <>
+                  <Stack.Item>
+                    <ActionsFilter
+                      searchText={searchText}
+                      onSearchChange={setSearchText}
+                      availableTags={data.available_tags}
+                      activeTags={activeTags}
+                      onToggleTag={toggleTag}
+                    />
+                  </Stack.Item>
+                  <Stack.Item grow>
+                    <ActionsList
+                      actorSelected={actorSelected}
+                      partnerSelected={partnerSelected}
+                      leftColumn={leftColumn}
+                      rightColumn={rightColumn}
+                      currentAction={data.current_action}
+                      canPerform={data.can_perform}
+                      onClickAction={onClickActionButton}
+                    />
+                  </Stack.Item>
+                </>
+              ) : (
+                <Stack.Item grow>
+                  <RomanceLogView log={data.romance_log} />
+                </Stack.Item>
+              )}
 
+              {/* Нижняя панель */}
               <Stack.Item>
                 <BottomControls
                   yieldToPartner={data.yield_to_partner}
@@ -631,9 +774,10 @@ export const EroticRolePlayPanel: React.FC = () => {
             </Stack>
           </Stack.Item>
 
+          {/* Правая колонка – органы партнёра */}
           <Stack.Item basis="22%">
             <OrganList
-              title={data.partner_name}
+              title={currentPartner?.name || 'Партнёр'}
               organs={data.partner_organs}
               selectedId={data.selected_partner_organ}
               onSelect={(id) => act('select_organ', { side: 'partner', id })}

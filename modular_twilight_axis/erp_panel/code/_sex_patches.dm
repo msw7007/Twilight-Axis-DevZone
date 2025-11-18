@@ -9,6 +9,7 @@
 	var/datum/sex_session_tgui/S = new(src, T)
 	LAZYADD(GLOB.sex_sessions, S)
 	S.ui_interact(src)
+	S.add_partner(T)
 	return S
 
 /proc/get_sex_session_tgui(mob/giver, mob/taker)
