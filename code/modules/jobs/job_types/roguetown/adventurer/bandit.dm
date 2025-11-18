@@ -16,9 +16,9 @@
 
 	display_order = JDO_BANDIT
 	announce_latejoin = FALSE
-	min_pq = 3
+	min_pq = 25
 	max_pq = null
-	round_contrib_points = 5
+	round_contrib_points = null
 
 	advclass_cat_rolls = list(CTAG_BANDIT = 20)
 	PQ_boost_divider = 10

@@ -12,14 +12,14 @@
 	outfit_female = null
 	display_order = JDO_WRETCH
 	show_in_credits = FALSE
-	min_pq = 10
+	min_pq = 20
 	max_pq = null
 
 	obsfuscated_job = TRUE
 
 	advclass_cat_rolls = list(CTAG_WRETCH = 20)
 	PQ_boost_divider = 10
-	round_contrib_points = 2
+	round_contrib_points = null
 
 	announce_latejoin = FALSE
 	wanderer_examine = TRUE
