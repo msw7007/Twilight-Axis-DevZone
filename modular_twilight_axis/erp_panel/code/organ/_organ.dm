@@ -28,6 +28,6 @@
 	. = ..()
 	sex_organ = new /datum/sex_organ/hand/right(src)
 	
-/obj/item/bodypart/l_arrm/Initialize()
+/obj/item/bodypart/l_arm/Initialize()
 	. = ..()
 	sex_organ = new /datum/sex_organ/hand(src)

@@ -105,7 +105,13 @@
 /datum/sex_organ/penis/New(obj/item/organ/penis/organ)
 	. = ..()
 	var/mob/living/carbon/human/owner = organ.owner
+	if(!owner)
+		return
+
 	var/obj/item/organ/testicles/testicles = owner.getorganslot(ORGAN_SLOT_TESTICLES)
+	if(!testicles)
+		return
+		
 	liquid_ammount = 5 * testicles.ball_size
 	liquid_ammount_max = 10 * testicles.ball_size
 	injection_amount = organ.penis_size

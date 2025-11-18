@@ -116,8 +116,10 @@
 
 /datum/component/arousal/proc/ejaculate()
 	var/mob/living/mob = parent
-	var/list/parent_sessions = return_sessions_with_user(parent)
-	var/datum/sex_session/highest_priority = return_highest_priority_action(parent_sessions, parent)
+	// TWILIGHT AXIS EDITION START - new ERP system
+	var/list/parent_sessions = return_sessions_with_user_tgui(parent)
+	var/datum/sex_session/highest_priority = return_highest_priority_action_tgui(parent_sessions, parent) 
+	// TWILIGHT AXIS EDITION END - new ERP system
 	playsound(parent, 'sound/misc/mat/endout.ogg', 50, TRUE, ignore_walls = FALSE)
 	// Special case for when the user has a penis but no testicles
 	if(!mob.getorganslot(ORGAN_SLOT_TESTICLES) && mob.getorganslot(ORGAN_SLOT_PENIS))
