@@ -41,7 +41,7 @@
 		// берём первый инстанс
 		var/datum/sex_action/A = null
 		for (var/id in S.current_actions)
-			var/datum/sex_action_instance_tgui/I = S.current_actions[id]
+			var/datum/sex_action_session/I = S.current_actions[id]
 			if (I)
 				A = I.action
 				break

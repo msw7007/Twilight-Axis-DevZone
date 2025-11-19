@@ -30,16 +30,30 @@ export type PartnerEntry = {
   name: string;
 };
 
+export type ActiveLink = {
+  id: string;
+  actor_organ_id: string;
+  partner_organ_id: string;
+  action_type: string;
+  action_name: string;
+  speed: number;
+  force: number;
+  do_until_finished?: boolean;
+  sensitivity?: number;
+  pain?: number;
+};
+
 export type SexSessionData = {
   title: string;
   session_name?: string;
 
   actor_name: string;
+  partner_name?: string;
 
   partners?: PartnerEntry[];
   current_partner_ref?: string | null;
 
-  actor_organs?: OrgNode[];
+  status_organs?: OrgNode[];
   partner_organs?: OrgNode[];
   selected_actor_organ?: string;
   selected_partner_organ?: string;
@@ -54,20 +68,20 @@ export type SexSessionData = {
 
   frozen?: boolean;
   do_until_finished?: boolean;
-  has_knotted_penis?: boolean;
   do_knot_action?: boolean;
+  yield_to_partner?: boolean;
 
   actions?: SexAction[];
   can_perform?: string[];
   available_tags?: string[];
   current_action?: string;
 
-  target_sensitivity?: number;
-  target_pain?: number;
+  active_links?: ActiveLink[];
+};
 
-  yield_to_partner?: boolean;
-
-  romance_log?: string[];
+export type StatusOrgNode = OrgNode & {
+  sensitivity?: number;
+  pain?: number;
 };
 
 const speedColors = ['#eac8de', '#e9a8d1', '#f05ee1', '#d146f5'];
@@ -95,6 +109,11 @@ const Pill: React.FC<{
   </Button>
 );
 
+const prettyOrgName = (name: string) =>
+  name
+    .replace(/(\d+[^]*)$/u, '')
+    .trim();
+
 const OrganList: React.FC<{
   title: string;
   organs: OrgNode[];
@@ -111,7 +130,14 @@ const OrganList: React.FC<{
             disabled={!!org.busy}
             onClick={() => onSelect(org.id)}
           >
-            {org.name}
+            <Box as="span">
+              {prettyOrgName(org.name)}
+              {org.busy && (
+                <Box as="span" ml={1} color="bad">
+                  ●
+                </Box>
+              )}
+            </Box>
           </Button>
         </Stack.Item>
       ))}
@@ -176,225 +202,347 @@ const ArousalBars: React.FC<{
   partnerLabel: string;
   actorArousal: number;
   partnerArousal: number;
-}> = ({ actorName, partnerLabel, actorArousal, partnerArousal }) => (
+  onSetActor: () => void;
+  onSetPartner: () => void;
+}> = ({
+  actorName,
+  partnerLabel,
+  actorArousal,
+  partnerArousal,
+  onSetActor,
+  onSetPartner,
+}) => (
   <Section>
     <LabeledList>
       <LabeledList.Item label={actorName || 'Источник'}>
-        <Box
-          style={{
-            height: 10,
-            width: '100%',
-            border: '1px solid rgba(255,255,255,0.2)',
-            borderRadius: 6,
-            overflow: 'hidden',
-          }}
+        <Button
+          inline
+          color="transparent"
+          onClick={onSetActor}
+          style={{ width: '100%' }}
         >
           <Box
             style={{
-              height: '100%',
-              width: `${actorArousal}%`,
-              background: '#d146f5',
+              height: 10,
+              width: '100%',
+              border: '1px solid rgba(255,255,255,0.2)',
+              borderRadius: 6,
+              overflow: 'hidden',
             }}
-          />
-        </Box>
+          >
+            <Box
+              style={{
+                height: '100%',
+                width: `${actorArousal}%`,
+                background: '#d146f5',
+              }}
+            />
+          </Box>
+        </Button>
       </LabeledList.Item>
       <LabeledList.Item label={partnerLabel || 'Цель'}>
-        <Box
-          style={{
-            height: 10,
-            width: '100%',
-            border: '1px solid rgba(255,255,255,0.2)',
-            borderRadius: 6,
-            overflow: 'hidden',
-          }}
+        <Button
+          inline
+          color="transparent"
+          onClick={onSetPartner}
+          style={{ width: '100%' }}
         >
           <Box
             style={{
-              height: '100%',
-              width: `${partnerArousal}%`,
-              background: '#f05ee1',
+              height: 10,
+              width: '100%',
+              border: '1px solid rgba(255,255,255,0.2)',
+              borderRadius: 6,
+              overflow: 'hidden',
             }}
-          />
-        </Box>
+          >
+            <Box
+              style={{
+                height: '100%',
+                width: `${partnerArousal}%`,
+                background: '#f05ee1',
+              }}
+            />
+          </Box>
+        </Button>
       </LabeledList.Item>
     </LabeledList>
   </Section>
 );
 
-const OrganTuningControls: React.FC<{
-  partnerSelected?: OrgNode;
+const StatusPanel: React.FC<{
+  data: SexSessionData;
+  actorOrgans: StatusOrgNode[];
+  actorName: string;
+  onEditOrgan: (id: string, field: 'sensitivity' | 'pain') => void;
+}> = ({ data, actorOrgans, actorName, onEditOrgan }) => {
+  const links = data.active_links || [];
+
+  const speedName = (v: number) => {
+    const idx = Math.max(1, Math.min(data.speed_names.length, v)) - 1;
+    return data.speed_names[idx] || '?';
+  };
+
+  const forceName = (v: number) => {
+    const idx = Math.max(1, Math.min(data.force_names.length, v)) - 1;
+    return data.force_names[idx] || '?';
+  };
+
+  return (
+    <Section title={`Состояние: ${actorName}`} fill scrollable>
+      {actorOrgans.map((org) => {
+        const affecting = links.filter(
+          (l) =>
+            l.actor_organ_id === org.id ||
+            l.partner_organ_id === org.id,
+        );
+
+        const sens = org.sensitivity ?? 0;
+        const pain = org.pain ?? 0;
+
+        return (
+          <Box key={org.id} mb={1.5}>
+            <Stack justify="space-between" align="center">
+              <Stack.Item>
+                <Box bold>{prettyOrgName(org.name)}</Box>
+              </Stack.Item>
+              <Stack.Item>
+                <Stack align="center">
+                  <Stack.Item style={{ marginRight: 8 }}>
+                    <Button
+                      inline
+                      compact
+                      color="transparent"
+                      onClick={() => onEditOrgan(org.id, 'sensitivity')}
+                    >
+                      Чувствительность:{' '}
+                      <Box as="span" color="good">
+                        {sens}
+                      </Box>
+                    </Button>
+                  </Stack.Item>
+                  <Stack.Item>
+                    <Box>
+                      Боль:{' '}
+                      <Box as="span" color="bad">
+                        {pain}
+                      </Box>
+                    </Box>
+                  </Stack.Item>
+                </Stack>
+              </Stack.Item>
+            </Stack>
+
+            {affecting.length ? (
+              <Stack vertical mt={0.5}>
+                {affecting.map((l) => {
+                  const isSource = l.actor_organ_id === org.id;
+                  const labelSide = isSource ? 'Источник' : 'Цель';
+                  return (
+                    <Box key={l.id} ml={1}>
+                      <Box as="span" color="label">
+                        [{labelSide}]
+                      </Box>{' '}
+                      {l.action_name || '—'}{' '}
+                      <Box as="span" color="label">
+                        ({speedName(l.speed)}, {forceName(l.force)})
+                      </Box>
+                    </Box>
+                  );
+                })}
+              </Stack>
+            ) : (
+              <Box ml={1} color="label">
+                Нет активных воздействий.
+              </Box>
+            )}
+          </Box>
+        );
+      })}
+    </Section>
+  );
+};
+
+const SensitivityInline: React.FC<{
   sensitivity?: number;
-  pain?: number;
-  onEdit: (field: 'sensitivity' | 'pain') => void;
-}> = ({ partnerSelected, sensitivity, pain, onEdit }) => (
-  <>
-    <Stack.Item>
-      <Button
-        inline
-        compact
-        color="transparent"
-        disabled={!partnerSelected}
-        onClick={() => onEdit('sensitivity')}
-      >
-        ЧУВСТВИТЕЛЬН.: {partnerSelected ? sensitivity ?? 0 : '—'}
-      </Button>
-    </Stack.Item>
-    <Stack.Item>
-      <Button
-        inline
-        compact
-        color="transparent"
-        disabled={!partnerSelected}
-        onClick={() => onEdit('pain')}
-      >
-        БОЛЬ: {partnerSelected ? pain ?? 0 : '—'}
-      </Button>
-    </Stack.Item>
-  </>
+  disabled?: boolean;
+  onEdit: () => void;
+}> = ({ sensitivity, disabled, onEdit }) => (
+  <Button
+    inline
+    compact
+    color="transparent"
+    disabled={disabled}
+    onClick={onEdit}
+  >
+    ЧУВСТВИТЕЛЬН.: {disabled ? '—' : sensitivity ?? 0}
+  </Button>
 );
 
-const ActionControlRow: React.FC<{
+const ActiveLinksPanel: React.FC<{
   data: SexSessionData;
-  actorSelected?: OrgNode;
-  partnerSelected?: OrgNode;
-  currentActionName?: string;
-  onToggleFinished: () => void;
-  onChangeSpeed: (delta: number) => void;
-  onChangeForce: (delta: number) => void;
-  onStopCurrent: () => void;
-  onToggleFrozen: () => void;
-  onToggleKnot: () => void;
-  onEditTuning: (field: 'sensitivity' | 'pain') => void;
+  actorOrgans: OrgNode[];
+  partnerOrgans: OrgNode[];
+  onSetSpeed: (id: string, value: number) => void;
+  onSetForce: (id: string, value: number) => void;
+  onToggleFinished: (id: string) => void;
+  onStop: (id: string) => void;
+  onEditSensitivity: (id: string) => void;
 }> = ({
   data,
-  actorSelected,
-  partnerSelected,
-  currentActionName,
+  actorOrgans,
+  partnerOrgans,
+  onSetSpeed,
+  onSetForce,
   onToggleFinished,
-  onChangeSpeed,
-  onChangeForce,
-  onStopCurrent,
-  onToggleFrozen,
-  onToggleKnot,
-  onEditTuning,
-}) => (
-  <Section>
-    <Stack align="center" justify="space-between">
-      <Stack.Item grow>
-        <Button
-          inline
-          compact
-          color="transparent"
-          onClick={onToggleFinished}
-        >
-          {data.do_until_finished
-            ? 'РЕЖИМ: ДО ЗАВЕРШЕНИЯ'
-            : 'РЕЖИМ: ПОКА НЕ ОСТАНОВЛЮСЬ'}
-        </Button>
-      </Stack.Item>
+  onStop,
+  onEditSensitivity,
+}) => {
+  const links = data.active_links || [];
+  if (!links.length) return null;
 
-      <Stack.Item shrink>
-        <Button inline compact onClick={() => onChangeSpeed(-1)}>
-          {'<'}
-        </Button>{' '}
-        <Box
-          as="span"
-          bold
-          style={{
-            color: speedColors[data.speed - 1],
-            display: 'inline-block',
-            minWidth: 110,
-            textAlign: 'center',
-          }}
-        >
-          {data.speed_names[data.speed - 1]}
-        </Box>{' '}
-        <Button inline compact onClick={() => onChangeSpeed(1)}>
-          {'>'}
-        </Button>
-      </Stack.Item>
+  const getOrg = (id: string, list: OrgNode[]) =>
+    list.find((o) => o.id === id);
 
-      <Stack.Item grow>
-        <Box textAlign="center">
-          <Button
-            inline
-            compact
-            selected={!!data.current_action}
-            disabled={!actorSelected || !partnerSelected}
-            onClick={onStopCurrent}
-          >
-            {currentActionName || 'ДЕЙСТВИЕ НЕ ВЫБРАНО'}
-          </Button>
-        </Box>
-      </Stack.Item>
+  return (
+    <Stack vertical>
+      {links.map((link) => {
+        const actorOrg = getOrg(link.actor_organ_id, actorOrgans);
+        const partnerOrg = getOrg(link.partner_organ_id, partnerOrgans);
+        const speedIdx = Math.max(1, Math.min(4, link.speed)) - 1;
+        const forceIdx = Math.max(1, Math.min(4, link.force)) - 1;
 
-      <Stack.Item shrink>
-        <Button inline compact onClick={() => onChangeForce(-1)}>
-          {'<'}
-        </Button>{' '}
-        <Box
-          as="span"
-          bold
-          style={{
-            color: forceColors[data.force - 1],
-            display: 'inline-block',
-            minWidth: 90,
-            textAlign: 'center',
-          }}
-        >
-          {data.force_names[data.force - 1]}
-        </Box>{' '}
-        <Button inline compact onClick={() => onChangeForce(1)}>
-          {'>'}
-        </Button>
-      </Stack.Item>
+        return (
+          <Section key={link.id}>
+            <Stack align="center" justify="space-between">
+              <Stack.Item shrink>
+                <Box bold>
+                  {actorOrg ? prettyOrgName(actorOrg.name) : '—'}
+                </Box>
+              </Stack.Item>
 
-      <Stack.Item shrink>
-        <Stack vertical align="end">
-          <OrganTuningControls
-            partnerSelected={partnerSelected}
-            sensitivity={data.target_sensitivity}
-            pain={data.target_pain}
-            onEdit={onEditTuning}
-          />
-        </Stack>
-      </Stack.Item>
-    </Stack>
-    <Box textAlign="center" mt={1}>
-      <Button
-        inline
-        compact
-        color="transparent"
-        onClick={onToggleFrozen}
-      >
-        {data.frozen ? 'НЕ ИЗМЕНЯТЬ' : 'ИЗМЕНЯТЬ'}
-      </Button>
-      {!!data.has_knotted_penis && (
-        <>
-          {' | '}
-          <Button
-            inline
-            compact
-            color="transparent"
-            onClick={onToggleKnot}
-          >
-            <Box
-              as="span"
-              bold
-              style={{
-                color: data.do_knot_action ? '#d146f5' : '#eac8de',
-              }}
+              <Stack.Item>
+                <Button
+                  inline
+                  compact
+                  onClick={() => onSetSpeed(link.id, link.speed - 1)}
+                >
+                  {'<'}
+                </Button>{' '}
+                <Box
+                  as="span"
+                  bold
+                  style={{
+                    color: speedColors[speedIdx],
+                    display: 'inline-block',
+                    minWidth: 110,
+                    textAlign: 'center',
+                  }}
+                >
+                  {data.speed_names[speedIdx]}
+                </Box>{' '}
+                <Button
+                  inline
+                  compact
+                  onClick={() => onSetSpeed(link.id, link.speed + 1)}
+                >
+                  {'>'}
+                </Button>
+              </Stack.Item>
+
+              <Stack.Item grow>
+                <Box textAlign="center">
+                  <Button
+                    inline
+                    compact
+                    color="transparent"
+                    selected
+                    onClick={() => onStop(link.id)}
+                  >
+                    {link.action_name || 'ДЕЙСТВИЕ'}
+                  </Button>
+                </Box>
+              </Stack.Item>
+
+              <Stack.Item>
+                <Button
+                  inline
+                  compact
+                  onClick={() => onSetForce(link.id, link.force - 1)}
+                >
+                  {'<'}
+                </Button>{' '}
+                <Box
+                  as="span"
+                  bold
+                  style={{
+                    color: forceColors[forceIdx],
+                    display: 'inline-block',
+                    minWidth: 90,
+                    textAlign: 'center',
+                  }}
+                >
+                  {data.force_names[forceIdx]}
+                </Box>{' '}
+                <Button
+                  inline
+                  compact
+                  onClick={() => onSetForce(link.id, link.force + 1)}
+                >
+                  {'>'}
+                </Button>
+              </Stack.Item>
+
+              <Stack.Item shrink>
+                <Box bold>
+                  {partnerOrg ? prettyOrgName(partnerOrg.name) : '—'}
+                </Box>
+              </Stack.Item>
+            </Stack>
+
+            <Stack
+              align="center"
+              justify="space-between"
+              style={{ marginTop: 4 }}
             >
-              {data.do_knot_action
-                ? 'НЕ ИСПОЛЬЗОВАТЬ УЗЕЛ'
-                : 'ИСПОЛЬЗОВАТЬ УЗЕЛ'}
-            </Box>
-          </Button>
-        </>
-      )}
-    </Box>
-  </Section>
-);
+              <Stack.Item>
+                <Button
+                  inline
+                  compact
+                  color="transparent"
+                  onClick={() => onToggleFinished(link.id)}
+                >
+                  {link.do_until_finished
+                    ? 'ДО ЗАВЕРШЕНИЯ'
+                    : 'ПОКА НЕ ОСТАНОВЛЮСЬ'}
+                </Button>
+              </Stack.Item>
+
+              <Stack.Item>
+                <SensitivityInline
+                  sensitivity={link.sensitivity}
+                  disabled={!partnerOrg}
+                  onEdit={() => onEditSensitivity(link.id)}
+                />
+              </Stack.Item>
+
+              <Stack.Item>
+                <Button
+                  inline
+                  compact
+                  color="transparent"
+                  onClick={() => onStop(link.id)}
+                >
+                  ОСТАНОВИТЬСЯ
+                </Button>
+              </Stack.Item>
+            </Stack>
+          </Section>
+        );
+      })}
+    </Stack>
+  );
+};
 
 const ActionsFilter: React.FC<{
   searchText: string;
@@ -402,7 +550,13 @@ const ActionsFilter: React.FC<{
   availableTags: string[];
   activeTags: string[];
   onToggleTag: (tag: string) => void;
-}> = ({ searchText, onSearchChange, availableTags, activeTags, onToggleTag }) => (
+}> = ({
+  searchText,
+  onSearchChange,
+  availableTags,
+  activeTags,
+  onToggleTag,
+}) => (
   <Section title="ДОСТУПНЫЕ ДЕЙСТВИЯ">
     <Input
       fluid
@@ -432,90 +586,77 @@ const ActionsFilter: React.FC<{
 const ActionsList: React.FC<{
   actorSelected?: OrgNode;
   partnerSelected?: OrgNode;
-  leftColumn: SexAction[];
-  rightColumn: SexAction[];
+  actions: SexAction[];
   currentAction?: string;
   canPerform: string[];
   onClickAction: (type: string) => void;
 }> = ({
   actorSelected,
   partnerSelected,
-  leftColumn,
-  rightColumn,
+  actions,
   currentAction,
   canPerform,
   onClickAction,
-}) => (
-  <Section fill scrollable>
-    {!actorSelected || !partnerSelected ? (
-      <NoticeBox info>
-        Выберите по одному элементу слева и справа, чтобы увидеть доступные
-        действия.
-      </NoticeBox>
-    ) : (
-      <Stack fill>
-        <Stack.Item basis="50%">
-          <Stack vertical>
-            {leftColumn.map((action) => {
-              const isCurrent = currentAction === action.type;
-              const isAvailable = canPerform.includes(action.type);
-              return (
-                <Stack.Item key={action.type}>
-                  <Button
-                    fluid
-                    selected={isCurrent}
-                    disabled={!isAvailable}
-                    onClick={() => onClickAction(action.type)}
-                  >
-                    {action.name}
-                  </Button>
-                </Stack.Item>
-              );
-            })}
-          </Stack>
-        </Stack.Item>
-        <Stack.Item basis="50%">
-          <Stack vertical>
-            {rightColumn.map((action) => {
-              const isCurrent = currentAction === action.type;
-              const isAvailable = canPerform.includes(action.type);
-              return (
-                <Stack.Item key={action.type}>
-                  <Button
-                    fluid
-                    selected={isCurrent}
-                    disabled={!isAvailable}
-                    onClick={() => onClickAction(action.type)}
-                  >
-                    {action.name}
-                  </Button>
-                </Stack.Item>
-              );
-            })}
-          </Stack>
-        </Stack.Item>
-      </Stack>
-    )}
-  </Section>
-);
+}) => {
+  const leftColumn = actions.filter((_, i) => i % 2 === 0);
+  const rightColumn = actions.filter((_, i) => i % 2 === 1);
 
-const RomanceLogView: React.FC<{ log: string[] }> = ({ log }) => (
-  <Section fill>
-    {log.length ? (
-      <Stack vertical>
-        {log.map((line, idx) => (
-          <Stack.Item key={idx}>
-            <Box>{line}</Box>
+  return (
+    <Section fill scrollable>
+      {!actorSelected || !partnerSelected ? (
+        <NoticeBox info>
+          Выберите по одному органу слева и справа, чтобы увидеть доступные
+          действия.
+        </NoticeBox>
+      ) : (
+        <Stack fill>
+          <Stack.Item basis="50%">
+            <Stack vertical>
+              {leftColumn.map((action) => {
+                const isCurrent = currentAction === action.type;
+                const isAvailable = canPerform.includes(action.type);
+                return (
+                  <Stack.Item key={action.type}>
+                    <Button
+                      inline
+                      color="transparent"
+                      selected={isCurrent}
+                      disabled={!isAvailable}
+                      onClick={() => onClickAction(action.type)}
+                      style={{ justifyContent: 'flex-start', width: '100%' }}
+                    >
+                      {action.name}
+                    </Button>
+                  </Stack.Item>
+                );
+              })}
+            </Stack>
           </Stack.Item>
-        ))}
-      </Stack>
-    ) : (
-      <Box italic color="label">
-        Здесь пока тихо.
-      </Box>
-    )}
-  </Section>
-);
+          <Stack.Item basis="50%">
+            <Stack vertical>
+              {rightColumn.map((action) => {
+                const isCurrent = currentAction === action.type;
+                const isAvailable = canPerform.includes(action.type);
+                return (
+                  <Stack.Item key={action.type}>
+                    <Button
+                      fluid
+                      selected={isCurrent}
+                      disabled={!isAvailable}
+                      onClick={() => onClickAction(action.type)}
+                    >
+                      {action.name}
+                    </Button>
+                  </Stack.Item>
+                );
+              })}
+            </Stack>
+          </Stack.Item>
+        </Stack>
+      )}
+    </Section>
+  );
+};
 
 const BottomControls: React.FC<{
   yieldToPartner?: boolean;
@@ -533,12 +674,12 @@ const BottomControls: React.FC<{
         <Button onClick={onStopAll}>ОСТАНОВИТЬСЯ</Button>
       </Stack.Item>
       <Stack.Item style={{ marginInline: 4 }}>
-        <Button onClick={onFlipRight}>ПЕРЕВЕРНУТЬ ВПРАВО</Button>
-      </Stack.Item>
-      <Stack.Item style={{ marginInline: 4 }}>
         <Button selected={!!yieldToPartner} onClick={onToggleYield}>
           ПОДДАТЬСЯ
         </Button>
+      </Stack.Item>
+      <Stack.Item style={{ marginInline: 4 }}>
+        <Button onClick={onFlipRight}>ПЕРЕВЕРНУТЬ ВПРАВО</Button>
       </Stack.Item>
     </Stack>
   </Section>
@@ -547,18 +688,16 @@ const BottomControls: React.FC<{
 export const EroticRolePlayPanel: React.FC = () => {
   const { act, data } = useBackend<SexSessionData>();
 
-  // нормализуем все потенциально пустые массивы
   const partners = data.partners ?? [];
-  const actorOrgans = data.actor_organs ?? [];
+  const actorOrgans = data.status_organs ?? [];
   const partnerOrgans = data.partner_organs ?? [];
   const actions = data.actions ?? [];
   const canPerform = data.can_perform ?? [];
   const availableTags = data.available_tags ?? [];
-  const romanceLog = data.romance_log ?? [];
 
   const [searchText, setSearchText] = useState('');
   const [activeTags, setActiveTags] = useState<string[]>([]);
-  const [activeTab, setActiveTab] = useState<'actions' | 'romance'>('actions');
+  const [activeTab, setActiveTab] = useState<'status' | 'actions'>('status');
 
   const toggleTag = (tag: string) => {
     setActiveTags((prev) =>
@@ -576,24 +715,20 @@ export const EroticRolePlayPanel: React.FC = () => {
   );
 
   const currentPartner = useMemo(() => {
-    if (!partners.length) {
-      return null;
-    }
+    if (!partners.length) return null;
     return (
       partners.find((p) => p.ref === data.current_partner_ref) || partners[0]
     );
   }, [partners, data.current_partner_ref]);
 
-  const currentActionObj = useMemo(
-    () => actions.find((a) => a.type === data.current_action),
-    [actions, data.current_action],
-  );
-
   const filteredActions = useMemo(() => {
     const q = searchText.trim().toLowerCase();
     return actions.filter((a) => {
       if (q && !a.name.toLowerCase().includes(q)) return false;
-      if (activeTags.length && !(a.tags || []).some((t) => activeTags.includes(t))) {
+      if (
+        activeTags.length &&
+        !(a.tags || []).some((t) => activeTags.includes(t))
+      ) {
         return false;
       }
       if (!canPerform.includes(a.type)) return false;
@@ -601,9 +736,6 @@ export const EroticRolePlayPanel: React.FC = () => {
       return true;
     });
   }, [actions, canPerform, searchText, activeTags, actorSelected, partnerSelected]);
-
-  const leftColumn = filteredActions.filter((_, i) => i % 2 === 0);
-  const rightColumn = filteredActions.filter((_, i) => i % 2 === 1);
 
   const onClickActionButton = (actionType: string) => {
     if (data.current_action === actionType) {
@@ -613,24 +745,16 @@ export const EroticRolePlayPanel: React.FC = () => {
     }
   };
 
-  const editTuning = (field: 'sensitivity' | 'pain') => {
-    if (!data.selected_partner_organ) return;
+  const setArousal = (target: 'actor' | 'partner') => {
     const current =
-      field === 'sensitivity'
-        ? data.target_sensitivity ?? 0
-        : data.target_pain ?? 0;
-
-    const raw = window.prompt('Введите значение от 0 до 2', String(current));
+      target === 'actor'
+        ? data.actor_arousal ?? 0
+        : data.partner_arousal ?? 0;
+    const raw = window.prompt('Введите возбуждение 0–100', String(current));
     if (raw === null) return;
     const value = Number(raw);
     if (Number.isNaN(value)) return;
-
-    act('set_organ_tuning', {
-      side: 'partner',
-      id: data.selected_partner_organ,
-      field,
-      value,
-    });
+    act('set_arousal_value', { target, amount: value });
   };
 
   const actorArousalWidth = Math.max(
@@ -642,119 +766,83 @@ export const EroticRolePlayPanel: React.FC = () => {
     Math.min(100, data.partner_arousal ?? 0),
   );
 
+  const editTuningForLink = (linkId: string) => {
+    const raw = window.prompt('Чувствительность 0–10', '0');
+    if (raw === null) return;
+    const value = Number(raw);
+    if (Number.isNaN(value)) return;
+    act('set_link_tuning', { id: linkId, field: 'sensitivity', value });
+  };
+
+  const editOrganField = (id: string, field: 'sensitivity' | 'pain') => {
+    const title = field === 'sensitivity' ? 'Чувствительность 0–10' : 'Боль 0–10';
+    const raw = window.prompt(title, '0');
+    if (raw === null) return;
+    const value = Number(raw);
+    if (Number.isNaN(value)) return;
+    act('set_organ_tuning', { id, field, value });
+  };
+
   return (
     <Window title="Утолить Желания" width={1000} height={720}>
       <Window.Content scrollable>
-        <Stack fill>
-          <Stack.Item basis="22%">
-            <OrganList
-              title={data.actor_name}
-              organs={actorOrgans}
-              selectedId={data.selected_actor_organ}
-              onSelect={(id) => act('select_organ', { side: 'actor', id })}
+        <Stack vertical fill>
+          <Stack.Item>
+            <PartnerSelector
+              actorName={data.actor_name}
+              partners={partners}
+              currentRef={data.current_partner_ref}
+              onChange={(ref) => act('set_partner', { ref })}
             />
           </Stack.Item>
 
-          <Stack.Item grow>
-            <Stack vertical fill>
-              <Stack.Item>
-                <PartnerSelector
-                  actorName={data.actor_name}
-                  partners={partners}
-                  currentRef={data.current_partner_ref}
-                  onChange={(ref) => act('set_partner', { ref })}
-                />
-              </Stack.Item>
+          <Stack.Item>
+            <ArousalBars
+              actorName={data.actor_name}
+              partnerLabel={currentPartner?.name || 'Цель'}
+              actorArousal={actorArousalWidth}
+              partnerArousal={partnerArousalWidth}
+              onSetActor={() => setArousal('actor')}
+              onSetPartner={() => setArousal('partner')}
+            />
+          </Stack.Item>
 
-              <Stack.Item>
-                <ArousalBars
-                  actorName={data.actor_name}
-                  partnerLabel={currentPartner?.name || 'Цель'}
-                  actorArousal={actorArousalWidth}
-                  partnerArousal={partnerArousalWidth}
-                />
-              </Stack.Item>
-
-              <Stack.Item>
-                <ActionControlRow
-                  data={data}
-                  actorSelected={actorSelected}
-                  partnerSelected={partnerSelected}
-                  currentActionName={currentActionObj?.name}
-                  onToggleFinished={() => act('toggle_finished')}
-                  onChangeSpeed={(delta) =>
-                    act('set_speed', {
-                      value: Math.max(1, Math.min(4, data.speed + delta)),
-                    })
-                  }
-                  onChangeForce={(delta) =>
-                    act('set_force', {
-                      value: Math.max(1, Math.min(4, data.force + delta)),
-                    })
-                  }
-                  onStopCurrent={() => {
-                    if (data.current_action) {
-                      act('stop_action');
-                    }
-                  }}
-                  onToggleFrozen={() => act('freeze_arousal')}
-                  onToggleKnot={() => act('toggle_knot')}
-                  onEditTuning={editTuning}
-                />
-              </Stack.Item>
-
-              <Stack.Item>
-                <Section>
-                  <Stack justify="center">
-                    <Stack.Item style={{ marginInline: 4 }}>
-                      <Button
-                        selected={activeTab === 'actions'}
-                        onClick={() => setActiveTab('actions')}
-                      >
-                        ДЕЙСТВИЯ
-                      </Button>
-                    </Stack.Item>
-                    <Stack.Item style={{ marginInline: 4 }}>
-                      <Button
-                        selected={activeTab === 'romance'}
-                        onClick={() => setActiveTab('romance')}
-                      >
-                        РОМАН
-                      </Button>
-                    </Stack.Item>
-                  </Stack>
-                </Section>
-              </Stack.Item>
-
-              {activeTab === 'actions' ? (
-                <>
-                  <Stack.Item>
-                    <ActionsFilter
-                      searchText={searchText}
-                      onSearchChange={setSearchText}
-                      availableTags={availableTags}
-                      activeTags={activeTags}
-                      onToggleTag={toggleTag}
-                    />
-                  </Stack.Item>
-                  <Stack.Item grow>
-                    <ActionsList
-                      actorSelected={actorSelected}
-                      partnerSelected={partnerSelected}
-                      leftColumn={leftColumn}
-                      rightColumn={rightColumn}
-                      currentAction={data.current_action}
-                      canPerform={canPerform}
-                      onClickAction={onClickActionButton}
-                    />
-                  </Stack.Item>
-                </>
-              ) : (
-                <Stack.Item grow>
-                  <RomanceLogView log={romanceLog} />
+          <Stack.Item>
+            <Section>
+              <Stack justify="center">
+                <Stack.Item style={{ marginInline: 4 }}>
+                  <Button
+                    selected={activeTab === 'status'}
+                    onClick={() => setActiveTab('status')}
+                  >
+                    СТАТУС
+                  </Button>
                 </Stack.Item>
-              )}
+                <Stack.Item style={{ marginInline: 4 }}>
+                  <Button
+                    selected={activeTab === 'actions'}
+                    onClick={() => setActiveTab('actions')}
+                  >
+                    ДЕЙСТВИЯ
+                  </Button>
+                </Stack.Item>
+              </Stack>
+            </Section>
+          </Stack.Item>
 
+          {activeTab === 'status' && (
+            <Stack.Item grow>
+              <StatusPanel
+                data={data}
+                actorOrgans={actorOrgans}
+                actorName={data.actor_name}
+                onEditOrgan={editOrganField}
+              />
+            </Stack.Item>
+          )}
+
+          {activeTab === 'actions' && (
+            <>
               <Stack.Item>
                 <BottomControls
                   yieldToPartner={data.yield_to_partner}
@@ -764,17 +852,79 @@ export const EroticRolePlayPanel: React.FC = () => {
                   onToggleYield={() => act('quick', { op: 'yield' })}
                 />
               </Stack.Item>
-            </Stack>
-          </Stack.Item>
 
-          <Stack.Item basis="22%">
-            <OrganList
-              title={currentPartner?.name || 'Партнёр'}
-              organs={partnerOrgans}
-              selectedId={data.selected_partner_organ}
-              onSelect={(id) => act('select_organ', { side: 'partner', id })}
-            />
-          </Stack.Item>
+              <Stack.Item>
+                <Section>
+                  <Stack fill align="stretch">
+                    <Stack.Item basis="18%">
+                      <OrganList
+                        title={data.actor_name}
+                        organs={actorOrgans}
+                        selectedId={data.selected_actor_organ}
+                        onSelect={(id) =>
+                          act('select_organ', { side: 'actor', id })
+                        }
+                      />
+                    </Stack.Item>
+
+                    <Stack.Item grow>
+                      <Stack vertical fill>
+                        <Stack.Item>
+                          <ActionsFilter
+                            searchText={searchText}
+                            onSearchChange={setSearchText}
+                            availableTags={availableTags}
+                            activeTags={activeTags}
+                            onToggleTag={toggleTag}
+                          />
+                        </Stack.Item>
+                        <Stack.Item grow>
+                          <ActionsList
+                            actorSelected={actorSelected}
+                            partnerSelected={partnerSelected}
+                            actions={filteredActions}
+                            currentAction={data.current_action}
+                            canPerform={canPerform}
+                            onClickAction={onClickActionButton}
+                          />
+                        </Stack.Item>
+                      </Stack>
+                    </Stack.Item>
+
+                    <Stack.Item basis="18%">
+                      <OrganList
+                        title={currentPartner?.name || 'Партнёр'}
+                        organs={partnerOrgans}
+                        selectedId={data.selected_partner_organ}
+                        onSelect={(id) =>
+                          act('select_organ', { side: 'partner', id })
+                        }
+                      />
+                    </Stack.Item>
+                  </Stack>
+                </Section>
+              </Stack.Item>
+
+              <Stack.Item>
+                <ActiveLinksPanel
+                  data={data}
+                  actorOrgans={actorOrgans}
+                  partnerOrgans={partnerOrgans}
+                  onSetSpeed={(id, value) =>
+                    act('set_link_speed', { id, value })
+                  }
+                  onSetForce={(id, value) =>
+                    act('set_link_force', { id, value })
+                  }
+                  onToggleFinished={(id) =>
+                    act('toggle_link_finished', { id })
+                  }
+                  onStop={(id) => act('stop_link', { id })}
+                  onEditSensitivity={editTuningForLink}
+                />
+              </Stack.Item>
+            </>
+          )}
         </Stack>
         <Divider />
       </Window.Content>

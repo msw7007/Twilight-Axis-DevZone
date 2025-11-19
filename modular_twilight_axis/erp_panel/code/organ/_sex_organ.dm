@@ -4,13 +4,15 @@
 
 /datum/sex_organ
 	// Link to physical organ
-	var/obj/item/organ/organ_link
+	var/atom/movable/organ_link
 	// how sensitive organ is - multiplayer to pleasure
 	var/sensivity = 0
 	// how painfull organ is - negative multiplayer to pleasure
 	var/pain = 0
-	// object that currently "uses" this organ
-	var/list/datum/sex_organ/stuff_object
+	// object that currently this organ stuffed in
+	var/datum/sex_organ/active_target = null
+	// list of objects that use this organ
+	var/list/datum/sex_organ/stuff_object  = list()
 	// type of sex organ
 	var/organ_type
 	// list and amount of liquid inside
@@ -20,20 +22,28 @@
 	// active deflation timer
 	var/deflation_timer_id = null 
 	
-/datum/sex_organ/New(obj/item/organ/organ)
+/datum/sex_organ/New(atom/movable/organ)
 	. = ..()
 	organ_link = organ
+
+	if(!stuff_object)
+		stuff_object = list()
+
 	if(stored_liquid_max)
 		stored_liquid = new(stored_liquid_max)
 
 /datum/sex_organ/proc/pleasure_bonus(datum/sex_organ/organ)
-	return sensivity - pain
+	return clamp(sensivity, 0, SEX_SENSITIVITY_MAX)  - clamp(pain, 0, SEX_PAIN_MAX)
 
 /datum/sex_organ/proc/insert_organ(datum/sex_organ/organ)
-	stuff_object += organ
+	if(!stuff_object)
+		stuff_object = list()
+	if(!(organ in stuff_object))
+		stuff_object += organ
 
 /datum/sex_organ/proc/remove_organ(datum/sex_organ/organ)
-	stuff_object -= organ
+	if(stuff_object && (organ in stuff_object))
+		stuff_object -= organ
 
 /datum/sex_organ/proc/add_reagent(datum/reagent/R, amount)
 	if(!stored_liquid || amount <= 0) 
@@ -89,6 +99,60 @@
 	. = ..()
 	//Добавить мудлет - нажал и выпил. Что-то сказал - вылил
 
+/datum/sex_organ/proc/is_active()
+	if(active_target)
+		return TRUE
+	if(stuff_object && length(stuff_object))
+		return TRUE
+	return FALSE
+
+/datum/sex_organ/proc/bind_with(datum/sex_organ/other)
+	if(active_target == other)
+		return
+	unbind()
+	active_target = other
+	if(other)
+		if(!other.stuff_object)
+			other.stuff_object = list()
+		if(!(src in other.stuff_object))
+			other.stuff_object += src
+
+/datum/sex_organ/proc/unbind()
+	if(active_target)
+		if(active_target.stuff_object && (src in active_target.stuff_object))
+			active_target.stuff_object -= src
+	active_target = null
+
+/datum/sex_organ/proc/can_start_active()
+	return active_target == null
+
+/datum/sex_organ/proc/start_active(datum/sex_organ/target)
+	if(!can_start_active())
+		return FALSE
+
+	active_target = target
+	target.insert_organ(src)
+	return TRUE
+
+/datum/sex_organ/proc/stop_active()
+	if(active_target)
+		active_target.remove_organ(src)
+		active_target = null
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 /datum/sex_organ/hand
 	organ_type = SEX_ORGAN_HANDS
 	stored_liquid_max = 0
@@ -134,3 +198,14 @@
 	. = ..()
 	stored_milk = organ.milk_stored
 	max_milk = organ.milk_max
+
+/datum/sex_organ/tail
+	organ_type = SEX_ORGAN_TAIL
+	stored_liquid_max = 0
+
+/datum/sex_organ/tail/New(obj/item/organ/tail/organ)
+	. = ..()
+
+/datum/sex_organ/legs
+	organ_type = SEX_ORGAN_LEGS
+	stored_liquid_max = 0

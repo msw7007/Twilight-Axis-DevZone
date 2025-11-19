@@ -1,9 +1,11 @@
 #include "code\_defenitions.dm"
 #include "code\_mob.dm"
-#include "code\_sex_instance.dm"
-#include "code\_sex_locks.dm"
-#include "code\_sex_patches.dm"
+#include "code\_sex_action_session.dm"
+#include "code\_proc_patches.dm"
 #include "code\_sex_session.dm"
-#include "code\actions\_basic_action.dm"
-#include "code\organ\_organ.dm"
+
+#include "code\actions\_sex_panel_action.dm"
+#include "code\actions\test_action.dm"
+
+#include "code\organ\_body_patches.dm"
 #include "code\organ\_sex_organ.dm"

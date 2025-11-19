@@ -29,3 +29,35 @@
 	if(t)
 		details["romance"] = t
 	return details
+
+/mob/living/carbon/human/proc/get_sex_organs()
+	var/list/result = list()
+	var/list/seen = list()
+
+	for(var/obj/item/organ/O in internal_organs)
+		if(O.sex_organ && !(O.sex_organ in seen))
+			seen += O.sex_organ
+			result += O.sex_organ
+
+	for(var/obj/item/bodypart/B in bodyparts)
+		if(B.sex_organ && !(B.sex_organ in seen))
+			seen += B.sex_organ
+			result += B.sex_organ
+
+	return result
+
+/mob/living/carbon/human/proc/get_sex_organs_by_type(organ_type)
+	var/list/result = list()
+	for(var/datum/sex_organ/O in get_sex_organs())
+		if(O.organ_type == organ_type)
+			result += O
+	return result
+
+/mob/living/carbon/human/proc/get_sex_organ_by_type(organ_type, only_free = FALSE)
+	for(var/datum/sex_organ/O in get_sex_organs())
+		if(O.organ_type != organ_type)
+			continue
+		if(only_free && (O.is_active()))
+			continue
+		return O
+	return null

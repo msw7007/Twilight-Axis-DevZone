@@ -13,30 +13,24 @@
 	var/has_knotted_penis = FALSE
 	var/do_knot_action = FALSE
 
-	var/arousal_ui = 0
+	var/actor_arousal_ui = 0
+	var/partner_arousal_ui = 0
 
-	var/list/current_actions = list() // /datum/sex_action_instance_tgui
+	var/list/current_actions = list()
 
 	var/list/locked_actor_categories = list()
 
 	var/list/speed_names = list("МЕДЛЕННО", "ПОСТЕПЕННО", "БЫСТРО", "НЕУМОЛИМО")
 	var/list/force_names = list("НЕЖНО", "НАСТОЙЧИВО", "ГРУБО", "ЖЕСТОКО")
 
-	/// список партнёров (кроме user); храним как слабые ссылки на мобов
 	var/list/partners = list()
-	/// текущий выбранный партнёр (REF() строки, чтобы удобно гонять в tgui)
 	var/current_partner_ref = null
 
-	/// лог “романа” — список строк
-	var/list/romance_log = list()
-	/// ограничение на длину лога
-	var/romance_log_max = 100
-
-	/// флаг “поддаться”
 	var/yield_to_partner = FALSE
+	var/broadcast_timer_id
 
 /datum/sex_session_tgui/New(mob/living/carbon/human/U, mob/living/carbon/human/T)
-	..()
+	. = ..()
 	user = U
 	target = T
 
@@ -47,16 +41,23 @@
 				has_knotted_penis = TRUE
 
 	RegisterSignal(user, COMSIG_SEX_CLIMAX, PROC_REF(on_resolution_event))
-	RegisterSignal(user, COMSIG_SEX_AROUSAL_CHANGED, PROC_REF(on_arousal_changed), TRUE)
+	RegisterSignal(user, COMSIG_SEX_AROUSAL_CHANGED, PROC_REF(on_arousal_changed))
+	if(target && target != user)
+		RegisterSignal(target, COMSIG_SEX_AROUSAL_CHANGED, PROC_REF(on_arousal_changed))
 
 /datum/sex_session_tgui/Destroy()
-	UnregisterSignal(user, list(COMSIG_SEX_CLIMAX, COMSIG_SEX_AROUSAL_CHANGED))
-	for (var/id in current_actions)
-		var/datum/sex_action_instance_tgui/I = current_actions[id]
-		if (I) 
+	if(user)
+		UnregisterSignal(user, list(COMSIG_SEX_CLIMAX, COMSIG_SEX_AROUSAL_CHANGED))
+	if(target && target != user)
+		UnregisterSignal(target, COMSIG_SEX_AROUSAL_CHANGED)
+
+	for(var/id in current_actions)
+		var/datum/sex_action_session/I = current_actions[id]
+		if(I)
 			qdel(I)
 	current_actions.Cut()
 	locked_actor_categories.Cut()
+	partners.Cut()
 	return ..()
 
 /datum/sex_session_tgui/proc/add_partner(mob/living/carbon/human/M)
@@ -74,32 +75,45 @@
 	out += list(list("id"="body","name"="Тело","busy"=FALSE,"side"=side))
 
 	var/obj/item/bodypart/head/HD = M.get_bodypart(BODY_ZONE_HEAD)
-	if (HD)
+	if(HD)
 		out += list(list("id"="mouth","name"="Рот","busy"=is_locked("mouth"),"side"=side))
+
 	var/obj/item/bodypart/l_arm/LA = M.get_bodypart(BODY_ZONE_L_ARM)
-	if (LA)
+	if(LA)
 		out += list(list("id"="left_hand","name"="Левая рука","busy"=is_locked("left_hand"),"side"=side))
+
 	var/obj/item/bodypart/r_arm/RA = M.get_bodypart(BODY_ZONE_R_ARM)
-	if (RA)
+	if(RA)
 		out += list(list("id"="right_hand","name"="Правая рука","busy"=is_locked("right_hand"),"side"=side))
 
-	if (M.getorganslot(ORGAN_SLOT_VAGINA))
+	var/obj/item/bodypart/l_leg/LL = M.get_bodypart(BODY_ZONE_L_LEG)
+	var/obj/item/bodypart/r_leg/RL = M.get_bodypart(BODY_ZONE_R_LEG)
+	if(LL || RL)
+		out += list(list("id"="legs","name"="Ноги","busy"=is_locked("legs"),"side"=side))
+
+	if(M.getorganslot(ORGAN_SLOT_TAIL))
+		out += list(list("id"="tail","name"="Хвост","busy"=is_locked("tail"),"side"=side))
+	if(M.getorganslot(ORGAN_SLOT_VAGINA))
 		out += list(list("id"="genital_v","name"="Вагина","busy"=is_locked("genital"),"side"=side))
-	if (M.getorganslot(ORGAN_SLOT_PENIS))
-		out += list(list("id"="genital_p","name"="Пенис","busy"=is_locked("genital"),"side"=side))
-	if (M.getorganslot(ORGAN_SLOT_ANUS))
+	if(M.getorganslot(ORGAN_SLOT_PENIS))
+		out += list(list("id"="genital_p","name"="Член","busy"=is_locked("genital"),"side"=side))
+	if(M.getorganslot(ORGAN_SLOT_ANUS))
 		out += list(list("id"="genital_a","name"="Анус","busy"=is_locked("genital"),"side"=side))
 
 	return out
 
 /datum/sex_session_tgui/proc/category_of_actor_node(id)
 	switch(id)
-		if("mouth")     
+		if("mouth")
 			return "mouth"
-		if("left_hand") 
+		if("left_hand")
 			return "left_hand"
 		if("right_hand")
 			return "right_hand"
+		if("legs")
+			return "legs"
+		if("tail")
+			return "tail"
 		if("genital_v","genital_p","genital_a")
 			return "genital"
 	return null
@@ -115,52 +129,77 @@
 
 /datum/sex_session_tgui/proc/actions_for_menu()
 	var/list/actions = list()
-	for (var/action_type in GLOB.sex_actions)
-		var/datum/sex_action/A = SEX_ACTION(action_type)
-		if (!A)
+	for(var/key in GLOB.sex_panel_actions)
+		var/datum/sex_panel_action/A = GLOB.sex_panel_actions[key]
+		if(!A)
 			continue
-		if (!A.shows_on_menu(user, target))
+		if(!A.shows_on_menu(user, target))
 			continue
-		actions += list(list("name"=A.name, "type"=action_type, "tags"=list()))
+		actions += list(list(
+			"name" = A.name,
+			"type" = key,
+			"tags" = list(),
+		))
 	return actions
 
-/datum/sex_session_tgui/proc/inherent_perform_check(datum/sex_action/A)
+/datum/sex_session_tgui/proc/inherent_perform_check(datum/sex_panel_action/A)
 	if(!target || !user)
 		return FALSE
-	if(user.stat != CONSCIOUS) 
+	if(user.stat != CONSCIOUS)
 		return FALSE
 	if(A.check_incapacitated && user.incapacitated())
 		return FALSE
 	if(A.check_same_tile)
 		var/same_tile = (get_turf(user) == get_turf(target))
-		var/grab_bypass = (A.aggro_grab_instead_same_tile && user.get_highest_grab_state_on(target) == GRAB_AGGRESSIVE)
-		if(!same_tile && !grab_bypass) 
+		var/grab_bypass = (A.required_grab_state && user.get_highest_grab_state_on(target) == GRAB_AGGRESSIVE)
+		if(!same_tile && !grab_bypass)
 			return FALSE
 	if(A.require_grab)
 		var/grabstate = user.get_highest_grab_state_on(target)
-		if(!grabstate || grabstate < A.required_grab_state) 
+		if(!grabstate || grabstate < A.required_grab_state)
 			return FALSE
 	return TRUE
 
 /datum/sex_session_tgui/proc/can_perform_action_type(action_type, performing = FALSE, actor_node_id = null, partner_node_id = null)
-	if(!action_type) 
-		return FALSE
-	var/datum/sex_action/A = SEX_ACTION(action_type)
-	if(!A) 
+	if(!action_type)
 		return FALSE
 
-	if(!inherent_perform_check(A)) 
+	var/datum/sex_panel_action/A = SEX_PANEL_ACTION(action_type)
+	if(!A)
 		return FALSE
 
-	var/a_id = actor_node_id || selected_actor_organ_id
-	var/p_id = partner_node_id || selected_partner_organ_id
-	if(!a_id || !p_id) 
+	var/a_id = actor_node_id
+	if(!a_id)
+		a_id = selected_actor_organ_id
+
+	var/p_id = partner_node_id
+	if(!p_id)
+		p_id = selected_partner_organ_id
+
+	var/a_type = a_id ? node_organ_type(a_id) : null
+	var/p_type = p_id ? node_organ_type(p_id) : null
+
+	if(A.required_init && a_type && A.required_init != a_type)
 		return FALSE
 
-	if(!performing && is_locked(category_of_actor_node(a_id))) 
+	if(A.required_target && p_type && A.required_target != p_type)
 		return FALSE
-	if(!A.can_perform(user, target) && !performing) 
-		return FALSE
+
+	if(performing)
+		if(A.required_init && !a_type)
+			return FALSE
+		if(A.required_target && !p_type)
+			return FALSE
+
+		if(!inherent_perform_check(A))
+			return FALSE
+
+		var/a_cat = a_id ? category_of_actor_node(a_id) : null
+		if(a_cat && is_locked(a_cat))
+			return FALSE
+
+		if(!A.can_perform(user, target))
+			return FALSE
 
 	return TRUE
 
@@ -172,7 +211,7 @@
 
 /datum/sex_session_tgui/ui_interact(mob/user, datum/tgui/ui)
 	ui = SStgui.try_update_ui(user, src, ui)
-	if (!ui)
+	if(!ui)
 		ui = new(user, src, ui_key(), "Утолить Желания")
 		ui.open()
 
@@ -196,32 +235,34 @@
 	D["selected_partner_organ"] = selected_partner_organ_id
 	D["speed"] = global_speed
 	D["force"] = global_force
-	D["arousal"] = clamp(round(arousal_ui), 0, 100)
+	D["actor_arousal"] = clamp(round(actor_arousal_ui), 0, 100)
+	D["partner_arousal"] = clamp(round(partner_arousal_ui), 0, 100)
 	D["frozen"] = frozen
 	D["do_until_finished"] = do_until_finished
 	D["do_knot_action"] = do_knot_action
+	D["yield_to_partner"] = yield_to_partner
+	D["status_organs"] = build_status_org_nodes(src.user)
 
 	var/list/can = list()
-	for (var/action_type in GLOB.sex_actions)
-		if (can_perform_action_type(action_type))
-			can += action_type
+	for(var/key in GLOB.sex_panel_actions)
+		if(can_perform_action_type(key))
+			can += key
 	D["can_perform"] = can
 
-	// current_action — возьмём первый активный
 	var/cur = null
-	for (var/id in current_actions)
-		var/datum/sex_action_instance_tgui/I = current_actions[id]
-		if (I)
+	for(var/id in current_actions)
+		var/datum/sex_action_session/I = current_actions[id]
+		if(I)
 			cur = I.action_type
 			break
 	D["current_action"] = cur
 
 	var/list/partners_data = list()
-
-	partners_data += list(list(
-		"ref" = REF(src.user),
-		"name" = "[src.user.name] (я)"
-	))
+	if(user)
+		partners_data += list(list(
+			"ref" = REF(user),
+			"name" = "[user.name]"
+		))
 
 	for(var/mob/living/carbon/human/M in partners)
 		if(QDELETED(M))
@@ -231,31 +272,54 @@
 			"name" = M.name
 		))
 
-	// если активный партнёр отвалился – самосвитч на себя
-	if(!current_partner_ref)
-		current_partner_ref = REF(src.user)
+	if(!current_partner_ref && user)
+		current_partner_ref = REF(user)
 
 	D["partners"] = partners_data
 	D["current_partner_ref"] = current_partner_ref
-	D["romance_log"] = romance_log.Copy()
-	
-	// имя активного партнёра для удобства
+
 	var/mob/living/carbon/human/active_partner = locate(current_partner_ref)
-	D["partner_name"] = active_partner ? active_partner.name : src.user.name
+	D["partner_name"] = active_partner ? active_partner.name : user?.name
+
+	var/list/links = list()
+	for(var/id in current_actions)
+		var/datum/sex_action_session/I = current_actions[id]
+		if(!I)
+			continue
+
+		var/datum/sex_organ/tgt_org = I.target_organ
+		var/sens = tgt_org ? tgt_org.sensivity : null
+		var/pain = tgt_org ? tgt_org.pain : null
+
+		links += list(list(
+			"id"               = I.instance_id,
+			"actor_organ_id"   = I.actor_node_id,
+			"partner_organ_id" = I.partner_node_id,
+			"action_type"      = I.action_type,
+			"action_name"      = I.action?.name,
+			"speed"            = I.speed,
+			"force"            = I.force,
+			"do_until_finished"= do_until_finished,
+			"sensitivity"      = sens,
+			"pain"             = pain,
+		))
+
+	D["active_links"] = links
 
 	return D
 
 /datum/sex_session_tgui/ui_act(action, list/params)
 	. = ..()
-	if (.)
+	if(.)
 		return
 
 	switch(action)
 		if("select_organ")
-			var/side = params["side"]; var/id = params["id"]
-			if (side == "actor") 
+			var/side = params["side"]
+			var/id = params["id"]
+			if(side == "actor")
 				selected_actor_organ_id = id
-			else if (side == "partner") 
+			else if(side == "partner")
 				selected_partner_organ_id = id
 			SStgui.update_uis(src)
 			return TRUE
@@ -297,11 +361,13 @@
 
 		if("quick")
 			var/op = params["op"]
-			if (op == "increase")
-				global_force = clamp(global_force+1, SEX_FORCE_MIN, SEX_FORCE_MAX)
-				global_speed = clamp(global_speed+1, SEX_SPEED_MIN, SEX_SPEED_MAX)
-			else if (op == "yield")
-				stop_all_actions()
+			if(op == "increase")
+				global_force = clamp(global_force + 1, SEX_FORCE_MIN, SEX_FORCE_MAX)
+				global_speed = clamp(global_speed + 1, SEX_SPEED_MIN, SEX_SPEED_MAX)
+			else if(op == "yield")
+				yield_to_partner = !yield_to_partner
+				if(yield_to_partner)
+					stop_all_actions()
 			SStgui.update_uis(src)
 			return TRUE
 
@@ -309,14 +375,77 @@
 			var/ref = params["ref"]
 			if(!ref)
 				return
-
-			// проверка, что такой партнёр вообще в списке
 			for(var/mob/living/carbon/human/M in partners + list(user))
 				if(REF(M) == ref)
 					current_partner_ref = ref
 					target = M
 					SStgui.update_uis(src)
 					return TRUE
+
+		if("stop_all")
+			stop_all_actions()
+			SStgui.update_uis(src)
+			return TRUE
+
+		if("stop_link")
+			var/id = params["id"]
+			if(id)
+				stop_instance(id)
+				SStgui.update_uis(src)
+				return TRUE
+
+		if("set_link_speed")
+			var/id = params["id"]
+			var/value = clamp(text2num(params["value"]), SEX_SPEED_MIN, SEX_SPEED_MAX)
+			var/datum/sex_action_session/I = current_actions[id]
+			if(I)
+				I.speed = value
+				SStgui.update_uis(src)
+				return TRUE
+
+		if("set_link_force")
+			var/id2 = params["id"]
+			var/value2 = clamp(text2num(params["value"]), SEX_FORCE_MIN, SEX_FORCE_MAX)
+			var/datum/sex_action_session/I2 = current_actions[id2]
+			if(I2)
+				I2.force = value2
+				SStgui.update_uis(src)
+				return TRUE
+
+		if("toggle_link_finished")
+			do_until_finished = !do_until_finished
+			SStgui.update_uis(src)
+			return TRUE
+
+		if("set_arousal_value")
+			var/target_type = params["target"]
+			var/amount = clamp(text2num(params["amount"]), 0, 100)
+			if(target_type == "actor" && user)
+				SEND_SIGNAL(user, COMSIG_SEX_SET_AROUSAL, amount)
+			else if(target_type == "partner" && target)
+				SEND_SIGNAL(target, COMSIG_SEX_SET_AROUSAL, amount)
+			SStgui.update_uis(src)
+			return TRUE
+
+		if("set_organ_tuning")
+			var/id = params["id"]
+			var/field = params["field"]
+			var/value = text2num(params["value"])
+
+			var/datum/sex_organ/O = resolve_organ_datum(user, id)
+			if(!O)
+				return FALSE
+
+			if(field == "sensitivity")
+				O.sensivity = clamp(value, 0, 10)
+				to_chat(user, "DEBUG: [id] sensivity now [O.sensivity]")
+
+			SStgui.update_uis(src)
+			return TRUE
+
+
+		if("flip")
+			return TRUE
 
 	return FALSE
 
@@ -343,85 +472,114 @@
 			current_partner_ref = REF(N)
 			target = N
 
-/datum/sex_session_tgui/proc/log_romance(message)
-	if(!message)
-		return
-	romance_log += message
-	if(length(romance_log) > romance_log_max)
-		romance_log.Cut(1, 2) // срезать самый старый
-
 /datum/sex_session_tgui/proc/try_start_action(action_type)
-	if (!selected_actor_organ_id || !selected_partner_organ_id)
-		return
-	if (!can_perform_action_type(action_type))
-		return
-	if (!slot_available_for(selected_actor_organ_id))
+	var/datum/sex_panel_action/A = SEX_PANEL_ACTION(action_type)
+	if(!A)
 		return
 
-	var/datum/sex_action/A = SEX_ACTION(action_type)
-	if (!A)
+	var/a_id = pick_actor_node_for_action(A)
+	var/p_id = pick_partner_node_for_action(A)
+
+	if(!a_id || !p_id)
 		return
 
-	var/cat = category_of_actor_node(selected_actor_organ_id)
-	if (cat) locked_actor_categories |= cat
+	if(!can_perform_action_type(action_type, TRUE, a_id, p_id))
+		return
 
-	var/datum/sex_action_instance_tgui/I = new(src, A, selected_actor_organ_id, selected_partner_organ_id)
+	selected_actor_organ_id = a_id
+	selected_partner_organ_id = p_id
+
+	var/cat = category_of_actor_node(a_id)
+	if(cat)
+		locked_actor_categories |= cat
+
+	var/datum/sex_action_session/I = new(src, A, a_id, p_id)
 	I.speed = global_speed
 	I.force = global_force
 
 	current_actions[I.instance_id] = I
-	INVOKE_ASYNC(I, TYPE_PROC_REF(/datum/sex_action_instance_tgui, start))
+	INVOKE_ASYNC(I, TYPE_PROC_REF(/datum/sex_action_session, start))
+
+	if(!length(current_actions))
+		start_broadcast_loop()
+
+	SStgui.update_uis(src)
+
+	
 
 /datum/sex_session_tgui/proc/stop_all_actions()
 	var/list/ids = current_actions.Copy()
-	for (var/id in ids)
+	for(var/id in ids)
 		stop_instance(id)
 
+	if(!length(current_actions))
+		clear_actor_locks()
+
 /datum/sex_session_tgui/proc/stop_instance(id)
-	var/datum/sex_action_instance_tgui/I = current_actions[id]
-	if (!I)
+	var/datum/sex_action_session/I = current_actions[id]
+	if(!I)
 		return
+
 	current_actions -= id
 
 	var/cat = category_of_actor_node(I.actor_node_id)
-	if (cat) locked_actor_categories -= cat
+	if(cat)
+		locked_actor_categories -= cat
+
+	var/datum/sex_organ/src_org = resolve_organ_datum(user, I.actor_node_id)
+	if(src_org)
+		src_org.unbind()
 
 	I.action.on_finish(user, target)
 	qdel(I)
+
+	if(!length(current_actions))
+		clear_actor_locks()
+		stop_broadcast_loop()
+
 	SStgui.update_uis(src)
 
 /datum/sex_session_tgui/proc/sync_arousal_ui()
-	var/list/ad = list()
-	SEND_SIGNAL(user, COMSIG_SEX_GET_AROUSAL, ad)
-	var/cur = ad["arousal"] || 0
-	arousal_ui = min(100, (cur / ACTIVE_EJAC_THRESHOLD) * 100)
+	var/list/ad_user = list()
+	var/list/ad_tgt = list()
+	if(user)
+		SEND_SIGNAL(user, COMSIG_SEX_GET_AROUSAL, ad_user)
+	if(target)
+		SEND_SIGNAL(target, COMSIG_SEX_GET_AROUSAL, ad_tgt)
+
+	var/cur_u = ad_user["arousal"] || 0
+	var/cur_t = ad_tgt["arousal"] || 0
+
+	actor_arousal_ui = min(100, (cur_u / ACTIVE_EJAC_THRESHOLD) * 100)
+	partner_arousal_ui = min(100, (cur_t / ACTIVE_EJAC_THRESHOLD) * 100)
 
 /datum/sex_session_tgui/proc/on_arousal_changed()
 	sync_arousal_ui()
 	SStgui.update_uis(src)
 
 /datum/sex_session_tgui/proc/on_resolution_event(mob/source)
-	if (!selected_actor_organ_id || !selected_partner_organ_id)
+	if(!selected_actor_organ_id || !selected_partner_organ_id)
 		return
 
 	var/datum/sex_organ/src_org = resolve_organ_datum(user, selected_actor_organ_id)
 	var/datum/sex_organ/tgt_org = resolve_organ_datum(target, selected_partner_organ_id)
-	if (!src_org || !tgt_org)
+	if(!src_org || !tgt_org)
 		return
 
 	var/amt = 5
-	if (src_org.stored_liquid && tgt_org.stored_liquid)
+	if(src_org.stored_liquid && tgt_org.stored_liquid)
 		src_org.stored_liquid.trans_to(tgt_org.stored_liquid, amt)
-	else if (istype(src_org, /datum/sex_organ/penis))
+	else if(istype(src_org, /datum/sex_organ/penis))
 		var/datum/sex_organ/penis/P = src_org
 		var/move = min(amt, P.liquid_ammount)
-		if (move > 0)
+		if(move > 0)
 			tgt_org.add_reagent(/datum/reagent/erpjuice/cum, move)
 			P.liquid_ammount = max(0, P.liquid_ammount - move)
 
 /datum/sex_session_tgui/proc/resolve_organ_datum(mob/living/carbon/human/M, id)
-	if (!M || !id)
+	if(!M || !id)
 		return null
+
 	switch(id)
 		if("mouth")
 			var/obj/item/bodypart/head/HD = M.get_bodypart(BODY_ZONE_HEAD)
@@ -432,6 +590,15 @@
 		if("right_hand")
 			var/obj/item/bodypart/r_arm/RA = M.get_bodypart(BODY_ZONE_R_ARM)
 			return RA?.sex_organ
+		if("legs")
+			var/obj/item/bodypart/l_leg/LL = M.get_bodypart(BODY_ZONE_L_LEG)
+			if(LL && LL.sex_organ)
+				return LL.sex_organ
+			var/obj/item/bodypart/r_leg/RL = M.get_bodypart(BODY_ZONE_R_LEG)
+			return RL?.sex_organ
+		if("tail")
+			var/obj/item/organ/tail/T = M.getorganslot(ORGAN_SLOT_TAIL)
+			return T?.sex_organ
 		if("genital_v")
 			var/obj/item/organ/vagina/V = M.getorganslot(ORGAN_SLOT_VAGINA)
 			return V?.sex_organ
@@ -443,4 +610,160 @@
 			return A?.sex_organ
 		if("body")
 			return null
+
 	return null
+
+/datum/sex_session_tgui/proc/node_organ_type(id)
+	switch(id)
+		if("mouth")
+			return SEX_ORGAN_MOUTH
+		if("left_hand", "right_hand")
+			return SEX_ORGAN_HANDS
+		if("legs")
+			return SEX_ORGAN_LEGS
+		if("tail")
+			return SEX_ORGAN_TAIL
+		if("genital_v")
+			return SEX_ORGAN_VAGINA
+		if("genital_p")
+			return SEX_ORGAN_PENIS
+		if("genital_a")
+			return SEX_ORGAN_ANUS
+	return null
+
+/datum/sex_session_tgui/proc/pick_actor_node_for_action(datum/sex_panel_action/A)
+	if(selected_actor_organ_id)
+		var/t = node_organ_type(selected_actor_organ_id)
+		if((!A.required_init || A.required_init == t) && !is_locked(category_of_actor_node(selected_actor_organ_id)))
+			return selected_actor_organ_id
+
+	var/list/nodes = build_org_nodes(user, "actor")
+	for(var/i in 1 to nodes.len)
+		var/list/N = nodes[i]
+		var/id = N["id"]
+		if(id == "body")
+			continue
+
+		var/t2 = node_organ_type(id)
+		if(A.required_init && A.required_init != t2)
+			continue
+		if(is_locked(category_of_actor_node(id)))
+			continue
+
+		return id
+
+	return null
+
+/datum/sex_session_tgui/proc/pick_partner_node_for_action(datum/sex_panel_action/A)
+	if(selected_partner_organ_id)
+		var/t = node_organ_type(selected_partner_organ_id)
+		if(!A.required_target || A.required_target == t)
+			return selected_partner_organ_id
+
+	var/list/nodes = build_org_nodes(target, "partner")
+	for(var/i in 1 to nodes.len)
+		var/list/N = nodes[i]
+		var/id = N["id"]
+		if(id == "body")
+			continue
+
+		var/t2 = node_organ_type(id)
+		if(A.required_target && A.required_target != t2)
+			continue
+
+		return id
+
+	return null
+
+/datum/sex_session_tgui/proc/start_broadcast_loop()
+	if(broadcast_timer_id)
+		return
+	broadcast_timer_id = addtimer(CALLBACK(src, PROC_REF(broadcast_tick)), 5 SECONDS, TIMER_STOPPABLE)
+
+/datum/sex_session_tgui/proc/stop_broadcast_loop()
+	if(!broadcast_timer_id)
+		return
+	deltimer(broadcast_timer_id)
+	broadcast_timer_id = null
+
+/datum/sex_session_tgui/proc/broadcast_tick()
+	if(QDELETED(src))
+		broadcast_timer_id = null
+		return
+
+	if(!length(current_actions))
+		broadcast_timer_id = null
+		return
+
+	var/list/candidates = list()
+
+	for(var/id in current_actions)
+		var/datum/sex_action_session/A = current_actions[id]
+		if(!A || QDELETED(A))
+			continue
+		if(!A.action)
+			continue
+		if(A.session.user != user)
+			continue
+		candidates += A
+
+	if(!length(candidates))
+		broadcast_timer_id = null
+		return
+
+	var/datum/sex_action_session/choice = pick(candidates)
+	var/mob/living/carbon/human/U = choice.session.user
+	var/mob/living/carbon/human/T = choice.session.target
+
+	if(U && T && choice.action)
+		var/msg = choice.action.get_perform_message(U, T, TRUE)
+		if(msg)
+			U.visible_message(msg)
+
+	broadcast_timer_id = addtimer(CALLBACK(src, PROC_REF(broadcast_tick)), 5 SECONDS, TIMER_STOPPABLE)
+
+/datum/sex_session_tgui/proc/can_continue_action_session(datum/sex_action_session/I)
+	if(!I || !I.action)
+		return FALSE
+	if(!user || !target)
+		return FALSE
+
+	if(!inherent_perform_check(I.action))
+		return FALSE
+
+	var/a_type = I.actor_node_id ? node_organ_type(I.actor_node_id) : null
+	var/p_type = I.partner_node_id ? node_organ_type(I.partner_node_id) : null
+
+	if(I.action.required_init && !a_type)
+		return FALSE
+	if(I.action.required_target && !p_type)
+		return FALSE
+
+	return TRUE
+
+/datum/sex_session_tgui/proc/clear_actor_locks()
+	if(locked_actor_categories)
+		locked_actor_categories.Cut()
+
+/datum/sex_session_tgui/proc/build_status_org_nodes(mob/living/carbon/human/M)
+	var/list/out = list()
+
+	var/list/base = build_org_nodes(M, "actor")
+	for(var/i in 1 to base.len)
+		var/list/N = base[i]
+		var/id = N["id"]
+
+		var/datum/sex_organ/O = resolve_organ_datum(M, id)
+		var/sens = O ? O.sensivity : 0
+		var/pain = O ? O.pain : 0
+
+		out += list(list(
+			"id"          = id,
+			"name"        = N["name"],
+			"busy"        = N["busy"],
+			"side"        = N["side"],
+			"sensitivity" = sens,
+			"pain"        = pain,
+		))
+
+	return out
