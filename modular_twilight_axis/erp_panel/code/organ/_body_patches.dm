@@ -16,11 +16,6 @@
 	if(!sex_organ)
 		sex_organ = new /datum/sex_organ/vagina(src)
 
-/obj/item/organ/anus/Initialize()
-	. = ..()
-	if(!sex_organ)
-		sex_organ = new /datum/sex_organ/anus(src)
-
 /obj/item/organ/tail/Initialize()
 	. = ..()
 	if(!sex_organ)
@@ -65,8 +60,5 @@
 
 /obj/item/bodypart/chest/Initialize()
 	. = ..()
-	var/mob/living/carbon/human/H = owner
-	if(H)
-		if(!H.legs_organ)
-			H.legs_organ = new /datum/sex_organ/anus(H)
-		sex_organ = H.legs_organ
+	if(!sex_organ)
+		sex_organ = new /datum/sex_organ/anus(H)
