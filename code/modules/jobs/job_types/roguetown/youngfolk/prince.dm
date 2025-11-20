@@ -76,7 +76,8 @@
 	beltr = /obj/item/storage/keyring/heir
 	neck = /obj/item/storage/belt/rogue/pouch/coins/rich
 	backr = /obj/item/storage/backpack/rogue/satchel
-	SStreasury.give_money_account(ECONOMIC_RICH, H, "Savings.")
+	if(H.mind)
+		SStreasury.give_money_account(ECONOMIC_RICH, H, "Savings.")
 
 /datum/advclass/heir/bookworm
 	name = "Introverted Bookworm"
@@ -116,7 +117,8 @@
 	shoes = /obj/item/clothing/shoes/roguetown/boots/nobleboot
 	mask = /obj/item/clothing/mask/rogue/spectacles
 	neck = /obj/item/storage/belt/rogue/pouch/coins/rich
-	SStreasury.give_money_account(ECONOMIC_RICH, H, "Savings.")
+	if(H.mind)
+		SStreasury.give_money_account(ECONOMIC_RICH, H, "Savings.")
 
  
 /datum/advclass/heir/aristocrat
@@ -166,7 +168,8 @@
 		armor = /obj/item/clothing/suit/roguetown/armor/silkcoat
 		shirt = /obj/item/clothing/suit/roguetown/shirt/dress/royal/princess
 		shoes = /obj/item/clothing/shoes/roguetown/shortboots
-	SStreasury.give_money_account(ECONOMIC_RICH, H, "Savings.")
+	if(H.mind)
+		SStreasury.give_money_account(ECONOMIC_RICH, H, "Savings.")
 
 /datum/advclass/heir/inbred
 	name = "Inbred wastrel"
@@ -208,7 +211,8 @@
 		armor = /obj/item/clothing/suit/roguetown/armor/silkcoat
 		shirt = /obj/item/clothing/suit/roguetown/shirt/dress/royal/princess
 		shoes = /obj/item/clothing/shoes/roguetown/shortboots
-	SStreasury.give_money_account(ECONOMIC_RICH, H, "Savings.")
+	if(H.mind)
+		SStreasury.give_money_account(ECONOMIC_RICH, H, "Savings.")
 
 /datum/advclass/heir/scamp
 	name = "Nettlesome Scamp"
@@ -260,7 +264,8 @@
 		/obj/item/storage/belt/rogue/pouch/coins/rich = 1,
 		/obj/item/lockpickring/mundane = 1,
 	)
-	SStreasury.give_money_account(ECONOMIC_RICH, H, "Savings.")
+	if(H.mind)
+		SStreasury.give_money_account(ECONOMIC_RICH, H, "Savings.")
 
 
 

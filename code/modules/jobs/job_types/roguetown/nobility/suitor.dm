@@ -81,7 +81,8 @@
 	if(H.mind)
 		var/datum/antagonist/new_antag = new /datum/antagonist/suitor()
 		H.mind.add_antag_datum(new_antag)
-	SStreasury.give_money_account(ECONOMIC_RICH, H, "Savings.")
+	if(H.mind)
+		SStreasury.give_money_account(ECONOMIC_RICH, H, "Savings.")
 
 /datum/advclass/suitor/schemer
 	name = "Schemer"
@@ -134,7 +135,8 @@
 	if(H.mind)
 		var/datum/antagonist/new_antag = new /datum/antagonist/suitor()
 		H.mind.add_antag_datum(new_antag)
-	SStreasury.give_money_account(ECONOMIC_RICH, H, "Savings.")
+	if(H.mind)
+		SStreasury.give_money_account(ECONOMIC_RICH, H, "Savings.")
 
 /datum/advclass/suitor/gallant
 	name = "Gallant"
@@ -182,7 +184,8 @@
 	if(H.mind)
 		var/datum/antagonist/new_antag = new /datum/antagonist/suitor()
 		H.mind.add_antag_datum(new_antag)
-	SStreasury.give_money_account(ECONOMIC_RICH, H, "Savings.")
+	if(H.mind)
+		SStreasury.give_money_account(ECONOMIC_RICH, H, "Savings.")
 
 
 /obj/item/clothing/head/roguetown/roguehood/shalal/hijab/gallant

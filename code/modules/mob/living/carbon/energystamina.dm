@@ -105,8 +105,12 @@
 		return TRUE
 	if(HAS_TRAIT(src, TRAIT_FORTITUDE))
 		added = added * 0.5
+
+	if(added < 0 && HAS_TRAIT(src, TRAIT_FROZEN_STAMINA))
+		added = 0
 	if(m_intent == MOVE_INTENT_RUN && isnull(buckled) && (mobility_flags & MOBILITY_STAND))
 		mind && mind.add_sleep_experience(/datum/skill/misc/athletics, (STAINT*0.05))
+
 	stamina = CLAMP(stamina+added, 0, max_stamina)
 	if(added > 0)
 		energy_add(added * -1)

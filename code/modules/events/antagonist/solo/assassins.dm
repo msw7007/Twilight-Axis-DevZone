@@ -42,13 +42,13 @@
 		"Apothecary"
 	)
 
-	base_antags = 1
-	maximum_antags = 2
+	base_antags = 0 // TA EDIT
+	maximum_antags = 0 // TA EDIT
 
 	earliest_start = 0 SECONDS
 	max_occurrences = 2
 
-	weight = 10
+	weight = 0 // TA EDIT
 
 	typepath = /datum/round_event/antagonist/solo/assassins
 	antag_datum = /datum/antagonist/assassin

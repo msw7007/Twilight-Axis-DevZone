@@ -19,7 +19,7 @@
 	advclass_cat_rolls = list(CTAG_SERGEANT = 20)
 
 	give_bank_account = TRUE
-	min_pq = 6
+	min_pq = 8
 	max_pq = null
 	cmode_music = 'sound/music/combat_ManAtArms.ogg'
 	job_traits = list(TRAIT_GUARDSMAN, TRAIT_STEELHEARTED, TRAIT_MEDIUMARMOR)
@@ -149,7 +149,8 @@
 		)
 		var/armorchoice = input(H, "Choose your armor.", "TAKE UP ARMOR") as anything in armors
 		armor = armors[armorchoice]
-	SStreasury.give_money_account(ECONOMIC_UPPER_MIDDLE_CLASS, H, "Savings.")
+	if(H.mind)
+		SStreasury.give_money_account(ECONOMIC_UPPER_MIDDLE_CLASS, H, "Savings.")
 
 /obj/effect/proc_holder/spell/invoked/order
 	name = ""

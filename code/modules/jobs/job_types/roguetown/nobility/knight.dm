@@ -17,7 +17,7 @@
 	job_traits = list(TRAIT_NOBLE, TRAIT_STEELHEARTED, TRAIT_GOODTRAINER, TRAIT_GUARDSMAN)
 	give_bank_account = TRUE
 	noble_income = 10
-	min_pq = 8
+	min_pq = 10
 	max_pq = null
 	round_contrib_points = 2
 	same_job_respawn_delay = 30 MINUTES
@@ -188,7 +188,8 @@
 		/obj/item/rope/chain = 1,
 		/obj/item/rogueweapon/scabbard/sheath = 1
 	)
-	SStreasury.give_money_account(ECONOMIC_UPPER_CLASS, H, "Savings.")
+	if(H.mind)
+		SStreasury.give_money_account(ECONOMIC_UPPER_CLASS, H, "Savings.")
 
 /datum/advclass/knight/footknight
 	name = "Foot Knight"
@@ -283,7 +284,8 @@
 		/obj/item/rope/chain = 1,
 		/obj/item/rogueweapon/scabbard/sheath = 1
 	)
-	SStreasury.give_money_account(ECONOMIC_UPPER_CLASS, H, "Savings.")
+	if(H.mind)
+		SStreasury.give_money_account(ECONOMIC_UPPER_CLASS, H, "Savings.")
 
 /datum/advclass/knight/mountedknight
 	name = "Mounted Knight"
@@ -402,7 +404,8 @@
 		/obj/item/rope/chain = 1,
 		/obj/item/rogueweapon/scabbard/sheath = 1
 	)
-	SStreasury.give_money_account(ECONOMIC_UPPER_CLASS, H, "Savings.")
+	if(H.mind)
+		SStreasury.give_money_account(ECONOMIC_UPPER_CLASS, H, "Savings.")
 
 
 /datum/advclass/knight/irregularknight
@@ -534,4 +537,5 @@
 		/obj/item/rope/chain = 1,
 		/obj/item/rogueweapon/scabbard/sheath = 1
 	)
-	SStreasury.give_money_account(ECONOMIC_UPPER_CLASS, H, "Savings.")
+	if(H.mind)
+		SStreasury.give_money_account(ECONOMIC_UPPER_CLASS, H, "Savings.")

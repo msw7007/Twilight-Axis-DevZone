@@ -16,7 +16,7 @@
 
 	give_bank_account = TRUE
 	noble_income = 20
-	min_pq = 1 //Probably a bad idea to have a complete newbie advising the monarch
+	min_pq = 5 //Probably a bad idea to have a complete newbie advising the monarch
 	max_pq = null
 	round_contrib_points = 2
 	cmode_music = 'sound/music/combat_noble.ogg'
@@ -63,4 +63,5 @@
 	beltl = /obj/item/storage/keyring/steward // If this turns out to be overbearing re:stewardry bump down to the clerk keyring instead.
 	beltr = /obj/item/rogueweapon/huntingknife/idagger/steel
 	cloak = /obj/item/clothing/cloak/stabard/surcoat/councillor
-	SStreasury.give_money_account(ECONOMIC_RICH, H, "Savings.")
+	if(H.mind)
+		SStreasury.give_money_account(ECONOMIC_RICH, H, "Savings.")

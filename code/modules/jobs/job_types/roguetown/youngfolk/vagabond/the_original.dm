@@ -38,4 +38,6 @@
 	if (H.mind)
 		H.STALUC = rand(5, 15)
 		H.change_stat(STATKEY_INT, round(rand(-4,4)))
-	SStreasury.give_money_account(ECONOMIC_DESTITUTE, H, "Savings.")
+
+	if(H.mind)
+		SStreasury.give_money_account(ECONOMIC_DESTITUTE, H, "Savings.")

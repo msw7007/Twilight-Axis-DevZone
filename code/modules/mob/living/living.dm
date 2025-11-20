@@ -618,8 +618,6 @@
 	if(pulling)
 		if(ismob(pulling))
 			var/mob/living/M = pulling
-			if(pulledby && pulledby == pulling)
-				reset_offsets("pulledby")
 			M.reset_offsets("pulledby")
 			reset_pull_offsets(pulling)
 			if(HAS_TRAIT(M, TRAIT_GARROTED))
@@ -638,8 +636,6 @@
 				if(I.grabbed == pulling)
 					dropItemToGround(I, silent = FALSE)
 	reset_offsets("pulledby")
-	reset_pull_offsets(src)
-
 	. = ..()
 
 	update_pull_movespeed()

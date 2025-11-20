@@ -15,7 +15,7 @@
 
 	display_order = JDO_DRUID
 	give_bank_account = TRUE
-	min_pq = 0
+	min_pq = 5
 	max_pq = null
 	round_contrib_points = 2
 	cmode_music = 'sound/music/cmode/garrison/combat_warden.ogg' // this was originally druid music. i think its ok to have druids share it w/ wardens.
@@ -87,9 +87,11 @@
 		H.adjust_skillrank_up_to(/datum/skill/magic/holy, 5, TRUE)
 		H.adjust_skillrank_up_to(/datum/skill/magic/druidic, 5, TRUE)
 	H.ambushable = FALSE
+	H.AddComponent(/datum/component/wise_tree_alert)
 	var/datum/devotion/C = new /datum/devotion(H, H.patron)
 	C.grant_miracles(H, cleric_tier = CLERIC_T4, passive_gain = CLERIC_REGEN_MAJOR, start_maxed = TRUE)	//Starts off maxed out.
-	SStreasury.give_money_account(ECONOMIC_DESTITUTE, H, "Church Funding.")
+	if(H.mind)
+		SStreasury.give_money_account(ECONOMIC_DESTITUTE, H, "Church Funding.")
 
 /datum/outfit/job/roguetown/druid/basic/choose_loadout(mob/living/carbon/human/H)
 	. = ..()

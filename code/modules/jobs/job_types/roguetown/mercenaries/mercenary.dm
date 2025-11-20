@@ -12,7 +12,7 @@
 	selection_color = JCOLOR_WANDERER
 	min_pq = 25		//Will be handled by classes if PQ limiting is needed. --But Until then, learn escalation, mercs.
 	max_pq = null
-	round_contrib_points = 1
+	round_contrib_points = null
 	outfit = null	//Handled by classes
 	outfit_female = null
 	advclass_cat_rolls = list(CTAG_MERCENARY = 20)

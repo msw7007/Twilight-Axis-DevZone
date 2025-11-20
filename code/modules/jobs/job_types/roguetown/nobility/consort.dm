@@ -74,7 +74,8 @@
 	H.change_stat(STATKEY_SPD, 2)
 	H.change_stat(STATKEY_PER, 2)
 	H.change_stat(STATKEY_LCK, 5)
-	SStreasury.give_money_account(ECONOMIC_RICH, H, "Savings.")
+	if(H.mind)
+		SStreasury.give_money_account(ECONOMIC_RICH, H, "Savings.")
 
 /obj/effect/proc_holder/spell/self/convertrole/servant
 	name = "Recruit Servant"

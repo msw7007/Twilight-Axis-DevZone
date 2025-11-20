@@ -38,4 +38,5 @@
 
 	r_hand = /obj/item/rogueweapon/woodstaff
 
-	SStreasury.give_money_account(ECONOMIC_DESTITUTE, H, "Savings.")
+	if(H.mind)
+		SStreasury.give_money_account(ECONOMIC_DESTITUTE, H, "Savings.")

@@ -20,7 +20,7 @@
 	announce_latejoin = FALSE
 	outfit = /datum/outfit/job/roguetown/dungeoneer
 	give_bank_account = TRUE
-	min_pq = 0
+	min_pq = 4
 	max_pq = null
 	round_contrib_points = 2
 	same_job_respawn_delay = 30 MINUTES
@@ -99,4 +99,5 @@
 		else
 			cloak = /obj/item/clothing/cloak/stabard/dungeon
 			head = /obj/item/clothing/head/roguetown/menacing
-	SStreasury.give_money_account(ECONOMIC_LOWER_MIDDLE_CLASS, H, "Savings.")
+	if(H.mind)
+		SStreasury.give_money_account(ECONOMIC_LOWER_MIDDLE_CLASS, H, "Savings.")

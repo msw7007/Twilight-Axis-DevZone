@@ -13,10 +13,11 @@
 	outfit = /datum/outfit/job/roguetown/steward
 	give_bank_account = TRUE
 	noble_income = 16
-	min_pq = 3 //Please don't give the vault keys to somebody that's going to lock themselves in on accident
+	min_pq = 8 //Please don't give the vault keys to somebody that's going to lock themselves in on accident
 	max_pq = null
 	round_contrib_points = 3
 	cmode_music = 'sound/music/combat_noble.ogg'
+	is_quest_giver = TRUE
 	same_job_respawn_delay = 30 MINUTES
 
 	advclass_cat_rolls = list(CTAG_STEWARD = 2)
@@ -82,7 +83,8 @@
 	if(H.mind)
 		H.mind.AddSpell(new /obj/effect/proc_holder/spell/invoked/appraise/secular)
 	H.verbs |= /mob/living/carbon/human/proc/adjust_taxes
-	SStreasury.give_money_account(ECONOMIC_RICH, H, "Savings.")
+	if(H.mind)
+		SStreasury.give_money_account(ECONOMIC_RICH, H, "Savings.")
 
 GLOBAL_VAR_INIT(steward_tax_cooldown, -50000) // Antispam
 /mob/living/carbon/human/proc/adjust_taxes()

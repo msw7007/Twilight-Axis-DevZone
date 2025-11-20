@@ -21,7 +21,7 @@
 
 	give_bank_account = TRUE
 	noble_income = 16
-	min_pq = 9
+	min_pq = 15
 	max_pq = null
 	round_contrib_points = 3
 	cmode_music = 'sound/music/combat_knight.ogg'
@@ -121,6 +121,8 @@
 		/mob/proc/haltyell,
 		/mob/living/carbon/human/mind/proc/setorders
 	)
+	if(H.mind)
+		SStreasury.give_money_account(ECONOMIC_RICH, H, "Savings.")
 	H.adjust_blindness(-3)
 	if(H.mind)
 		var/weapons = list(
@@ -242,7 +244,6 @@
 		var/helmchoice = input(H, "Choose your Helm.", "TAKE UP HELMS") as anything in helmets
 		if(helmchoice != "None")
 			head = helmets[helmchoice]
-	SStreasury.give_money_account(ECONOMIC_RICH, H, "Savings.")
 
 /obj/effect/proc_holder/spell/self/convertrole
 	name = "Recruit Beggar"

@@ -178,6 +178,10 @@ GLOBAL_LIST_EMPTY(loadout_items_by_category)
 	category = "Плащи"
 	path = /obj/item/clothing/cloak/stabard/surcoat
 
+/datum/loadout_item/jupon_short
+	name = "Short Jupon"
+	path = /obj/item/clothing/cloak/stabard/surcoat/short
+
 /datum/loadout_item/cape
 	name = "Cape"
 	category = "Плащи"
@@ -868,6 +872,12 @@ GLOBAL_LIST_EMPTY(loadout_items_by_category)
 	path = /obj/item/enchantingkit/zoe
 	donatitem = TRUE
 
+/datum/loadout_item/donator_willmbrink
+	name = "Royal Gown"
+	path = /obj/item/clothing/suit/roguetown/shirt/dress/royal
+	category = list("Одежда", "Донат")
+	donatitem = TRUE
+
 /datum/loadout_item/donator_kumie
 	name = "Donator Kit - Aristocratic Boots - Required: Heavy Leather Boots or Noble Boots"
 	category = list("Разное", "Донат")
@@ -1131,10 +1141,52 @@ GLOBAL_LIST_EMPTY(loadout_items_by_category)
 	path = /obj/item/clothing/head/roguetown/eoramask
 	donatitem = TRUE
 
+/datum/loadout_item/donat/eyepatchfake
+	name = "Повязка на правый глаз(ненастоящая)"
+	category = list("Головные уборы", "Донат")
+	path = /obj/item/clothing/mask/rogue/eyepatch/fake
+	donatitem = TRUE
+
+/datum/loadout_item/donat/eyepatchfakeleft
+	name = "Повязка на левый глаз(ненастоящая)"
+	category = list("Головные уборы", "Донат")
+	path = /obj/item/clothing/mask/rogue/eyepatch/left/fake
+	donatitem = TRUE
+
 // Шляпы
 
 /datum/loadout_item/donat/grenzelhofthat_decorated
 	name = "Грензельхофтская шляпа(без брони, декоративная)"
 	category = list("Головные уборы", "Донат")
 	path = /obj/item/clothing/head/roguetown/grenzelhofthat/decorated
+	donatitem = TRUE
+
+/datum/loadout_item/donat/wizhat
+	name = "Шляпа мага(синяя)"
+	category = list("Головные уборы", "Донат")
+	path = /obj/item/clothing/head/roguetown/wizhat
+	donatitem = TRUE
+
+/datum/loadout_item/donat/wizhatred
+	name = "Шляпа мага(красная)"
+	category = list("Головные уборы", "Донат")
+	path = /obj/item/clothing/head/roguetown/wizhat/red
+	donatitem = TRUE
+
+/datum/loadout_item/donat/wizhatyellow
+	name = "Шляпа мага(желтая)"
+	category = list("Головные уборы", "Донат")
+	path = /obj/item/clothing/head/roguetown/wizhat/yellow
+	donatitem = TRUE
+
+/datum/loadout_item/donat/wizhatgreen
+	name = "Шляпа мага(зеленая)"
+	category = list("Головные уборы", "Донат")
+	path = /obj/item/clothing/head/roguetown/wizhat/green
+	donatitem = TRUE
+
+/datum/loadout_item/donat/wizhatblack
+	name = "Шляпа мага(черная)"
+	category = list("Головные уборы", "Донат")
+	path = /obj/item/clothing/head/roguetown/wizhat/black
 	donatitem = TRUE

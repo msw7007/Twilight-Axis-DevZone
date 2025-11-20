@@ -15,7 +15,7 @@
 	display_order = JDO_VET
 	whitelist_req = TRUE
 	give_bank_account = 35
-	min_pq = 5 //Should...probably actually be a veteran of at least a few weeks before trying to teach others
+	min_pq = 12 //Should...probably actually be a veteran of at least a few weeks before trying to teach others
 	max_pq = null
 	round_contrib_points = 2
 	same_job_respawn_delay = 30 MINUTES
@@ -102,7 +102,8 @@
 		/obj/item/rogueweapon/scabbard/sheath = 1
 		)
 	H.verbs |= /mob/proc/haltyell
-	SStreasury.give_money_account(ECONOMIC_RICH, H, "Retirement.")
+	if(H.mind)
+		SStreasury.give_money_account(ECONOMIC_RICH, H, "Retirement.")
 
 /datum/outfit/job/roguetown/vet/battlemaster/choose_loadout(mob/living/carbon/human/H)
 	. = ..()
@@ -190,7 +191,8 @@
 		H.adjust_skillrank_up_to(/datum/skill/combat/axes, 5, TRUE)
 		H.adjust_skillrank_up_to(/datum/skill/combat/wrestling, 5, TRUE)
 	H.verbs |= /mob/proc/haltyell
-	SStreasury.give_money_account(ECONOMIC_RICH, H, "Retirement.")
+	if(H.mind)
+		SStreasury.give_money_account(ECONOMIC_RICH, H, "Retirement.")
 
 /datum/advclass/veteran/calvaryman
 	name = "Tarnished Knight"
@@ -255,7 +257,8 @@
 		H.adjust_skillrank_up_to(/datum/skill/combat/polearms, 5, TRUE)
 		H.adjust_skillrank_up_to(/datum/skill/combat/whipsflails, 5, TRUE)
 	H.verbs |= /mob/proc/haltyell
-	SStreasury.give_money_account(ECONOMIC_RICH, H, "Retirement.")
+	if(H.mind)
+		SStreasury.give_money_account(ECONOMIC_RICH, H, "Retirement.")
 
 	H.adjust_blindness(-3)
 	if(H.mind)
@@ -337,7 +340,8 @@
 		/obj/item/rogueweapon/scabbard/sheath = 1
 		)
 	H.verbs |= /mob/proc/haltyell
-	SStreasury.give_money_account(ECONOMIC_RICH, H, "Retirement.")
+	if(H.mind)
+		SStreasury.give_money_account(ECONOMIC_RICH, H, "Retirement.")
 
 /datum/outfit/job/roguetown/vet/merc/choose_loadout(mob/living/carbon/human/H)
 	. = ..()
@@ -432,7 +436,8 @@
 		H.change_stat(STATKEY_PER, 2)
 	H.verbs |= /mob/proc/haltyell
 	H.cmode_music = 'sound/music/cmode/antag/combat_deadlyshadows.ogg' // so apparently this works for veteran, but not for advents. i dont know why.
-	SStreasury.give_money_account(ECONOMIC_RICH, H, "Retirement.")
+	if(H.mind)
+		SStreasury.give_money_account(ECONOMIC_RICH, H, "Retirement.")
 
 /datum/advclass/veteran/spy
 	name = "Ex-Spy"
@@ -505,4 +510,5 @@
 		H.change_stat(STATKEY_SPD, 1) // You get -2 speed from being old. You are still in the negative stat wise from picking old.
 		H.change_stat(STATKEY_PER, 2) // You get -2 perception from being old. I want you to at least have a positive perception, to represent that you're observant. The highest perception you can get with this is a 13, so I think we'll be okayed.
 	H.verbs |= /mob/proc/haltyell
-	SStreasury.give_money_account(ECONOMIC_RICH, H, "Retirement.")
+	if(H.mind)
+		SStreasury.give_money_account(ECONOMIC_RICH, H, "Retirement.")
