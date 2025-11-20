@@ -44,13 +44,16 @@
 	return TRUE
 
 /datum/sex_panel_action/test_simple/get_start_message(mob/living/carbon/human/user, mob/living/carbon/human/target)
-	return "<span class='love_low'>[user] начинает тестовое действие с [target].</span>"
+	var/pose_state = get_pose_key(user, target)
+	return "<span class='love_low'>[user] [get_pose_text(pose_state)] начинает тестовое действие с [target].</span>"
 
 /datum/sex_panel_action/test_simple/get_perform_message(mob/living/carbon/human/user, mob/living/carbon/human/target)
-	return "<span class='love_low'>[user] делает тестовое действие с [target].</span>"
+	var/pose_state = get_pose_key(user, target)
+	return "<span class='love_low'>[user] [get_pose_text(pose_state)] делает тестовое действие с [target].</span>"
 
 /datum/sex_panel_action/test_simple/get_finish_message(mob/living/carbon/human/user, mob/living/carbon/human/target)
-	return "<span class='love_low'>[user] заканчивает тестовое действие с [target].</span>"
+	var/pose_state = get_pose_key(user, target)
+	return "<span class='love_low'>[user] [get_pose_text(pose_state)] заканчивает тестовое действие с [target].</span>"
 
 /datum/sex_panel_action/test_simple/on_start(mob/living/carbon/human/user, mob/living/carbon/human/target)
 	var/list/orgs = connect_organs(user, target)

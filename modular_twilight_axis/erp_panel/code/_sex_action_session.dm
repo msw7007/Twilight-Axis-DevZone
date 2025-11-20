@@ -171,21 +171,38 @@
 	var/user_sources   = get_arousal_source_count_for(U)
 	var/target_sources = get_arousal_source_count_for(T)
 
-	if(user_sources <= 0)
-		user_sources = 1
-	if(target_sources <= 0)
-		target_sources = 1
+	var/user_delta   = 0
+	var/target_delta = 0
 
-	var/user_delta   = delta * max(0, action.affects_self_arousal)
-	var/target_delta = delta * max(0, action.affects_arousal)
+	if(action.affects_self_arousal && delta > 0)
+		user_delta = delta
+	if(action.affects_arousal && delta > 0)
+		target_delta = delta
 
 	if(user_sources > 1 && user_delta)
 		user_delta /= user_sources
 	if(target_sources > 1 && target_delta)
 		target_delta /= target_sources
 
-	var/user_pain   = self_pain_delta   * max(0, action.affects_self_pain)
-	var/target_pain = target_pain_delta * max(0, action.affects_pain)
+	var/user_pain   = 0
+	var/target_pain = 0
+
+	if(action.affects_self_pain && self_pain_delta > 0)
+		user_pain = self_pain_delta
+	if(action.affects_pain && target_pain_delta > 0)
+		target_pain = target_pain_delta
+
+	if(user_pain > 0 && U)
+		if(session?.is_maso_or_nympho(U))
+			user_delta += user_pain
+		else
+			user_delta -= user_pain
+
+	if(target_pain > 0 && T)
+		if(session?.is_maso_or_nympho(T))
+			target_delta += target_pain
+		else
+			target_delta -= target_pain
 
 	if(U && (user_delta || user_pain))
 		SEND_SIGNAL(U, COMSIG_SEX_RECEIVE_ACTION, user_delta, user_pain, TRUE,  force, speed)

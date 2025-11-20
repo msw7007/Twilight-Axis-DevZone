@@ -139,7 +139,9 @@
 		active_target.remove_organ(src)
 		active_target = null
 
-
+/datum/sex_organ/proc/reset_after_sleep()
+	sensivity = 0
+	pain = 0
 
 
 

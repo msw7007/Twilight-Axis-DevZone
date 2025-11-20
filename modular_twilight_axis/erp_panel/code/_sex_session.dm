@@ -236,10 +236,18 @@
 	D["speed"] = global_speed
 	D["force"] = global_force
 	D["actor_arousal"] = clamp(round(actor_arousal_ui), 0, 100)
-	D["partner_arousal"] = clamp(round(partner_arousal_ui), 0, 100)
+
+	if(can_see_partner_arousal())
+		D["partner_arousal"] = clamp(round(partner_arousal_ui), 0, 100)
+		D["partner_arousal_hidden"] = FALSE
+	else
+		D["partner_arousal"] = null
+		D["partner_arousal_hidden"] = TRUE
+		
 	D["frozen"] = frozen
 	D["do_until_finished"] = do_until_finished
 	D["do_knot_action"] = do_knot_action
+	D["has_knotted_penis"] = has_knotted_penis
 	D["yield_to_partner"] = yield_to_partner
 	D["status_organs"] = build_status_org_nodes(src.user)
 
@@ -291,6 +299,11 @@
 		var/sens = tgt_org ? tgt_org.sensivity : null
 		var/pain = tgt_org ? tgt_org.pain : null
 
+		var/can_knot_link = FALSE
+		if(has_knotted_penis && I.action && I.session && I.session.user == user)
+			if(I.action.can_knot && node_organ_type(I.actor_node_id) == SEX_ORGAN_PENIS)
+				can_knot_link = TRUE
+
 		links += list(list(
 			"id"               = I.instance_id,
 			"actor_organ_id"   = I.actor_node_id,
@@ -302,6 +315,7 @@
 			"do_until_finished"= do_until_finished,
 			"sensitivity"      = sens,
 			"pain"             = pain,
+			"can_knot"         = can_knot_link,
 		))
 
 	D["active_links"] = links
@@ -355,7 +369,8 @@
 			return TRUE
 
 		if("toggle_knot")
-			do_knot_action = !do_knot_action
+			if(can_toggle_knot())
+				do_knot_action = !do_knot_action
 			SStgui.update_uis(src)
 			return TRUE
 
@@ -442,7 +457,6 @@
 
 			SStgui.update_uis(src)
 			return TRUE
-
 
 		if("flip")
 			return TRUE
@@ -550,8 +564,8 @@
 	var/cur_u = ad_user["arousal"] || 0
 	var/cur_t = ad_tgt["arousal"] || 0
 
-	actor_arousal_ui = min(100, (cur_u / ACTIVE_EJAC_THRESHOLD) * 100)
-	partner_arousal_ui = min(100, (cur_t / ACTIVE_EJAC_THRESHOLD) * 100)
+	actor_arousal_ui = min(100, (cur_u / ERP_UI_MAX_AROUSAL) * 100)
+	partner_arousal_ui = min(100, (cur_t / ERP_UI_MAX_AROUSAL) * 100)
 
 /datum/sex_session_tgui/proc/on_arousal_changed()
 	sync_arousal_ui()
@@ -767,3 +781,43 @@
 		))
 
 	return out
+
+/datum/sex_session_tgui/proc/can_see_partner_arousal()
+	if(!user || !target || user == target)
+		return TRUE
+
+	if(HAS_TRAIT(user, TRAIT_EMPATH))
+		return TRUE
+	return FALSE
+
+/datum/sex_session_tgui/proc/can_toggle_knot()
+	if(!has_knotted_penis)
+		return FALSE
+	if(!length(current_actions))
+		return FALSE
+
+	for(var/id in current_actions)
+		var/datum/sex_action_session/I = current_actions[id]
+		if(!I || !I.action)
+			continue
+		if(I.session.user != user)
+			continue
+		if(node_organ_type(I.actor_node_id) != SEX_ORGAN_PENIS)
+			continue
+		if(!I.action.can_knot)
+			continue
+		return TRUE
+
+	return FALSE
+
+/datum/sex_session_tgui/proc/is_maso_or_nympho(mob/living/carbon/human/M)
+	if(!M)
+		return FALSE
+
+	if(M.has_flaw(/datum/charflaw/addiction/lovefiend))
+		return TRUE
+
+	if(M.has_flaw(/datum/charflaw/addiction/masochist))
+		return TRUE
+
+	return FALSE

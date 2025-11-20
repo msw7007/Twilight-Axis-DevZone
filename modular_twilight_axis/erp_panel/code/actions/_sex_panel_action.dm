@@ -35,6 +35,8 @@
 	var/affects_arousal = 0
 	/// Can action affects target pain?
 	var/affects_pain = 0
+	/// Get pose of partners
+	var/pose_key = SEX_POSE_BOTH_STANDING
 
 /datum/sex_panel_action/proc/shows_on_menu(mob/living/carbon/human/user, mob/living/carbon/human/target)
 	if(abstract_type)
@@ -147,3 +149,27 @@
 			return FALSE
 
 	return orgs
+
+/datum/sex_panel_action/proc/get_pose_key(mob/living/carbon/human/user, mob/living/carbon/human/target)
+	if(!user || !target)
+		return SEX_POSE_BOTH_STANDING
+
+	if(user.lying && target.lying)
+		return SEX_POSE_BOTH_LYING
+	if(user.lying)
+		return SEX_POSE_USER_LYING
+	if(target.lying)
+		return SEX_POSE_TARGET_LYING
+
+	return SEX_POSE_BOTH_STANDING
+
+/datum/sex_panel_action/proc/get_pose_text(pose_state)
+	switch(pose_state)
+		if(SEX_POSE_BOTH_STANDING)
+			return "стоя"
+		if(SEX_POSE_USER_LYING)
+			return "снизу"
+		if(SEX_POSE_TARGET_LYING)
+			return "сверху"
+		if(SEX_POSE_BOTH_LYING)
+			return "лежа"

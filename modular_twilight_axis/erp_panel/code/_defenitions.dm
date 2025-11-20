@@ -17,6 +17,13 @@
 #define SEX_PAIN_GAIN_EXTREME_PASSIVE 0.1
 #define SEX_PAIN_GAIN_EXTREME_ACTIVE  0.03
 
+#define SEX_POSE_BOTH_STANDING "both_standing"
+#define SEX_POSE_USER_LYING    "user_lying"
+#define SEX_POSE_TARGET_LYING  "target_lying"
+#define SEX_POSE_BOTH_LYING    "both_lying"
+
+#define ERP_UI_MAX_AROUSAL 100
+
 GLOBAL_LIST_INIT(sex_panel_actions, build_sex_panel_actions())
 
 #define SEX_PANEL_ACTION(sex_action_type) (GLOB.sex_panel_actions[sex_action_type])

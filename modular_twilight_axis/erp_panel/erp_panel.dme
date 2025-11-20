@@ -1,5 +1,6 @@
 #include "code\_defenitions.dm"
 #include "code\_mob.dm"
+#include "code\_component.dm"
 #include "code\_sex_action_session.dm"
 #include "code\_proc_patches.dm"
 #include "code\_sex_session.dm"

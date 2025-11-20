@@ -17,6 +17,8 @@ export type OrgNode = {
   name: string;
   busy?: boolean;
   side?: 'actor' | 'partner';
+  sensitivity?: number;
+  pain?: number;
 };
 
 export type SexAction = {
@@ -65,6 +67,7 @@ export type SexSessionData = {
 
   actor_arousal?: number;
   partner_arousal?: number;
+  show_partner_arousal?: boolean;
 
   frozen?: boolean;
   do_until_finished?: boolean;
@@ -77,11 +80,6 @@ export type SexSessionData = {
   current_action?: string;
 
   active_links?: ActiveLink[];
-};
-
-export type StatusOrgNode = OrgNode & {
-  sensitivity?: number;
-  pain?: number;
 };
 
 const speedColors = ['#eac8de', '#e9a8d1', '#f05ee1', '#d146f5'];
@@ -202,6 +200,7 @@ const ArousalBars: React.FC<{
   partnerLabel: string;
   actorArousal: number;
   partnerArousal: number;
+  showPartnerBar: boolean;
   onSetActor: () => void;
   onSetPartner: () => void;
 }> = ({
@@ -209,70 +208,100 @@ const ArousalBars: React.FC<{
   partnerLabel,
   actorArousal,
   partnerArousal,
+  showPartnerBar,
   onSetActor,
   onSetPartner,
-}) => (
-  <Section>
-    <LabeledList>
-      <LabeledList.Item label={actorName || 'Источник'}>
-        <Button
-          inline
-          color="transparent"
-          onClick={onSetActor}
-          style={{ width: '100%' }}
+}) => {
+  const maxArousal = 100;
+
+  const clamp01 = (v: number) => Math.max(0, Math.min(1, v));
+
+  const actorFrac = clamp01(actorArousal / maxArousal);
+  const partnerFrac = clamp01(partnerArousal / maxArousal);
+
+  const actorPct = Math.round(actorFrac * 100);
+  const partnerPct = Math.round(partnerFrac * 100);
+
+  return (
+    <Section>
+      <LabeledList>
+        <LabeledList.Item
+          label={actorName || 'Источник'}
+          buttons={
+            <Box as="span" ml={1} color="label">
+              {actorArousal} / {maxArousal} ({actorPct}%)
+            </Box>
+          }
         >
-          <Box
-            style={{
-              height: 10,
-              width: '100%',
-              border: '1px solid rgba(255,255,255,0.2)',
-              borderRadius: 6,
-              overflow: 'hidden',
-            }}
+          <Button
+            inline
+            color="transparent"
+            onClick={onSetActor}
+            style={{ width: '100%' }}
           >
             <Box
               style={{
-                height: '100%',
-                width: `${actorArousal}%`,
-                background: '#d146f5',
+                height: 10,
+                width: '100%',
+                border: '1px solid rgba(255,255,255,0.2)',
+                borderRadius: 6,
+                overflow: 'hidden',
               }}
-            />
-          </Box>
-        </Button>
-      </LabeledList.Item>
-      <LabeledList.Item label={partnerLabel || 'Цель'}>
-        <Button
-          inline
-          color="transparent"
-          onClick={onSetPartner}
-          style={{ width: '100%' }}
-        >
-          <Box
-            style={{
-              height: 10,
-              width: '100%',
-              border: '1px solid rgba(255,255,255,0.2)',
-              borderRadius: 6,
-              overflow: 'hidden',
-            }}
+            >
+              <Box
+                style={{
+                  height: '100%',
+                  width: `${actorPct}%`,
+                  background: '#d146f5',
+                }}
+              />
+            </Box>
+          </Button>
+        </LabeledList.Item>
+
+        {showPartnerBar && (
+          <LabeledList.Item
+            label={partnerLabel || 'Цель'}
+            buttons={
+              <Box as="span" ml={1} color="label">
+                {partnerArousal} / {maxArousal} ({partnerPct}%)
+              </Box>
+            }
           >
-            <Box
-              style={{
-                height: '100%',
-                width: `${partnerArousal}%`,
-                background: '#f05ee1',
-              }}
-            />
-          </Box>
-        </Button>
-      </LabeledList.Item>
-    </LabeledList>
-  </Section>
-);
+            <Button
+              inline
+              color="transparent"
+              onClick={onSetPartner}
+              style={{ width: '100%' }}
+            >
+              <Box
+                style={{
+                  height: 10,
+                  width: '100%',
+                  border: '1px solid rgba(255,255,255,0.2)',
+                  borderRadius: 6,
+                  overflow: 'hidden',
+                }}
+              >
+                <Box
+                  style={{
+                    height: '100%',
+                    width: `${partnerPct}%`,
+                    background: '#f05ee1',
+                  }}
+                />
+              </Box>
+            </Button>
+          </LabeledList.Item>
+        )}
+      </LabeledList>
+    </Section>
+  );
+};
 
 const StatusPanel: React.FC<{
   data: SexSessionData;
-  actorOrgans: StatusOrgNode[];
+  actorOrgans: OrgNode[];
   actorName: string;
   onEditOrgan: (id: string, field: 'sensitivity' | 'pain') => void;
 }> = ({ data, actorOrgans, actorName, onEditOrgan }) => {
@@ -297,6 +326,7 @@ const StatusPanel: React.FC<{
             l.partner_organ_id === org.id,
         );
 
+        // БЕРЁМ ИМЕННО ИЗ ОРГАНА
         const sens = org.sensitivity ?? 0;
         const pain = org.pain ?? 0;
 
@@ -404,16 +434,30 @@ const ActiveLinksPanel: React.FC<{
   const getOrg = (id: string, list: OrgNode[]) =>
     list.find((o) => o.id === id);
 
+  const speedNames = data.speed_names || [];
+  const forceNames = data.force_names || [];
+
+  const clampIndex = (v: number, names: string[]) => {
+    const len = names.length || 1;
+    const idx = Math.max(1, Math.min(len, v || 1)) - 1;
+    return idx;
+  };
+
   return (
     <Stack vertical>
       {links.map((link) => {
         const actorOrg = getOrg(link.actor_organ_id, actorOrgans);
         const partnerOrg = getOrg(link.partner_organ_id, partnerOrgans);
-        const speedIdx = Math.max(1, Math.min(4, link.speed)) - 1;
-        const forceIdx = Math.max(1, Math.min(4, link.force)) - 1;
+
+        const speedIdx = clampIndex(link.speed, speedNames);
+        const forceIdx = clampIndex(link.force, forceNames);
+
+        const speedLabel = speedNames[speedIdx] || '?';
+        const forceLabel = forceNames[forceIdx] || '?';
 
         return (
           <Section key={link.id}>
+            {/* Верхняя строка: органы + скорость/сила + название действия */}
             <Stack align="center" justify="space-between">
               <Stack.Item shrink>
                 <Box bold>
@@ -433,13 +477,13 @@ const ActiveLinksPanel: React.FC<{
                   as="span"
                   bold
                   style={{
-                    color: speedColors[speedIdx],
+                    color: speedColors[speedIdx % speedColors.length],
                     display: 'inline-block',
                     minWidth: 110,
                     textAlign: 'center',
                   }}
                 >
-                  {data.speed_names[speedIdx]}
+                  {speedLabel}
                 </Box>{' '}
                 <Button
                   inline
@@ -476,13 +520,13 @@ const ActiveLinksPanel: React.FC<{
                   as="span"
                   bold
                   style={{
-                    color: forceColors[forceIdx],
+                    color: forceColors[forceIdx % forceColors.length],
                     display: 'inline-block',
                     minWidth: 90,
                     textAlign: 'center',
                   }}
                 >
-                  {data.force_names[forceIdx]}
+                  {forceLabel}
                 </Box>{' '}
                 <Button
                   inline
@@ -500,6 +544,7 @@ const ActiveLinksPanel: React.FC<{
               </Stack.Item>
             </Stack>
 
+            {/* Нижняя строка: до завершения / чувствительность / стоп */}
             <Stack
               align="center"
               justify="space-between"
@@ -750,21 +795,15 @@ export const EroticRolePlayPanel: React.FC = () => {
       target === 'actor'
         ? data.actor_arousal ?? 0
         : data.partner_arousal ?? 0;
-    const raw = window.prompt('Введите возбуждение 0–100', String(current));
+    const raw = window.prompt('Введите возбуждение 0–120', String(current));
     if (raw === null) return;
     const value = Number(raw);
     if (Number.isNaN(value)) return;
     act('set_arousal_value', { target, amount: value });
   };
 
-  const actorArousalWidth = Math.max(
-    0,
-    Math.min(100, data.actor_arousal ?? 0),
-  );
-  const partnerArousalWidth = Math.max(
-    0,
-    Math.min(100, data.partner_arousal ?? 0),
-  );
+  const actorArousal = Math.max(0, data.actor_arousal ?? 0);
+  const partnerArousal = Math.max(0, data.partner_arousal ?? 0);
 
   const editTuningForLink = (linkId: string) => {
     const raw = window.prompt('Чувствительность 0–10', '0');
@@ -783,6 +822,13 @@ export const EroticRolePlayPanel: React.FC = () => {
     act('set_organ_tuning', { id, field, value });
   };
 
+  const showPartnerBar: boolean =
+    !!(
+      data.show_partner_arousal ??
+      (data.current_partner_ref &&
+        data.current_partner_ref !== (partners[0]?.ref ?? null))
+    );
+
   return (
     <Window title="Утолить Желания" width={1000} height={720}>
       <Window.Content scrollable>
@@ -800,8 +846,9 @@ export const EroticRolePlayPanel: React.FC = () => {
             <ArousalBars
               actorName={data.actor_name}
               partnerLabel={currentPartner?.name || 'Цель'}
-              actorArousal={actorArousalWidth}
-              partnerArousal={partnerArousalWidth}
+              actorArousal={actorArousal}
+              partnerArousal={partnerArousal}
+              showPartnerBar={showPartnerBar}
               onSetActor={() => setArousal('actor')}
               onSetPartner={() => setArousal('partner')}
             />

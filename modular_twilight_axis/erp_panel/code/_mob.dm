@@ -61,3 +61,14 @@
 			continue
 		return O
 	return null
+
+/mob/living/carbon/human/proc/reset_sex_organs_after_sleep()
+	for(var/datum/sex_organ/O in get_sex_organs())
+		if(!O)
+			continue
+		O.reset_after_sleep()
+
+/mob/living/carbon/human/handle_sleep()
+	. = ..()
+	if(IsSleeping())
+		reset_sex_organs_after_sleep()
