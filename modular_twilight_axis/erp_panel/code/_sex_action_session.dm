@@ -17,6 +17,7 @@
 	var/friction_count = 0
 
 	var/timer_id
+	var/next_tick_time = 0
 
 /datum/sex_action_session/New(datum/sex_session_tgui/S, datum/sex_panel_action/A, actor_node, partner_node)
 	. = ..()
@@ -55,24 +56,23 @@
 	if(!I || I != src)
 		return
 
-	#ifndef LOCALTEST
 	if(isnull(session.target.client))
-		return session.stop_instance(instance_id)
-	#endif
-
-	if(action.stamina_cost)
-		if(!session.user.stamina_add(action.stamina_cost * get_stamina_cost_multiplier(force)))
-			return session.stop_instance(instance_id)
-
-	var/do_time = action.interaction_timer / get_speed_multiplier(speed)
-	if(do_time < 0)
-		do_time = 0
-
-	if(!do_after(session.user, do_time, target = session.target))
 		return session.stop_instance(instance_id)
 
 	if(!session.can_continue_action_session(src))
 		return session.stop_instance(instance_id)
+
+	var/do_time = action.interaction_timer / get_speed_multiplier(speed)
+	if(do_time < 0.1)
+		do_time = 0.1
+
+	if(world.time < next_tick_time)
+		timer_id = addtimer(CALLBACK(src, PROC_REF(loop_tick)), world.tick_lag, TIMER_STOPPABLE)
+		return
+
+	if(action.stamina_cost)
+		if(!session.user.stamina_add(action.stamina_cost * get_stamina_cost_multiplier(force)))
+			return session.stop_instance(instance_id)
 
 	action.on_perform(session.user, session.target)
 	action.show_sex_effects(session.user)
@@ -87,7 +87,9 @@
 	session.sync_arousal_ui()
 	SStgui.update_uis(session)
 
+	next_tick_time = world.time + do_time
 	timer_id = addtimer(CALLBACK(src, PROC_REF(loop_tick)), world.tick_lag, TIMER_STOPPABLE)
+
 
 /datum/sex_action_session/proc/update_organ_response()
 	if(!session || !action)
@@ -132,15 +134,15 @@
 			target_pain_delta *= 1.2
 
 	if(src_org)
-		src_org.sensivity = max(0, src_org.sensivity + self_sens_delta)
-		src_org.pain = max(0, src_org.pain + self_pain_delta)
+		src_org.sensivity = clamp(src_org.sensivity + self_sens_delta, 0, src_org.sensivity_max)
+		src_org.pain = clamp(src_org.pain + self_pain_delta, 0, src_org.pain_max)
 
 	if(tgt_org)
-		tgt_org.sensivity = max(0, tgt_org.sensivity + target_sens_delta)
-		src_org.pain = max(0, src_org.pain + target_pain_delta)
+		tgt_org.sensivity = clamp(tgt_org.sensivity + target_sens_delta, 0, tgt_org.sensivity_max)
+		tgt_org.pain = clamp(tgt_org.pain + target_pain_delta, 0, tgt_org.pain_max)
 
 	return list(
-		"self" = max(0, self_pain_delta),
+		"self"   = max(0, self_pain_delta),
 		"target" = max(0, target_pain_delta),
 	)
 
@@ -157,7 +159,7 @@
 	if(src_org && tgt_org)
 		var/bonus = src_org.pleasure_bonus(tgt_org)
 		if(isnum(bonus))
-			mult = max(0.25, 1 + (bonus / 10))
+			mult = 1 + bonus
 
 	return base * mult
 
@@ -235,6 +237,15 @@
 	if(count <= 0)
 		count = 1
 	return count
+
+/proc/is_sex_toy(obj/item/I)
+	if(!I)
+		return FALSE
+
+	if(istype(I, /obj/item/dildo))
+		return TRUE
+
+	return FALSE
 
 /proc/get_speed_multiplier(s)
 	switch(s)

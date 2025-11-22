@@ -26,38 +26,56 @@
 		if(QDELETED(M) || M.stat == DEAD)
 			continue
 
-		var/is_nympho = FALSE
-
-		if(M.has_flaw(/datum/charflaw/addiction/lovefiend))
-			is_nympho = TRUE
-
+		var/is_nympho = M.has_flaw(/datum/charflaw/addiction/lovefiend)
 		var/bonus = is_nympho ? 20 : 10
 
+		var/datum/component/arousal/A = M.GetComponent(/datum/component/arousal)
+		if(!A)
+			continue
+
+		A.chain_orgasm_lock = TRUE
 		SEND_SIGNAL(M, COMSIG_SEX_ADJUST_AROUSAL, bonus)
 
 /datum/component/arousal/after_ejaculation(intimate = FALSE, mob/living/carbon/human/user, mob/living/carbon/human/target)
-	spread_climax_to_partners(user)
+	var/do_spread = !chain_orgasm_lock
+	chain_orgasm_lock = FALSE
 
-	.=..()
+	if(do_spread)
+		spread_climax_to_partners(user)
+
+	SEND_SIGNAL(user, COMSIG_SEX_SET_AROUSAL, 20)
+	SEND_SIGNAL(user, COMSIG_SEX_CLIMAX)
+
+	charge = max(0, charge - CHARGE_FOR_CLIMAX)
+
+	user.add_stress(/datum/stressevent/cumok)
+	if(user.has_flaw(/datum/charflaw/addiction/lovefiend))
+		user.sate_addiction()
+	user.emote("moan", forced = TRUE)
+	user.playsound_local(user, 'sound/misc/mat/end.ogg', 100)
+	last_ejaculation_time = world.time
+
+	if(intimate)
+		after_intimate_climax(user, target)
 
 /datum/component/arousal/ejaculate()
-	var/mob/living/mob = parent
+	var/mob/living/carbon/human/mob = parent
 
-	var/list/parent_sessions = return_sessions_with_user_tgui(parent)
-	var/datum/sex_action_session/highest_priority = return_highest_priority_action_tgui(parent_sessions, parent)
+	var/list/parent_sessions = return_sessions_with_user_tgui(mob)
+	var/datum/sex_action_session/highest_priority = return_highest_priority_action_tgui(parent_sessions, mob)
 
-	playsound(parent, 'sound/misc/mat/endout.ogg', 50, TRUE, ignore_walls = FALSE)
+	playsound(mob, 'sound/misc/mat/endout.ogg', 50, TRUE, ignore_walls = FALSE)
 
 	if(!mob.getorganslot(ORGAN_SLOT_TESTICLES) && mob.getorganslot(ORGAN_SLOT_PENIS))
 		mob.visible_message(span_love("[mob] climaxes, yet nothing is released!"))
-		after_ejaculation(FALSE, parent)
+		after_ejaculation(FALSE, mob, null)
 		return
 
 	if(!highest_priority)
 		mob.visible_message(span_love("[mob] makes a mess!"))
-		var/turf/turf = get_turf(parent)
+		var/turf/turf = get_turf(mob)
 		new /obj/effect/decal/cleanable/coom(turf)
-		after_ejaculation(FALSE, parent)
+		after_ejaculation(FALSE, mob, null)
 		return
 
 	var/datum/sex_action_session/S = highest_priority
@@ -68,12 +86,40 @@
 	var/return_type = A.handle_climax_message(U, T)
 	if(!return_type)
 		mob.visible_message(span_love("[mob] makes a mess!"))
-		var/turf/turf2 = get_turf(parent)
+		var/turf/turf2 = get_turf(mob)
 		new /obj/effect/decal/cleanable/coom(turf2)
 		after_ejaculation(FALSE, U, T)
 	else
 		handle_climax(return_type, U, T)
 		after_ejaculation(return_type == "into" || return_type == "oral", U, T)
 
-	if(S.session.do_knot_action && A.can_knot)
-		A.try_knot_on_climax(U, T)
+	if(S.session.do_knot_action && A.can_knot && U)
+		var/obj/item/organ/penis/P = U.getorganslot(ORGAN_SLOT_PENIS)
+		var/datum/sex_organ/penis/PO = P ? P.sex_organ : null
+		if(PO && PO.have_knot)
+			A.try_knot_on_climax(U, T)
+
+/datum/component/arousal/receive_sex_action(datum/source, arousal_amt, pain_amt, giving, applied_force, applied_speed)
+	var/mob/living/carbon/user = parent
+	arousal_amt *= get_force_pleasure_multiplier(applied_force, giving)
+	pain_amt *= get_force_pain_multiplier(applied_force)
+	pain_amt *= get_speed_pain_multiplier(applied_speed)
+
+	if(user.stat == DEAD)
+		arousal_amt = 0
+		pain_amt = 0
+
+	if(user.cmode)
+		switch(applied_force)
+			if(SEX_FORCE_HIGH, SEX_FORCE_EXTREME)
+				pain_amt *= 2
+
+	if(!arousal_frozen)
+		adjust_arousal(source, arousal_amt)
+
+	damage_from_pain(pain_amt)
+	try_do_moan(arousal_amt, pain_amt, applied_force, giving)
+	try_do_pain_effect(pain_amt, giving)
+
+/datum/component/arousal
+	var/chain_orgasm_lock = FALSE

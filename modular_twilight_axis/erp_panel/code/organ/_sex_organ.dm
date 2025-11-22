@@ -9,6 +9,10 @@
 	var/sensivity = 0
 	// how painfull organ is - negative multiplayer to pleasure
 	var/pain = 0
+		// how sensitive organ max is - multiplayer to pleasure
+	var/sensivity_max = 2
+	// how painfull organ max is - negative multiplayer to pleasure
+	var/pain_max = 2
 	// object that currently this organ stuffed in
 	var/datum/sex_organ/active_target = null
 	// list of objects that use this organ
@@ -85,20 +89,6 @@
 	deflation_timer_id = addtimer(CALLBACK(src, PROC_REF(on_timer_end)), time, TIMER_STOPPABLE)
 	return TRUE
 
-/datum/sex_organ/proc/on_timer_end()
-	deflation_timer_id = null
-
-	drain_uniform(5)
-	renew_timer(5 MINUTES)
-
-/datum/sex_organ/mouth
-	organ_type = SEX_ORGAN_MOUTH
-	stored_liquid_max = MOUTH_MAX_UNITS
-
-/datum/sex_organ/mouth/add_reagent(datum/reagent/R, amount)
-	. = ..()
-	//Добавить мудлет - нажал и выпил. Что-то сказал - вылил
-
 /datum/sex_organ/proc/is_active()
 	if(active_target)
 		return TRUE
@@ -143,71 +133,33 @@
 	sensivity = 0
 	pain = 0
 
+/datum/sex_organ/proc/get_owner()
+	if(istype(organ_link, /obj/item/bodypart))
+		var/obj/item/bodypart/BP = organ_link
+		return BP.owner
+	if(istype(organ_link, /obj/item/organ))
+		var/obj/item/organ/O = organ_link
+		return O.owner
+	return null
 
+/datum/sex_organ/proc/on_timer_end()
+	deflation_timer_id = null
 
-
-
-
-
-
-
-
-
-
-
-/datum/sex_organ/hand
-	organ_type = SEX_ORGAN_HANDS
-	stored_liquid_max = 0
-
-/datum/sex_organ/hand/right
-
-/datum/sex_organ/penis
-	organ_type = SEX_ORGAN_PENIS
-	var/datum/reagent/liquid_type = /datum/reagent/erpjuice/cum
-	var/liquid_ammount = 0
-	var/liquid_ammount_max = 0
-	var/injection_amount = 0
-
-/datum/sex_organ/penis/New(obj/item/organ/penis/organ)
-	. = ..()
-	var/mob/living/carbon/human/owner = organ.owner
-	if(!owner)
+	if(!stored_liquid)
 		return
 
-	var/obj/item/organ/testicles/testicles = owner.getorganslot(ORGAN_SLOT_TESTICLES)
-	if(!testicles)
+	var/removed = drain_uniform(5)
+	if(removed <= 0)
 		return
-		
-	liquid_ammount = 5 * testicles.ball_size
-	liquid_ammount_max = 10 * testicles.ball_size
-	injection_amount = organ.penis_size
 
-/datum/sex_organ/vagina
-	organ_type = SEX_ORGAN_VAGINA
-	stored_liquid_max = VAGINA_MAX_UNITS
+	// визуальное вытекание только для дырок
+	if(organ_type == SEX_ORGAN_VAGINA || organ_type == SEX_ORGAN_ANUS)
+		var/mob/living/carbon/human/H = get_owner()
+		if(istype(H))
+			var/turf/T = get_turf(H)
+			if(T)
+				new /obj/effect/decal/cleanable/coom(T)
 
-/datum/sex_organ/anus
-	organ_type = SEX_ORGAN_ANUS
-	stored_liquid_max = ANUS_MAX_UNITS
-
-/datum/sex_organ/breasts
-	organ_type = SEX_ORGAN_BREASTS
-	stored_liquid_max = 0
-	var/stored_milk = 0
-	var/max_milk = 0
-
-/datum/sex_organ/breasts/New(obj/item/organ/breasts/organ)
-	. = ..()
-	stored_milk = organ.milk_stored
-	max_milk = organ.milk_max
-
-/datum/sex_organ/tail
-	organ_type = SEX_ORGAN_TAIL
-	stored_liquid_max = 0
-
-/datum/sex_organ/tail/New(obj/item/organ/tail/organ)
-	. = ..()
-
-/datum/sex_organ/legs
-	organ_type = SEX_ORGAN_LEGS
-	stored_liquid_max = 0
+	if(stored_liquid.total_volume > 0)
+		drain_uniform(min(stored_liquid.total_volume, 5))
+		renew_timer(5 MINUTES)

@@ -10,3 +10,11 @@
 
 #include "code\organ\_body_patches.dm"
 #include "code\organ\_sex_organ.dm"
+#include "code\organ\anus.dm"
+#include "code\organ\breasts.dm"
+#include "code\organ\hands.dm"
+#include "code\organ\legs.dm"
+#include "code\organ\mouth.dm"
+#include "code\organ\penis.dm"
+#include "code\organ\tail.dm"
+#include "code\organ\vagina.dm"

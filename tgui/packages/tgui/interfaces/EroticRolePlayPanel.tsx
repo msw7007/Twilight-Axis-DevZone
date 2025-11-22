@@ -1,4 +1,4 @@
-import { type ReactNode, useMemo, useState } from 'react';
+import { type CSSProperties, type ReactNode, useMemo, useState } from 'react';
 import { useBackend } from 'tgui/backend';
 import { Window } from 'tgui/layouts';
 import {
@@ -6,7 +6,7 @@ import {
   Button,
   Divider,
   Input,
-  LabeledList,
+  Modal,
   NoticeBox,
   Section,
   Stack,
@@ -19,6 +19,7 @@ export type OrgNode = {
   side?: 'actor' | 'partner';
   sensitivity?: number;
   pain?: number;
+  fullness?: number;
 };
 
 export type SexAction = {
@@ -55,8 +56,9 @@ export type SexSessionData = {
   partners?: PartnerEntry[];
   current_partner_ref?: string | null;
 
-  status_organs?: OrgNode[];
+  actor_organs?: OrgNode[];
   partner_organs?: OrgNode[];
+  status_organs?: OrgNode[];
   selected_actor_organ?: string;
   selected_partner_organ?: string;
 
@@ -67,17 +69,22 @@ export type SexSessionData = {
 
   actor_arousal?: number;
   partner_arousal?: number;
-  show_partner_arousal?: boolean;
+  partner_arousal_hidden?: boolean;
 
   frozen?: boolean;
   do_until_finished?: boolean;
   do_knot_action?: boolean;
+  has_knotted_penis?: boolean;
+  can_knot_now?: boolean;
   yield_to_partner?: boolean;
 
   actions?: SexAction[];
   can_perform?: string[];
   available_tags?: string[];
+  organ_filtered?: string[];
+
   current_action?: string;
+  current_actions?: string[];
 
   active_links?: ActiveLink[];
 };
@@ -107,11 +114,6 @@ const Pill: React.FC<{
   </Button>
 );
 
-const prettyOrgName = (name: string) =>
-  name
-    .replace(/(\d+[^]*)$/u, '')
-    .trim();
-
 const OrganList: React.FC<{
   title: string;
   organs: OrgNode[];
@@ -120,25 +122,45 @@ const OrganList: React.FC<{
 }> = ({ title, organs, selectedId, onSelect }) => (
   <Section title={title} fill>
     <Stack vertical>
-      {organs.map((org) => (
-        <Stack.Item key={org.id}>
-          <Button
-            fluid
-            selected={selectedId === org.id}
-            disabled={!!org.busy}
-            onClick={() => onSelect(org.id)}
-          >
-            <Box as="span">
-              {prettyOrgName(org.name)}
-              {org.busy && (
-                <Box as="span" ml={1} color="bad">
-                  ●
-                </Box>
-              )}
-            </Box>
-          </Button>
-        </Stack.Item>
-      ))}
+      {organs.map((org) => {
+        const isSelected = selectedId === org.id;
+        const isBusy = !!org.busy;
+        const baseColor = isBusy ? '#a05080' : '#c080ff';
+
+        const style: CSSProperties = {
+          border: isSelected
+            ? '2px solid rgba(255, 180, 255, 0.9)'
+            : '1px solid rgba(255,255,255,0.2)',
+          boxShadow: isSelected
+            ? '0 0 8px rgba(255, 150, 255, 0.9)'
+            : undefined,
+          background: isSelected
+            ? 'rgba(255, 150, 255, 0.18)'
+            : 'rgba(255,255,255,0.05)',
+          color: baseColor,
+        };
+
+        return (
+          <Stack.Item key={org.id}>
+            <Button
+              fluid
+              selected={isSelected}
+              disabled={isBusy}
+              style={style}
+              onClick={() => onSelect(org.id)}
+            >
+              <Box as="span">
+                {org.name}
+                {isBusy ? (
+                  <Box as="span" ml={1} color="bad">
+                    ●
+                  </Box>
+                ) : null}
+              </Box>
+            </Button>
+          </Stack.Item>
+        );
+      })}
     </Stack>
   </Section>
 );
@@ -195,6 +217,74 @@ const PartnerSelector: React.FC<{
   );
 };
 
+const BarRow: React.FC<{
+  label: string;
+  valuePercent: number;
+  color: string;
+  clickable?: boolean;
+  onClick?: () => void;
+}> = ({ label, valuePercent, color, clickable, onClick }) => {
+  const content = (
+    <Box
+      style={{
+        position: 'relative',
+        height: 22,
+        width: '100%',
+        border: '1px solid rgba(255,255,255,0.35)',
+        borderRadius: 6,
+        overflow: 'hidden',
+      }}
+    >
+      <Box
+        style={{
+          position: 'absolute',
+          top: 0,
+          left: 0,
+          height: '100%',
+          width: `${valuePercent}%`,
+          background: color,
+          transition: 'width 0.2s',
+        }}
+      />
+      <Box
+        style={{
+          position: 'relative',
+          zIndex: 1,
+          height: '100%',
+          width: '100%',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          padding: '0 6px',
+          fontSize: 11,
+          color: '#fff',
+          textShadow: '0 0 3px #000',
+        }}
+      >
+        <span>{label}</span>
+        <span>
+          {Math.round(valuePercent)} / 100 ({Math.round(valuePercent)}%)
+        </span>
+      </Box>
+    </Box>
+  );
+
+  if (clickable && onClick) {
+    return (
+      <Button
+        inline
+        color="transparent"
+        onClick={onClick}
+        style={{ width: '100%', padding: 0 }}
+      >
+        {content}
+      </Button>
+    );
+  }
+
+  return content;
+};
+
 const ArousalBars: React.FC<{
   actorName: string;
   partnerLabel: string;
@@ -202,7 +292,6 @@ const ArousalBars: React.FC<{
   partnerArousal: number;
   showPartnerBar: boolean;
   onSetActor: () => void;
-  onSetPartner: () => void;
 }> = ({
   actorName,
   partnerLabel,
@@ -210,102 +299,41 @@ const ArousalBars: React.FC<{
   partnerArousal,
   showPartnerBar,
   onSetActor,
-  onSetPartner,
-}) => {
-  const maxArousal = 100;
-
-  const clamp01 = (v: number) => Math.max(0, Math.min(1, v));
-
-  const actorFrac = clamp01(actorArousal / maxArousal);
-  const partnerFrac = clamp01(partnerArousal / maxArousal);
-
-  const actorPct = Math.round(actorFrac * 100);
-  const partnerPct = Math.round(partnerFrac * 100);
-
-  return (
-    <Section>
-      <LabeledList>
-        <LabeledList.Item
-          label={actorName || 'Источник'}
-          buttons={
-            <Box as="span" ml={1} color="label">
-              {actorArousal} / {maxArousal} ({actorPct}%)
-            </Box>
-          }
-        >
-          <Button
-            inline
-            color="transparent"
-            onClick={onSetActor}
-            style={{ width: '100%' }}
-          >
-            <Box
-              style={{
-                height: 10,
-                width: '100%',
-                border: '1px solid rgba(255,255,255,0.2)',
-                borderRadius: 6,
-                overflow: 'hidden',
-              }}
-            >
-              <Box
-                style={{
-                  height: '100%',
-                  width: `${actorPct}%`,
-                  background: '#d146f5',
-                }}
-              />
-            </Box>
-          </Button>
-        </LabeledList.Item>
-
-        {showPartnerBar && (
-          <LabeledList.Item
-            label={partnerLabel || 'Цель'}
-            buttons={
-              <Box as="span" ml={1} color="label">
-                {partnerArousal} / {maxArousal} ({partnerPct}%)
-              </Box>
-            }
-          >
-            <Button
-              inline
-              color="transparent"
-              onClick={onSetPartner}
-              style={{ width: '100%' }}
-            >
-              <Box
-                style={{
-                  height: 10,
-                  width: '100%',
-                  border: '1px solid rgba(255,255,255,0.2)',
-                  borderRadius: 6,
-                  overflow: 'hidden',
-                }}
-              >
-                <Box
-                  style={{
-                    height: '100%',
-                    width: `${partnerPct}%`,
-                    background: '#f05ee1',
-                  }}
-                />
-              </Box>
-            </Button>
-          </LabeledList.Item>
-        )}
-      </LabeledList>
-    </Section>
-  );
-};
+}) => (
+  <Section>
+    <Stack vertical>
+      <Stack.Item>
+        <BarRow
+          label={actorName || 'Я'}
+          valuePercent={actorArousal}
+          color="#d146f5"
+          clickable
+          onClick={onSetActor}
+        />
+      </Stack.Item>
+      {showPartnerBar && (
+        <Stack.Item mt={0.5}>
+          <BarRow
+            label={partnerLabel || 'Партнёр'}
+            valuePercent={partnerArousal}
+            color="#f05ee1"
+          />
+        </Stack.Item>
+      )}
+    </Stack>
+  </Section>
+);
 
 const StatusPanel: React.FC<{
   data: SexSessionData;
   actorOrgans: OrgNode[];
   actorName: string;
+  partnerLabel?: string;
+  editable?: boolean;
   onEditOrgan: (id: string, field: 'sensitivity' | 'pain') => void;
-}> = ({ data, actorOrgans, actorName, onEditOrgan }) => {
+}> = ({ data, actorOrgans, actorName, partnerLabel, editable, onEditOrgan }) => {
   const links = data.active_links || [];
+  const canEdit = editable !== false;
 
   const speedName = (v: number) => {
     const idx = Math.max(1, Math.min(data.speed_names.length, v)) - 1;
@@ -321,20 +349,20 @@ const StatusPanel: React.FC<{
     <Section title={`Состояние: ${actorName}`} fill scrollable>
       {actorOrgans.map((org) => {
         const affecting = links.filter(
-          (l) =>
-            l.actor_organ_id === org.id ||
-            l.partner_organ_id === org.id,
+          (l) => l.actor_organ_id === org.id || l.partner_organ_id === org.id,
         );
 
-        // БЕРЁМ ИМЕННО ИЗ ОРГАНА
-        const sens = org.sensitivity ?? 0;
-        const pain = org.pain ?? 0;
+        const sens = (org as any).sensitivity ?? 0;
+        const pain = (org as any).pain ?? 0;
+        const fullness = (org as any).fullness ?? 0;
 
         return (
           <Box key={org.id} mb={1.5}>
             <Stack justify="space-between" align="center">
               <Stack.Item>
-                <Box bold>{prettyOrgName(org.name)}</Box>
+                <Box bold>
+                  {org ? org.name : '—'}
+                </Box>
               </Stack.Item>
               <Stack.Item>
                 <Stack align="center">
@@ -343,7 +371,12 @@ const StatusPanel: React.FC<{
                       inline
                       compact
                       color="transparent"
-                      onClick={() => onEditOrgan(org.id, 'sensitivity')}
+                      disabled={!canEdit}
+                      onClick={
+                        canEdit
+                          ? () => onEditOrgan(org.id, 'sensitivity')
+                          : undefined
+                      }
                     >
                       Чувствительность:{' '}
                       <Box as="span" color="good">
@@ -352,27 +385,49 @@ const StatusPanel: React.FC<{
                     </Button>
                   </Stack.Item>
                   <Stack.Item>
-                    <Box>
+                    <Button
+                      inline
+                      compact
+                      color="transparent"
+                      disabled={!canEdit}
+                      onClick={
+                        canEdit
+                          ? () => onEditOrgan(org.id, 'pain')
+                          : undefined
+                      }
+                    >
                       Боль:{' '}
                       <Box as="span" color="bad">
                         {pain}
                       </Box>
-                    </Box>
+                    </Button>
                   </Stack.Item>
                 </Stack>
               </Stack.Item>
             </Stack>
-
+            {fullness > 0 && (
+              <Box
+                mt={0.25}
+                textAlign="right"
+                style={{ fontSize: 10 }}
+                color="label"
+              >
+                Заполненность: {Math.round(fullness)}%
+              </Box>
+            )}
             {affecting.length ? (
               <Stack vertical mt={0.5}>
                 {affecting.map((l) => {
                   const isSource = l.actor_organ_id === org.id;
-                  const labelSide = isSource ? 'Источник' : 'Цель';
+                  const whoLabel = isSource
+                    ? actorName
+                    : partnerLabel || 'Партнёр';
+
                   return (
                     <Box key={l.id} ml={1}>
                       <Box as="span" color="label">
-                        [{labelSide}]
-                      </Box>{' '}
+                        {whoLabel}:{' '}
+                      </Box>
                       {l.action_name || '—'}{' '}
                       <Box as="span" color="label">
                         ({speedName(l.speed)}, {forceName(l.force)})
@@ -418,6 +473,10 @@ const ActiveLinksPanel: React.FC<{
   onToggleFinished: (id: string) => void;
   onStop: (id: string) => void;
   onEditSensitivity: (id: string) => void;
+  hasKnottedPenis?: boolean;
+  canKnotNow?: boolean;
+  doKnotAction?: boolean;
+  onToggleKnot?: () => void;
 }> = ({
   data,
   actorOrgans,
@@ -427,6 +486,10 @@ const ActiveLinksPanel: React.FC<{
   onToggleFinished,
   onStop,
   onEditSensitivity,
+  hasKnottedPenis,
+  canKnotNow,
+  doKnotAction,
+  onToggleKnot,
 }) => {
   const links = data.active_links || [];
   if (!links.length) return null;
@@ -434,34 +497,33 @@ const ActiveLinksPanel: React.FC<{
   const getOrg = (id: string, list: OrgNode[]) =>
     list.find((o) => o.id === id);
 
-  const speedNames = data.speed_names || [];
-  const forceNames = data.force_names || [];
-
-  const clampIndex = (v: number, names: string[]) => {
-    const len = names.length || 1;
-    const idx = Math.max(1, Math.min(len, v || 1)) - 1;
-    return idx;
-  };
-
   return (
     <Stack vertical>
+      {hasKnottedPenis && canKnotNow && onToggleKnot && (
+        <Box mb={0.5} textAlign="center">
+          <Button
+            inline
+            compact
+            selected={!!doKnotAction}
+            onClick={onToggleKnot}
+          >
+            {doKnotAction ? 'ДО УЗЛА' : 'БЕЗ УЗЛА'}
+          </Button>
+        </Box>
+      )}
+
       {links.map((link) => {
         const actorOrg = getOrg(link.actor_organ_id, actorOrgans);
         const partnerOrg = getOrg(link.partner_organ_id, partnerOrgans);
-
-        const speedIdx = clampIndex(link.speed, speedNames);
-        const forceIdx = clampIndex(link.force, forceNames);
-
-        const speedLabel = speedNames[speedIdx] || '?';
-        const forceLabel = forceNames[forceIdx] || '?';
+        const speedIdx = Math.max(1, Math.min(4, link.speed)) - 1;
+        const forceIdx = Math.max(1, Math.min(4, link.force)) - 1;
 
         return (
           <Section key={link.id}>
-            {/* Верхняя строка: органы + скорость/сила + название действия */}
             <Stack align="center" justify="space-between">
               <Stack.Item shrink>
                 <Box bold>
-                  {actorOrg ? prettyOrgName(actorOrg.name) : '—'}
+                  {actorOrg ? actorOrg.name : '—'}
                 </Box>
               </Stack.Item>
 
@@ -477,13 +539,13 @@ const ActiveLinksPanel: React.FC<{
                   as="span"
                   bold
                   style={{
-                    color: speedColors[speedIdx % speedColors.length],
+                    color: speedColors[speedIdx],
                     display: 'inline-block',
                     minWidth: 110,
                     textAlign: 'center',
                   }}
                 >
-                  {speedLabel}
+                  {data.speed_names[speedIdx]}
                 </Box>{' '}
                 <Button
                   inline
@@ -520,13 +582,13 @@ const ActiveLinksPanel: React.FC<{
                   as="span"
                   bold
                   style={{
-                    color: forceColors[forceIdx % forceColors.length],
+                    color: forceColors[forceIdx],
                     display: 'inline-block',
                     minWidth: 90,
                     textAlign: 'center',
                   }}
                 >
-                  {forceLabel}
+                  {data.force_names[forceIdx]}
                 </Box>{' '}
                 <Button
                   inline
@@ -539,49 +601,45 @@ const ActiveLinksPanel: React.FC<{
 
               <Stack.Item shrink>
                 <Box bold>
-                  {partnerOrg ? prettyOrgName(partnerOrg.name) : '—'}
+                  {partnerOrg ? partnerOrg.name : '—'}
                 </Box>
               </Stack.Item>
             </Stack>
+            <Box mt={0.5} textAlign="center">
+              <Stack justify="center" align="center">
+                <Stack.Item style={{ marginInline: 12 }}>
+                  <Button
+                    inline
+                    compact
+                    color="transparent"
+                    onClick={() => onToggleFinished(link.id)}
+                  >
+                    {link.do_until_finished
+                      ? 'ДО ЗАВЕРШЕНИЯ'
+                      : 'ПОКА НЕ ОСТАНОВЛЮСЬ'}
+                  </Button>
+                </Stack.Item>
 
-            {/* Нижняя строка: до завершения / чувствительность / стоп */}
-            <Stack
-              align="center"
-              justify="space-between"
-              style={{ marginTop: 4 }}
-            >
-              <Stack.Item>
-                <Button
-                  inline
-                  compact
-                  color="transparent"
-                  onClick={() => onToggleFinished(link.id)}
-                >
-                  {link.do_until_finished
-                    ? 'ДО ЗАВЕРШЕНИЯ'
-                    : 'ПОКА НЕ ОСТАНОВЛЮСЬ'}
-                </Button>
-              </Stack.Item>
+                <Stack.Item style={{ marginInline: 12 }}>
+                  <SensitivityInline
+                    sensitivity={link.sensitivity}
+                    disabled={!partnerOrg}
+                    onEdit={() => onEditSensitivity(link.id)}
+                  />
+                </Stack.Item>
 
-              <Stack.Item>
-                <SensitivityInline
-                  sensitivity={link.sensitivity}
-                  disabled={!partnerOrg}
-                  onEdit={() => onEditSensitivity(link.id)}
-                />
-              </Stack.Item>
-
-              <Stack.Item>
-                <Button
-                  inline
-                  compact
-                  color="transparent"
-                  onClick={() => onStop(link.id)}
-                >
-                  ОСТАНОВИТЬСЯ
-                </Button>
-              </Stack.Item>
-            </Stack>
+                <Stack.Item style={{ marginInline: 12 }}>
+                  <Button
+                    inline
+                    compact
+                    color="transparent"
+                    onClick={() => onStop(link.id)}
+                  >
+                    ОСТАНОВИТЬСЯ
+                  </Button>
+                </Stack.Item>
+              </Stack>
+            </Box>
           </Section>
         );
       })}
@@ -607,7 +665,7 @@ const ActionsFilter: React.FC<{
       fluid
       placeholder="Поиск взаимодействия..."
       value={searchText}
-      onChange={onSearchChange}
+      onChange={(value) => onSearchChange(value)}
     />
     {!!availableTags.length && (
       <Box mt={1}>
@@ -632,19 +690,57 @@ const ActionsList: React.FC<{
   actorSelected?: OrgNode;
   partnerSelected?: OrgNode;
   actions: SexAction[];
-  currentAction?: string;
+  currentActionTypes?: string[];
   canPerform: string[];
   onClickAction: (type: string) => void;
 }> = ({
   actorSelected,
   partnerSelected,
   actions,
-  currentAction,
+  currentActionTypes,
   canPerform,
   onClickAction,
 }) => {
   const leftColumn = actions.filter((_, i) => i % 2 === 0);
   const rightColumn = actions.filter((_, i) => i % 2 === 1);
+  const activeSet = new Set(currentActionTypes ?? []);
+
+  const renderButton = (action: SexAction) => {
+    const isCurrent = activeSet.has(action.type);
+    const isAvailable = canPerform.includes(action.type);
+
+    const style: CSSProperties = {
+      justifyContent: 'flex-start',
+      width: '100%',
+      background: isCurrent
+        ? 'rgba(255, 140, 255, 0.23)'
+        : isAvailable
+          ? 'rgba(255, 160, 255, 0.08)'
+          : 'rgba(255,255,255,0.02)',
+      boxShadow: isCurrent
+        ? '0 0 8px rgba(255, 140, 255, 0.9)'
+        : undefined,
+      color: !isAvailable
+        ? '#777'
+        : isCurrent
+          ? '#ffe6ff'
+          : '#f5b3ff',
+    };
+
+    return (
+      <Button
+        key={action.type}
+        inline
+        color="transparent"
+        selected={isCurrent}
+        disabled={!isAvailable}
+        onClick={() => onClickAction(action.type)}
+        style={style}
+      >
+        {action.name}
+      </Button>
+    );
+  };
 
   return (
     <Section fill scrollable>
@@ -657,44 +753,16 @@ const ActionsList: React.FC<{
         <Stack fill>
           <Stack.Item basis="50%">
             <Stack vertical>
-              {leftColumn.map((action) => {
-                const isCurrent = currentAction === action.type;
-                const isAvailable = canPerform.includes(action.type);
-                return (
-                  <Stack.Item key={action.type}>
-                    <Button
-                      inline
-                      color="transparent"
-                      selected={isCurrent}
-                      disabled={!isAvailable}
-                      onClick={() => onClickAction(action.type)}
-                      style={{ justifyContent: 'flex-start', width: '100%' }}
-                    >
-                      {action.name}
-                    </Button>
-                  </Stack.Item>
-                );
-              })}
+              {leftColumn.map((action) => (
+                <Stack.Item key={action.type}>{renderButton(action)}</Stack.Item>
+              ))}
             </Stack>
           </Stack.Item>
           <Stack.Item basis="50%">
             <Stack vertical>
-              {rightColumn.map((action) => {
-                const isCurrent = currentAction === action.type;
-                const isAvailable = canPerform.includes(action.type);
-                return (
-                  <Stack.Item key={action.type}>
-                    <Button
-                      fluid
-                      selected={isCurrent}
-                      disabled={!isAvailable}
-                      onClick={() => onClickAction(action.type)}
-                    >
-                      {action.name}
-                    </Button>
-                  </Stack.Item>
-                );
-              })}
+              {rightColumn.map((action) => (
+                <Stack.Item key={action.type}>{renderButton(action)}</Stack.Item>
+              ))}
             </Stack>
           </Stack.Item>
         </Stack>
@@ -705,15 +773,14 @@ const ActionsList: React.FC<{
 
 const BottomControls: React.FC<{
   yieldToPartner?: boolean;
-  onFlipLeft: () => void;
-  onFlipRight: () => void;
+  onFlipPose: () => void;
   onStopAll: () => void;
   onToggleYield: () => void;
-}> = ({ yieldToPartner, onFlipLeft, onFlipRight, onStopAll, onToggleYield }) => (
+}> = ({ yieldToPartner, onFlipPose, onStopAll, onToggleYield }) => (
   <Section>
     <Stack justify="center">
       <Stack.Item style={{ marginInline: 4 }}>
-        <Button onClick={onFlipLeft}>ПЕРЕВЕРНУТЬ ВЛЕВО</Button>
+        <Button onClick={onFlipPose}>ПЕРЕВЕРНУТЬСЯ</Button>
       </Stack.Item>
       <Stack.Item style={{ marginInline: 4 }}>
         <Button onClick={onStopAll}>ОСТАНОВИТЬСЯ</Button>
@@ -723,26 +790,34 @@ const BottomControls: React.FC<{
           ПОДДАТЬСЯ
         </Button>
       </Stack.Item>
-      <Stack.Item style={{ marginInline: 4 }}>
-        <Button onClick={onFlipRight}>ПЕРЕВЕРНУТЬ ВПРАВО</Button>
-      </Stack.Item>
     </Stack>
   </Section>
 );
+
+type EditContext =
+  | { kind: 'arousal_actor' }
+  | { kind: 'link_sens'; id: string }
+  | { kind: 'organ'; id: string; field: 'sensitivity' | 'pain' };
 
 export const EroticRolePlayPanel: React.FC = () => {
   const { act, data } = useBackend<SexSessionData>();
 
   const partners = data.partners ?? [];
-  const actorOrgans = data.status_organs ?? [];
+  const actorOrgansBase = data.actor_organs ?? [];
   const partnerOrgans = data.partner_organs ?? [];
+  const statusOrgans = data.status_organs ?? [];
   const actions = data.actions ?? [];
   const canPerform = data.can_perform ?? [];
   const availableTags = data.available_tags ?? [];
+  const organFilteredTypes = data.organ_filtered ?? [];
 
   const [searchText, setSearchText] = useState('');
   const [activeTags, setActiveTags] = useState<string[]>([]);
   const [activeTab, setActiveTab] = useState<'status' | 'actions'>('status');
+
+  const [editContext, setEditContext] = useState<EditContext | null>(null);
+  const [editTitle, setEditTitle] = useState('');
+  const [editValue, setEditValue] = useState('');
 
   const toggleTag = (tag: string) => {
     setActiveTags((prev) =>
@@ -751,8 +826,8 @@ export const EroticRolePlayPanel: React.FC = () => {
   };
 
   const actorSelected = useMemo(
-    () => actorOrgans.find((o) => o.id === data.selected_actor_organ),
-    [actorOrgans, data.selected_actor_organ],
+    () => actorOrgansBase.find((o) => o.id === data.selected_actor_organ),
+    [actorOrgansBase, data.selected_actor_organ],
   );
   const partnerSelected = useMemo(
     () => partnerOrgans.find((o) => o.id === data.selected_partner_organ),
@@ -768,69 +843,131 @@ export const EroticRolePlayPanel: React.FC = () => {
 
   const filteredActions = useMemo(() => {
     const q = searchText.trim().toLowerCase();
+
     return actions.filter((a) => {
       if (q && !a.name.toLowerCase().includes(q)) return false;
+
       if (
         activeTags.length &&
         !(a.tags || []).some((t) => activeTags.includes(t))
       ) {
         return false;
       }
-      if (!canPerform.includes(a.type)) return false;
+
+      if (
+        organFilteredTypes.length &&
+        !organFilteredTypes.includes(a.type)
+      ) {
+        return false;
+      }
+
       if (!actorSelected || !partnerSelected) return false;
+
       return true;
     });
-  }, [actions, canPerform, searchText, activeTags, actorSelected, partnerSelected]);
+  }, [
+    actions,
+    searchText,
+    activeTags,
+    organFilteredTypes,
+    actorSelected,
+    partnerSelected,
+  ]);
 
   const onClickActionButton = (actionType: string) => {
-    if (data.current_action === actionType) {
-      act('stop_action');
-    } else {
-      act('start_action', { action_type: actionType });
+    act('start_action', { action_type: actionType });
+  };
+
+  const actorArousalWidth = Math.max(
+    0,
+    Math.min(100, data.actor_arousal ?? 0),
+  );
+  const partnerArousalWidth = Math.max(
+    0,
+    Math.min(100, data.partner_arousal ?? 0),
+  );
+
+  const showPartnerBar = !!(
+    typeof data.partner_arousal === 'number' &&
+    !data.partner_arousal_hidden
+  );
+
+  const openNumericModal = (
+    ctx: EditContext,
+    title: string,
+    initial: number,
+  ) => {
+    setEditContext(ctx);
+    setEditTitle(title);
+    setEditValue(String(Math.round(initial)));
+  };
+
+  const handleNumericConfirm = () => {
+    if (!editContext) return;
+    const num = Number(editValue);
+    if (Number.isNaN(num)) {
+      setEditContext(null);
+      return;
     }
+
+    switch (editContext.kind) {
+      case 'arousal_actor':
+        act('set_arousal_value', { target: 'actor', amount: num });
+        break;
+
+      case 'link_sens':
+        act('set_link_tuning', {
+          id: editContext.id,
+          field: 'sensitivity',
+          value: num,
+        });
+        break;
+
+      case 'organ':
+        act('set_organ_tuning', {
+          id: editContext.id,
+          field: editContext.field,
+          value: num,
+        });
+        break;
+    }
+
+    setEditContext(null);
   };
 
-  const setArousal = (target: 'actor' | 'partner') => {
-    const current =
-      target === 'actor'
-        ? data.actor_arousal ?? 0
-        : data.partner_arousal ?? 0;
-    const raw = window.prompt('Введите возбуждение 0–120', String(current));
-    if (raw === null) return;
-    const value = Number(raw);
-    if (Number.isNaN(value)) return;
-    act('set_arousal_value', { target, amount: value });
+  const handleNumericCancel = () => {
+    setEditContext(null);
   };
 
-  const actorArousal = Math.max(0, data.actor_arousal ?? 0);
-  const partnerArousal = Math.max(0, data.partner_arousal ?? 0);
+  const startEditArousalActor = () => {
+    openNumericModal(
+      { kind: 'arousal_actor' },
+      'Возбуждение 0–100',
+      data.actor_arousal ?? 0,
+    );
+  };
 
   const editTuningForLink = (linkId: string) => {
-    const raw = window.prompt('Чувствительность 0–10', '0');
-    if (raw === null) return;
-    const value = Number(raw);
-    if (Number.isNaN(value)) return;
-    act('set_link_tuning', { id: linkId, field: 'sensitivity', value });
+    const link = (data.active_links || []).find((l) => l.id === linkId);
+    openNumericModal(
+      { kind: 'link_sens', id: linkId },
+      'Чувствительность 0–10',
+      link?.sensitivity ?? 0,
+    );
   };
 
   const editOrganField = (id: string, field: 'sensitivity' | 'pain') => {
-    const title = field === 'sensitivity' ? 'Чувствительность 0–10' : 'Боль 0–10';
-    const raw = window.prompt(title, '0');
-    if (raw === null) return;
-    const value = Number(raw);
-    if (Number.isNaN(value)) return;
-    act('set_organ_tuning', { id, field, value });
+    const org = statusOrgans.find((o) => o.id === id);
+    const current =
+      field === 'sensitivity' ? org?.sensitivity ?? 0 : org?.pain ?? 0;
+    const title =
+      field === 'sensitivity' ? 'Чувствительность 0–10' : 'Боль 0–10';
+
+    openNumericModal({ kind: 'organ', id, field }, title, current);
   };
 
-  const showPartnerBar: boolean =
-    !!(
-      data.show_partner_arousal ??
-      (data.current_partner_ref &&
-        data.current_partner_ref !== (partners[0]?.ref ?? null))
-    );
-
   return (
-    <Window title="Утолить Желания" width={1000} height={720}>
+    <Window title="Утолить Желания" width={900} height={720}>
       <Window.Content scrollable>
         <Stack vertical fill>
           <Stack.Item>
@@ -845,12 +982,11 @@ export const EroticRolePlayPanel: React.FC = () => {
           <Stack.Item>
             <ArousalBars
               actorName={data.actor_name}
-              partnerLabel={currentPartner?.name || 'Цель'}
-              actorArousal={actorArousal}
-              partnerArousal={partnerArousal}
+              partnerLabel={currentPartner?.name || 'Партнёр'}
+              actorArousal={actorArousalWidth}
+              partnerArousal={partnerArousalWidth}
               showPartnerBar={showPartnerBar}
-              onSetActor={() => setArousal('actor')}
-              onSetPartner={() => setArousal('partner')}
+              onSetActor={startEditArousalActor}
             />
           </Stack.Item>
 
@@ -881,8 +1017,10 @@ export const EroticRolePlayPanel: React.FC = () => {
             <Stack.Item grow>
               <StatusPanel
                 data={data}
-                actorOrgans={actorOrgans}
+                actorOrgans={statusOrgans}
                 actorName={data.actor_name}
+                partnerLabel={currentPartner?.name}
+                editable
                 onEditOrgan={editOrganField}
               />
             </Stack.Item>
@@ -893,8 +1031,7 @@ export const EroticRolePlayPanel: React.FC = () => {
               <Stack.Item>
                 <BottomControls
                   yieldToPartner={data.yield_to_partner}
-                  onFlipLeft={() => act('flip', { dir: -1 })}
-                  onFlipRight={() => act('flip', { dir: 1 })}
+                  onFlipPose={() => act('flip', { dir: 1 })}
                   onStopAll={() => act('stop_all')}
                   onToggleYield={() => act('quick', { op: 'yield' })}
                 />
@@ -906,7 +1043,7 @@ export const EroticRolePlayPanel: React.FC = () => {
                     <Stack.Item basis="18%">
                       <OrganList
                         title={data.actor_name}
-                        organs={actorOrgans}
+                        organs={actorOrgansBase}
                         selectedId={data.selected_actor_organ}
                         onSelect={(id) =>
                           act('select_organ', { side: 'actor', id })
@@ -930,7 +1067,7 @@ export const EroticRolePlayPanel: React.FC = () => {
                             actorSelected={actorSelected}
                             partnerSelected={partnerSelected}
                             actions={filteredActions}
-                            currentAction={data.current_action}
+                            currentActionTypes={data.current_actions ?? []}
                             canPerform={canPerform}
                             onClickAction={onClickActionButton}
                           />
@@ -955,7 +1092,7 @@ export const EroticRolePlayPanel: React.FC = () => {
               <Stack.Item>
                 <ActiveLinksPanel
                   data={data}
-                  actorOrgans={actorOrgans}
+                  actorOrgans={actorOrgansBase}
                   partnerOrgans={partnerOrgans}
                   onSetSpeed={(id, value) =>
                     act('set_link_speed', { id, value })
@@ -968,6 +1105,10 @@ export const EroticRolePlayPanel: React.FC = () => {
                   }
                   onStop={(id) => act('stop_link', { id })}
                   onEditSensitivity={editTuningForLink}
+                  hasKnottedPenis={data.has_knotted_penis}
+                  canKnotNow={data.can_knot_now}
+                  doKnotAction={data.do_knot_action}
+                  onToggleKnot={() => act('toggle_knot')}
                 />
               </Stack.Item>
             </>
@@ -975,6 +1116,22 @@ export const EroticRolePlayPanel: React.FC = () => {
         </Stack>
         <Divider />
       </Window.Content>
+
+      {editContext && (
+        <Modal>
+          <Section title={editTitle}>
+            <Input
+              autoFocus
+              value={editValue}
+              onChange={(value) => setEditValue(value)}
+            />
+            <Box mt={1} textAlign="right">
+              <Button onClick={handleNumericCancel}>Отмена</Button>{' '}
+              <Button onClick={handleNumericConfirm}>OK</Button>
+            </Box>
+          </Section>
+        </Modal>
+      )}
     </Window>
   );
 };

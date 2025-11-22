@@ -4,7 +4,7 @@
 	/// Can be action present in panel
 	abstract_type = TRUE
 	/// Can action use penis knot
-	var/can_knot = TRUE
+	var/can_knot = FALSE
 	/// Sex organ requred to init action
 	var/required_init
 	/// Sex organ required to target
@@ -45,6 +45,53 @@
 
 /datum/sex_panel_action/proc/can_perform(mob/living/carbon/human/user, mob/living/carbon/human/target)
 	SHOULD_CALL_PARENT(TRUE)
+
+	if(!user || !target)
+		return FALSE
+
+	// ВАЖНО: не требуем "свободный" орган, только существующий
+	// раньше тут было TRUE (only_free_init)
+	var/list/orgs = get_action_organs(user, target, FALSE, FALSE)
+	if(!orgs || !orgs.len)
+		return FALSE
+
+	var/datum/sex_organ/init_organ   = orgs["init"]
+	var/datum/sex_organ/target_organ = orgs["target"]
+
+	// собираем список реально существующих органов
+	var/list/to_check = list()
+	if(init_organ)
+		to_check += init_organ
+	if(target_organ)
+		to_check += target_organ
+
+	for(var/datum/sex_organ/O in to_check)
+		if(!O)
+			continue
+
+		var/node_id = O.organ_type
+		if(!node_id)
+			continue
+
+		var/mob/living/carbon/human/owner = null
+
+		if(istype(O.organ_link, /obj/item/bodypart))
+			var/obj/item/bodypart/BP = O.organ_link
+			owner = BP.owner
+		else if(istype(O.organ_link, /obj/item/organ))
+			var/obj/item/organ/ORG = O.organ_link
+			owner = ORG.owner
+
+		if(!owner)
+			continue
+
+		if(owner.is_sex_node_restrained(node_id))
+			return FALSE
+
+		if(armor_slot_lock)
+			if(owner.is_sex_node_blocked_by_clothes(node_id))
+				return FALSE
+
 	return TRUE
 
 /datum/sex_panel_action/proc/on_start(mob/living/carbon/human/user, mob/living/carbon/human/target)
@@ -93,13 +140,15 @@
 	return 0
 
 /datum/sex_panel_action/proc/try_knot_on_climax(mob/living/carbon/human/user, mob/living/carbon/human/target)
-	if(!can_knot)
+	if(!can_knot || !user || !target)
 		return FALSE
 
-	var/datum/sex_session/session = get_sex_session(user, target)
+	var/datum/sex_session_tgui/session = get_or_create_sex_session_tgui(user, target)
 	if(!session)
 		return FALSE
-	return SEND_SIGNAL(user, COMSIG_SEX_TRY_KNOT, target, session.force, get_knot_count())
+
+	var/force_level = session.global_force
+	return SEND_SIGNAL(user, COMSIG_SEX_TRY_KNOT, target, force_level, get_knot_count())
 
 /datum/sex_panel_action/proc/do_onomatopoeia(mob/living/carbon/human/user)
 	user.balloon_alert_to_viewers("Plap!", x_offset = rand(-15, 15), y_offset = rand(0, 25))

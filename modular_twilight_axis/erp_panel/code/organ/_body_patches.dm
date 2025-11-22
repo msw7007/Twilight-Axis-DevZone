@@ -47,7 +47,7 @@
 	var/mob/living/carbon/human/H = owner
 	if(H)
 		if(!H.legs_organ)
-			H.legs_organ = new /datum/sex_organ/legs(H)
+			H.legs_organ = new /datum/sex_organ/legs(src)
 		sex_organ = H.legs_organ
 
 /obj/item/bodypart/r_leg/Initialize()
@@ -55,10 +55,10 @@
 	var/mob/living/carbon/human/H = owner
 	if(H)
 		if(!H.legs_organ)
-			H.legs_organ = new /datum/sex_organ/legs(H)
+			H.legs_organ = new /datum/sex_organ/legs(src)
 		sex_organ = H.legs_organ
 
 /obj/item/bodypart/chest/Initialize()
 	. = ..()
 	if(!sex_organ)
-		sex_organ = new /datum/sex_organ/anus(H)
+		sex_organ = new /datum/sex_organ/anus(src)

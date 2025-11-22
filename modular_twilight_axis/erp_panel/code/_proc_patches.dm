@@ -1,15 +1,33 @@
 /mob/living/proc/start_sex_session_tgui(mob/living/T)
 	if(!T)
 		return
-	var/datum/sex_session_tgui/old = get_sex_session_tgui(src, T)
-	if(old)
-		old.ui_interact(src)
-		return old
 
-	var/datum/sex_session_tgui/S = new(src, T)
+	// 1) Пробуем найти сессию именно для этой пары (src + T)
+	var/datum/sex_session_tgui/S = get_sex_session_tgui(src, T)
+
+	// 2) Если её нет — берём любую уже открытую сессию для src
+	if(!S)
+		S = get_any_sex_session_tgui_for(src)
+
+	if(S)
+		// Если есть существующая сессия, просто добавляем/переключаем партнёра
+		if(istype(T, /mob/living/carbon/human))
+			var/mob/living/carbon/human/H = T
+			S.add_partner(H)
+			S.target = H
+			S.current_partner_ref = REF(H)
+
+		S.ui_interact(src)
+		return S
+
+	// 3) Ничего нет — создаём новую сессию
+	S = new(src, T)
 	LAZYADD(GLOB.sex_sessions, S)
+
+	if(istype(T, /mob/living/carbon/human))
+		S.add_partner(T)
+
 	S.ui_interact(src)
-	S.add_partner(T)
 	return S
 
 /proc/get_sex_session_tgui(mob/giver, mob/taker)
@@ -18,6 +36,18 @@
 			var/datum/sex_session_tgui/S = D
 			if (S.user == giver && S.target == taker)
 				return S
+	return null
+
+/proc/get_any_sex_session_tgui_for(mob/living/carbon/human/user)
+	if(!user)
+		return null
+
+	for(var/datum/sex_session_tgui/S in GLOB.sex_sessions)
+		if(QDELETED(S))
+			continue
+		if(S.user == user)
+			return S
+
 	return null
 
 /proc/return_sessions_with_user_tgui(mob/living/carbon/human/U)
