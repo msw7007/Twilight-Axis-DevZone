@@ -2,15 +2,12 @@
 	if(!T)
 		return
 
-	// 1) Пробуем найти сессию именно для этой пары (src + T)
 	var/datum/sex_session_tgui/S = get_sex_session_tgui(src, T)
 
-	// 2) Если её нет — берём любую уже открытую сессию для src
 	if(!S)
 		S = get_any_sex_session_tgui_for(src)
 
 	if(S)
-		// Если есть существующая сессия, просто добавляем/переключаем партнёра
 		if(istype(T, /mob/living/carbon/human))
 			var/mob/living/carbon/human/H = T
 			S.add_partner(H)
@@ -20,7 +17,6 @@
 		S.ui_interact(src)
 		return S
 
-	// 3) Ничего нет — создаём новую сессию
 	S = new(src, T)
 	LAZYADD(GLOB.sex_sessions, S)
 
@@ -68,7 +64,6 @@
 			continue
 		var/datum/sex_session_tgui/S = D
 
-		// берём первый инстанс
 		var/datum/sex_action/A = null
 		for (var/id in S.current_actions)
 			var/datum/sex_action_session/I = S.current_actions[id]

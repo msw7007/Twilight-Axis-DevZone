@@ -49,8 +49,6 @@
 	if(!user || !target)
 		return FALSE
 
-	// ВАЖНО: не требуем "свободный" орган, только существующий
-	// раньше тут было TRUE (only_free_init)
 	var/list/orgs = get_action_organs(user, target, FALSE, FALSE)
 	if(!orgs || !orgs.len)
 		return FALSE
@@ -58,7 +56,6 @@
 	var/datum/sex_organ/init_organ   = orgs["init"]
 	var/datum/sex_organ/target_organ = orgs["target"]
 
-	// собираем список реально существующих органов
 	var/list/to_check = list()
 	if(init_organ)
 		to_check += init_organ

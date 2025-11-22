@@ -152,7 +152,6 @@
 	if(removed <= 0)
 		return
 
-	// визуальное вытекание только для дырок
 	if(organ_type == SEX_ORGAN_VAGINA || organ_type == SEX_ORGAN_ANUS)
 		var/mob/living/carbon/human/H = get_owner()
 		if(istype(H))

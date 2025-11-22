@@ -20,35 +20,47 @@
 
 /mob/living/carbon/human/examine(mob/user)
 	. = ..()
-	var/t = get_romance_partners_text()
+	var/t = get_sex_examine_text()
 	if(t)
 		. += "<span class='love_mid'>[t]</span>"
 
-/mob/living/carbon/human/proc/get_romance_partners_text()
-	var/list/sessions = return_sessions_with_user(src)
+/mob/living/carbon/human/proc/get_sex_examine_text()
+	var/list/sessions = return_sessions_with_user_tgui(src)
 	if(!length(sessions))
 		return null
 
-	var/list/names = list()
-	for(var/datum/sex_session_tgui/S in sessions)
-		for(var/mob/living/carbon/human/M in S.partners)
-			if(M == src)
-				continue
-			if(!(M.name in names))
-				names += M.name
+	var/list/parts = list()
+	var/list/active_names = list()
 
-	if(!length(names))
+	for(var/datum/sex_session_tgui/S in sessions)
+		if(!length(S.current_actions))
+			continue
+
+		var/list/participants = list()
+
+		if(S.user && S.user != src)
+			participants |= S.user
+		if(S.target && S.target != src)
+			participants |= S.target
+
+		for(var/mob/living/carbon/human/M in S.partners)
+			if(M != src)
+				participants |= M
+
+		for(var/mob/living/carbon/human/M2 in participants)
+			if(!(M2.name in active_names))
+				active_names += M2.name
+
+	if(active_names.len)
+		parts += "[src] тесно сплетается с [english_list(active_names)]."
+
+	if(has_status_effect(/datum/status_effect/mouth_full))
+		parts += "[src] выглядит так, будто рот у [src.p_them()] до краёв чем-то наполнен."
+
+	if(!parts.len)
 		return null
 
-	return "[src] тесно сплетается с [english_list(names)]."
-
-/mob/living/carbon/human/proc/get_examine_details()
-	var/list/details = list()
-	// ...
-	var/t = get_romance_partners_text()
-	if(t)
-		details["romance"] = t
-	return details
+	return parts.Join(" ")
 
 /mob/living/carbon/human/proc/get_sex_organs()
 	var/list/result = list()
