@@ -191,3 +191,32 @@
 			lying = 270
 		update_transform()
 		lying_prev = lying
+
+/mob/living/carbon/human/proc/get_mouth_sex_organ()
+	var/obj/item/bodypart/head/HD = get_bodypart(BODY_ZONE_HEAD)
+	return HD?.sex_organ
+
+/mob/living/carbon/human/proc/swallow_from_mouth(amount = 5)
+	if(amount <= 0 || !reagents)
+		return FALSE
+
+	var/datum/sex_organ/mouth/M = get_mouth_sex_organ()
+	if(!M || !M.stored_liquid)
+		remove_status_effect(/datum/status_effect/mouth_full)
+		return FALSE
+
+	if(M.stored_liquid.total_volume <= 0)
+		remove_status_effect(/datum/status_effect/mouth_full)
+		return FALSE
+
+	var/to_swallow = min(amount, M.stored_liquid.total_volume)
+	if(to_swallow <= 0)
+		remove_status_effect(/datum/status_effect/mouth_full)
+		return FALSE
+
+	M.stored_liquid.trans_to(reagents, to_swallow)
+
+	if(M.stored_liquid.total_volume <= 0)
+		remove_status_effect(/datum/status_effect/mouth_full)
+
+	return TRUE

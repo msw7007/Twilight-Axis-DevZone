@@ -4,6 +4,7 @@
 #include "code\_sex_action_session.dm"
 #include "code\_proc_patches.dm"
 #include "code\_sex_session.dm"
+#include "code\status_effects.dm"
 
 #include "code\actions\_sex_panel_action.dm"
 #include "code\actions\test_action.dm"
