@@ -13,6 +13,7 @@
 		H.apply_status_effect(/datum/status_effect/mouth_full)
 
 	return .
+	
 /datum/sex_organ/mouth/Destroy(force, ...)
 	. = ..()
 	var/mob/living/carbon/human/H = get_owner()
