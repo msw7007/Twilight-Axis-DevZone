@@ -51,6 +51,10 @@
 	user.add_stress(/datum/stressevent/cumok)
 	if(user.has_flaw(/datum/charflaw/addiction/lovefiend))
 		user.sate_addiction()
+		if(user == target)
+			var/datum/charflaw/addiction/lovefiend/link_flaw = user.get_flaw()
+			if(link_flaw)
+				link_flaw.time = rand(6 MINUTES, 30 MINUTES)
 	user.emote("moan", forced = TRUE)
 	user.playsound_local(user, 'sound/misc/mat/end.ogg', 100)
 	last_ejaculation_time = world.time
