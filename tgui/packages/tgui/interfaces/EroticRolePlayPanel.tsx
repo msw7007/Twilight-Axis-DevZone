@@ -970,7 +970,7 @@ export const EroticRolePlayPanel: React.FC = () => {
   };
 
   return (
-    <Window title="Утолить Желания" width={900} height={720}>
+    <Window title="Утолить Желания" width={680} height={720}>
       <Window.Content scrollable>
         <Stack vertical fill>
           <Stack.Item>
