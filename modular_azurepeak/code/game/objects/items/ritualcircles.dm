@@ -1265,7 +1265,7 @@
 		if("Defenestration")
 			if(!do_after(user, 5 SECONDS))
 				return
-			user.say("Father of freedon, pay heed to our litany!!") //TA Lore edit
+			user.say("Father of freedom, pay heed to our litany!!") //TA Lore edit
 			if(!do_after(user, 5 SECONDS))
 				return
 			user.say("To thou we offer - a scion of tyranny!!") //TA Lore edit
