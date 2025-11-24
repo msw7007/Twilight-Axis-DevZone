@@ -1023,6 +1023,9 @@
 	if(!selected_actor_organ_id || !selected_partner_organ_id)
 		return res
 
+	if(selected_actor_organ_id == "body" || selected_partner_organ_id == "body")
+		return res
+
 	for(var/key in GLOB.sex_panel_actions)
 		var/datum/sex_panel_action/A = GLOB.sex_panel_actions[key]
 		if(!A)

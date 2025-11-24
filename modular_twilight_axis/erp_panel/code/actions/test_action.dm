@@ -81,6 +81,7 @@
 	return "<span class='love_low'>[user] [get_pose_text(pose_state)] заканчивает [name] с [target].</span>"
 
 /datum/sex_panel_action/test_simple/on_start(mob/living/carbon/human/user, mob/living/carbon/human/target)
+	. = ..()
 	var/list/orgs = connect_organs(user, target)
 	if(orgs == FALSE)
 		return FALSE
@@ -99,6 +100,7 @@
 	show_sex_effects(user)
 
 /datum/sex_panel_action/test_simple/on_finish(mob/living/carbon/human/user, mob/living/carbon/human/target)
+	. = ..()
 	var/message = get_finish_message(user, target)
 	if(message)
 		user.visible_message(message)

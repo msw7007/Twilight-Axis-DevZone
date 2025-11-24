@@ -138,6 +138,8 @@ const OrganList: React.FC<{
             ? 'rgba(255, 150, 255, 0.18)'
             : 'rgba(255,255,255,0.05)',
           color: baseColor,
+          textAlign: 'center',
+          justifyContent: 'center',
         };
 
         return (
@@ -710,7 +712,7 @@ const ActionsList: React.FC<{
     const isAvailable = canPerform.includes(action.type);
 
     const style: CSSProperties = {
-      justifyContent: 'flex-start',
+      justifyContent: 'center',
       width: '100%',
       background: isCurrent
         ? 'rgba(255, 140, 255, 0.23)'
@@ -725,6 +727,7 @@ const ActionsList: React.FC<{
         : isCurrent
           ? '#ffe6ff'
           : '#f5b3ff',
+      textAlign: 'center',
     };
 
     return (

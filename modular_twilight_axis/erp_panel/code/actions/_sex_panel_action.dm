@@ -25,8 +25,6 @@
 	var/require_grab = FALSE
 	/// Minimum grab state required
 	var/required_grab_state = GRAB_PASSIVE
-	/// List of active sex process with characters
-	var/list/datum/sex_session_lock/sex_locks = list()
 	/// Can action affects self arousal?
 	var/affects_self_arousal = 0
 	/// Can action affects self pain?
@@ -37,6 +35,8 @@
 	var/affects_pain = 0
 	/// Get pose of partners
 	var/pose_key = SEX_POSE_BOTH_STANDING
+	/// Link to session data
+	var/datum/sex_action_session/session
 
 /datum/sex_panel_action/proc/shows_on_menu(mob/living/carbon/human/user, mob/living/carbon/human/target)
 	if(abstract_type)
@@ -91,13 +91,17 @@
 
 	return TRUE
 
-/datum/sex_panel_action/proc/on_start(mob/living/carbon/human/user, mob/living/carbon/human/target)
+/datum/sex_panel_action/proc/on_start(mob/living/carbon/human/user, mob/living/carbon/human/target, datum/sex_action_session/new_session)
+	SHOULD_CALL_PARENT(TRUE)
+	session = new_session
 	return
 
 /datum/sex_panel_action/proc/on_perform(mob/living/carbon/human/user, mob/living/carbon/human/target)
 	return
 
 /datum/sex_panel_action/proc/on_finish(mob/living/carbon/human/user, mob/living/carbon/human/target)
+	SHOULD_CALL_PARENT(TRUE)
+	session = null
 	return
 
 /datum/sex_panel_action/proc/get_start_message(mob/living/carbon/human/user, mob/living/carbon/human/target)
@@ -108,27 +112,6 @@
 
 /datum/sex_panel_action/proc/get_finish_message(mob/living/carbon/human/user, mob/living/carbon/human/target)
 	return null
-
-/datum/sex_panel_action/proc/lock_sex_object(mob/living/carbon/human/user, mob/living/carbon/human/target)
-	return FALSE
-
-/datum/sex_panel_action/proc/unlock_sex_object(mob/living/carbon/human/user, mob/living/carbon/human/target)
-	for(var/datum/sex_session_lock/lock as anything in sex_locks)
-		qdel(lock)
-	sex_locks.Cut()
-
-/datum/sex_panel_action/proc/check_sex_lock(mob/locked, organ_slot, obj/item/item)
-	if(!organ_slot && !item)
-		return FALSE
-	for(var/datum/sex_session_lock/lock as anything in GLOB.locked_sex_objects)
-		if(lock in sex_locks)
-			continue
-		if(lock.locked_host != locked)
-			continue
-		if(lock.locked_item != item && lock.locked_organ_slot != organ_slot)
-			continue
-		return TRUE
-	return FALSE
 
 /datum/sex_panel_action/proc/handle_climax_message(mob/living/carbon/human/user, mob/living/carbon/human/target)
 	return
@@ -219,3 +202,27 @@
 			return "сверху"
 		if(SEX_POSE_BOTH_LYING)
 			return "лежа"
+
+/datum/sex_panel_action/proc/get_force_text()
+	var/action_force = session.force
+	switch(action_force)
+		if(SEX_FORCE_LOW)
+			return "нежно"
+		if(SEX_FORCE_MID)
+			return "страстно"
+		if(SEX_FORCE_HIGH)
+			return "грубо"
+		if(SEX_FORCE_EXTREME)
+			return "неумолимо"
+
+/datum/sex_panel_action/proc/get_speed_text()
+	var/action_speed = session.speed
+	switch(action_speed)
+		if(SEX_SPEED_LOW)
+			return "медленно"
+		if(SEX_SPEED_MID)
+			return "плавно"
+		if(SEX_SPEED_HIGH)
+			return "быстро"
+		if(SEX_SPEED_EXTREME)
+			return "агрессивно"
