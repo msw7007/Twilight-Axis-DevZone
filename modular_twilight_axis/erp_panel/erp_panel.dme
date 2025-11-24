@@ -22,14 +22,38 @@
 
 #include "code\actions\masturbation\_self.dm"
 #include "code\actions\masturbation\hands\_hands.dm"
+#include "code\actions\masturbation\hands\breasts_play.dm"
+#include "code\actions\masturbation\hands\milking.dm"
+#include "code\actions\masturbation\hands\fingering_anal.dm"
+#include "code\actions\masturbation\hands\fingering_oral.dm"
+#include "code\actions\masturbation\hands\fingering_vaginal.dm"
+#include "code\actions\masturbation\hands\milking.dm"
+#include "code\actions\masturbation\hands\penis.dm"
+#include "code\actions\masturbation\hands\sextoy_anal.dm"
+#include "code\actions\masturbation\hands\sextoy_oral.dm"
+#include "code\actions\masturbation\hands\sextoy_vaginal.dm"
+#include "code\actions\masturbation\hands\tail_play.dm"
 #include "code\actions\masturbation\tail\_tail.dm"
+#include "code\actions\masturbation\tail\anal.dm"
+#include "code\actions\masturbation\tail\oral.dm"
+#include "code\actions\masturbation\tail\vaginal.dm"
+#include "code\actions\masturbation\tail\penis.dm"
+#include "code\actions\masturbation\tail\breasts.dm"
 
 #include "code\actions\interaction\_other.dm"
 #include "code\actions\interaction\mouth\_mouth.dm"
+
 #include "code\actions\interaction\breasts\_breasts.dm"
+
 #include "code\actions\interaction\hands\_hands.dm"
+
 #include "code\actions\interaction\vagina\_vagina.dm"
+
 #include "code\actions\interaction\penis\_penis.dm"
+
 #include "code\actions\interaction\anus\_anus.dm"
+
 #include "code\actions\interaction\tail\_tail.dm"
+
 #include "code\actions\interaction\legs\_legs.dm"
+
