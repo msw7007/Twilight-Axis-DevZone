@@ -6,9 +6,6 @@
 #include "code\_sex_session.dm"
 #include "code\status_effects.dm"
 
-#include "code\actions\_sex_panel_action.dm"
-#include "code\actions\test_action.dm"
-
 #include "code\organ\_body_patches.dm"
 #include "code\organ\_sex_organ.dm"
 #include "code\organ\anus.dm"
@@ -19,3 +16,20 @@
 #include "code\organ\penis.dm"
 #include "code\organ\tail.dm"
 #include "code\organ\vagina.dm"
+
+#include "code\actions\_sex_panel_action.dm"
+#include "code\actions\test_action.dm"
+
+#include "code\actions\masturbation\_self.dm"
+#include "code\actions\masturbation\hands\_hands.dm"
+#include "code\actions\masturbation\tail\_tail.dm"
+
+#include "code\actions\interaction\_other.dm"
+#include "code\actions\interaction\mouth\_mouth.dm"
+#include "code\actions\interaction\breasts\_breasts.dm"
+#include "code\actions\interaction\hands\_hands.dm"
+#include "code\actions\interaction\vagina\_vagina.dm"
+#include "code\actions\interaction\penis\_penis.dm"
+#include "code\actions\interaction\anus\_anus.dm"
+#include "code\actions\interaction\tail\_tail.dm"
+#include "code\actions\interaction\legs\_legs.dm"
