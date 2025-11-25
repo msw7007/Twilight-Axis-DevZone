@@ -30,4 +30,4 @@
 
 /datum/sex_panel_action/self/on_perform(mob/living/carbon/human/user, mob/living/carbon/human/target)
 	. = ..()
-	SEND_SIGNAL(user, COMSIG_SEX_RECEIVE_ACTION, 1, 0, TRUE,  0)
+	SEND_SIGNAL(user, COMSIG_SEX_RECEIVE_ACTION, affects_self_arousal, affects_self_pain)

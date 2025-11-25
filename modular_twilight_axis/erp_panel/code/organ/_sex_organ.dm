@@ -25,6 +25,12 @@
 	var/stored_liquid_max = 0
 	// active deflation timer
 	var/deflation_timer_id = null 
+	// reagent id that organ produce
+	var/producing_reagent_id = null
+	// reagent producing rate
+	var/producing_reagent_rate = 0
+	// ammount of reagent that ejects by events
+	var/injection_amount = 0
 	
 /datum/sex_organ/New(atom/movable/organ)
 	. = ..()
@@ -35,6 +41,9 @@
 
 	if(stored_liquid_max)
 		stored_liquid = new(stored_liquid_max)
+
+	if(stored_liquid_max || (producing_reagent_id && producing_reagent_rate > 0))
+		renew_timer(5 MINUTES)
 
 /datum/sex_organ/proc/pleasure_bonus(datum/sex_organ/organ)
 	return clamp(sensivity, 0, SEX_SENSITIVITY_MAX)  - clamp(pain, 0, SEX_PAIN_MAX)
@@ -148,17 +157,140 @@
 	if(!stored_liquid)
 		return
 
-	var/removed = drain_uniform(5)
-	if(removed <= 0)
+	if(producing_reagent_id && producing_reagent_rate > 0)
+		if(stored_liquid.total_volume < stored_liquid_max)
+			produce_liquid(null, producing_reagent_rate)
+
+	var/removed = 0
+	if(stored_liquid.total_volume > 0)
+		removed = drain_uniform(min(5, stored_liquid.total_volume))
+		if(removed > 0 && (organ_type == SEX_ORGAN_VAGINA || organ_type == SEX_ORGAN_ANUS))
+			var/mob/living/carbon/human/H = get_owner()
+			if(istype(H))
+				var/turf/T = get_turf(H)
+				if(T)
+					new /obj/effect/decal/cleanable/coom(T)
+
+	if(stored_liquid.total_volume > 0 || (producing_reagent_id && producing_reagent_rate > 0))
+		renew_timer(5 MINUTES)
+
+/datum/sex_organ/proc/produce_liquid(datum/reagent/R, amount)
+	if(!stored_liquid || amount <= 0)
+		return 0
+
+	if(!R && producing_reagent_id)
+		R = GLOB.chemical_reagents_list[producing_reagent_id]
+
+	if(!R)
+		return 0
+
+	renew_timer(5 MINUTES)
+	return stored_liquid.add_reagent(R.type, amount)
+
+/datum/sex_organ/proc/can_receive_liquid(amount = 1)
+	if(!stored_liquid || stored_liquid_max <= 0)
+		return FALSE
+
+	if(stored_liquid.total_volume >= stored_liquid_max)
+		return FALSE
+
+	if(amount <= 0)
+		return TRUE
+
+	return (stored_liquid.total_volume + amount) <= stored_liquid_max
+
+/datum/sex_organ/proc/is_valid_liquid_container(obj/item/I)
+	if(!I)
+		return FALSE
+
+	if(istype(I, /obj/item/reagent_containers))
+		return TRUE
+
+	if(I.reagents)
+		return TRUE
+
+	return FALSE
+
+/datum/sex_organ/proc/find_liquid_container()
+	var/mob/living/carbon/human/H = get_owner()
+	if(!H)
+		return null
+
+	if(H.held_items)
+		for(var/obj/item/I in H.held_items)
+			if(is_valid_liquid_container(I))
+				return I
+
+	var/turf/T = get_turf(H)
+	if(!T)
+		return null
+
+	for(var/obj/item/I in T)
+		if(is_valid_liquid_container(I))
+			return I
+
+	var/list/candidates = list()
+	for(var/dir in list(NORTH, SOUTH, EAST, WEST))
+		var/turf/NT = get_step(T, dir)
+		if(!NT)
+			continue
+		for(var/obj/item/I in NT)
+			if(is_valid_liquid_container(I))
+				candidates += I
+
+	if(length(candidates))
+		return pick(candidates)
+
+	return null
+
+/datum/sex_organ/proc/inject_liquid()
+	if(!stored_liquid || stored_liquid.total_volume <= 0)
+		return 0
+
+	var/amount = injection_amount
+	if(!amount || amount <= 0)
+		amount = 5
+
+	var/moved = 0
+	if(active_target && active_target.stored_liquid)
+		if(active_target.can_receive_liquid(amount))
+			moved = stored_liquid.trans_to(active_target.stored_liquid, amount)
+			if(moved > 0)
+				active_target.renew_timer(5 MINUTES)
+				return moved
+
+	var/obj/item/container = find_liquid_container()
+	if(container)
+		var/datum/reagents/R = container.reagents
+
+		if(!R && istype(container, /obj/item/reagent_containers))
+			var/obj/item/reagent_containers/RC = container
+			if(RC.volume > 0)
+				RC.create_reagents(RC.volume)
+				R = RC.reagents
+
+		if(R)
+			moved = stored_liquid.trans_to(R, amount)
+			if(moved > 0)
+				return moved
+
+	var/mob/living/carbon/human/H = get_owner()
+	var/turf/T = H ? get_turf(H) : (organ_link ? get_turf(organ_link) : null)
+	if(T)
+		new /obj/effect/decal/cleanable/coom(T)
+		moved = drain_uniform(amount)
+		return moved
+
+	moved = drain_uniform(amount)
+	return moved
+
+/datum/sex_organ/proc/tick_fluids()
+	if(!stored_liquid)
 		return
 
-	if(organ_type == SEX_ORGAN_VAGINA || organ_type == SEX_ORGAN_ANUS)
-		var/mob/living/carbon/human/H = get_owner()
-		if(istype(H))
-			var/turf/T = get_turf(H)
-			if(T)
-				new /obj/effect/decal/cleanable/coom(T)
+	if(producing_reagent_id && producing_reagent_rate > 0)
+		if(stored_liquid.total_volume < stored_liquid_max)
+			produce_liquid(null, producing_reagent_rate)
 
 	if(stored_liquid.total_volume > 0)
-		drain_uniform(min(stored_liquid.total_volume, 5))
 		renew_timer(5 MINUTES)

@@ -717,35 +717,20 @@
 	if(do_until_finished)
 		stop_all_actions()
 
-	if(!selected_actor_organ_id || !selected_partner_organ_id)
+	if(!selected_actor_organ_id)
 		return
 
 	var/datum/sex_organ/src_org = resolve_organ_datum(user, selected_actor_organ_id)
-	var/datum/sex_organ/tgt_org = resolve_organ_datum(target, selected_partner_organ_id)
-	if(!src_org || !tgt_org)
+	if(!src_org)
 		return
 
-	var/amt = 5
+	if(selected_partner_organ_id)
+		var/datum/sex_organ/tgt_org = resolve_organ_datum(target, selected_partner_organ_id)
+		if(tgt_org)
+			src_org.bind_with(tgt_org)
 
-	if(src_org.stored_liquid && tgt_org.stored_liquid)
-		src_org.stored_liquid.trans_to(tgt_org.stored_liquid, amt)
-		return
-
-	if(istype(src_org, /datum/sex_organ/penis))
-		var/datum/sex_organ/penis/P = src_org
-		var/move = min(amt, P.liquid_ammount)
-		if(move <= 0)
-			return
-
-		if(tgt_org.stored_liquid)
-			tgt_org.add_reagent(P.liquid_type, move)
-		else
-			var/mob/living/carbon/human/H = tgt_org.get_owner()
-			var/turf/T = H ? get_turf(H) : get_turf(user)
-			if(T)
-				new /obj/effect/decal/cleanable/coom(T)
-
-		P.liquid_ammount = max(0, P.liquid_ammount - move)
+	var/moved = src_org.inject_liquid()
+	if(moved <= 0)
 		return
 
 /datum/sex_session_tgui/proc/resolve_organ_datum(mob/living/carbon/human/M, id)
