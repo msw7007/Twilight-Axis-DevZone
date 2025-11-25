@@ -228,6 +228,7 @@
 			return pick(list("агрессивно", "стремительно", "бурно", "яростно", "взахлеб"))
 
 /datum/sex_panel_action/proc/spanify_force(string)
+	var/action_force = session.force
 	switch(force)
 		if(SEX_FORCE_LOW)
 			return "<span class='love_low'>[string]</span>"
