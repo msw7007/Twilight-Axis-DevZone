@@ -44,7 +44,7 @@
 	name = "Тестовое действие грудью"
 	required_init   = SEX_ORGAN_BREASTS
 	required_target = null
-	armor_slot_lock = BODY_ZONE_PRECISE_STOMACH
+	armor_slot_lock = BODY_ZONE_CHEST
 
 /datum/sex_panel_action/test_simple/penis
 	name = "Тестовое действие членом"

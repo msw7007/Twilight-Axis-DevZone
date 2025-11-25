@@ -43,7 +43,7 @@
 	if(src_org)
 		src_org.bind_with(tgt_org)
 
-	action.on_start(session.user, session.target)
+	action.on_start(session.user, session.target, src)
 	loop_tick()
 
 /datum/sex_action_session/proc/loop_tick()
@@ -74,7 +74,6 @@
 		if(!session.user.stamina_add(action.stamina_cost * get_stamina_cost_multiplier(force)))
 			return session.stop_instance(instance_id)
 
-	action.on_perform(session.user, session.target)
 	action.show_sex_effects(session.user)
 
 	var/list/pain_deltas = update_organ_response()
@@ -89,7 +88,6 @@
 
 	next_tick_time = world.time + do_time
 	timer_id = addtimer(CALLBACK(src, PROC_REF(loop_tick)), world.tick_lag, TIMER_STOPPABLE)
-
 
 /datum/sex_action_session/proc/update_organ_response()
 	if(!session || !action)
@@ -237,6 +235,24 @@
 	if(count <= 0)
 		count = 1
 	return count
+
+/datum/sex_action_session/proc/get_priority_for(mob/living/carbon/human/U)
+	if(!session || !action || !U)
+		return -1
+
+	var/organ_priority = 0
+	if(actor_node_id)
+		var/org_type = session.node_organ_type(actor_node_id)
+		if(isnum(org_type))
+			organ_priority = org_type
+
+	var/role_priority = 0
+	if(U == session.target)
+		role_priority = 100
+	else if(U == session.user)
+		role_priority = 50
+
+	return organ_priority + role_priority
 
 /proc/is_sex_toy(obj/item/I)
 	if(!I)

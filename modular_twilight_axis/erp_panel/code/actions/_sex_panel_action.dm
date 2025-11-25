@@ -94,15 +94,29 @@
 /datum/sex_panel_action/proc/on_start(mob/living/carbon/human/user, mob/living/carbon/human/target, datum/sex_action_session/new_session)
 	SHOULD_CALL_PARENT(TRUE)
 	session = new_session
-	return
+	var/list/orgs = connect_organs(user, target)
+	if(!orgs)
+		return FALSE
+
+	var/message = span_warning(get_start_message(user, target))
+	if(message)
+		user.visible_message(message)
+
+	return TRUE
 
 /datum/sex_panel_action/proc/on_perform(mob/living/carbon/human/user, mob/living/carbon/human/target)
+	var/message = get_perform_message(user, target)
+	if(message)
+		user.visible_message(message)
 	return
 
 /datum/sex_panel_action/proc/on_finish(mob/living/carbon/human/user, mob/living/carbon/human/target)
 	SHOULD_CALL_PARENT(TRUE)
 	session = null
-	return
+	var/message = span_warning(get_finish_message(user, target))
+	if(message)
+		user.visible_message(message)
+	return TRUE
 
 /datum/sex_panel_action/proc/get_start_message(mob/living/carbon/human/user, mob/living/carbon/human/target)
 	return null
@@ -229,7 +243,7 @@
 
 /datum/sex_panel_action/proc/spanify_force(string)
 	var/action_force = session.force
-	switch(force)
+	switch(action_force)
 		if(SEX_FORCE_LOW)
 			return "<span class='love_low'>[string]</span>"
 		if(SEX_FORCE_MID)

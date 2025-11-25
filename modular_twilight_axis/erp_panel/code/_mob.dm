@@ -163,7 +163,7 @@
 	if(!node_id)
 		return FALSE
 
-	var/zone = BODY_ZONE_PRECISE_STOMACH
+	var/zone = BODY_ZONE_CHEST
 
 	switch(node_id)
 		if(SEX_ORGAN_MOUTH)

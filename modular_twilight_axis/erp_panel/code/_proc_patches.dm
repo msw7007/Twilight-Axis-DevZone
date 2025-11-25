@@ -56,7 +56,7 @@
 	return sessions
 
 /proc/return_highest_priority_action_tgui(list/sessions = list(), mob/living/carbon/human/U)
-	var/datum/best_session = null
+	var/datum/sex_session_tgui/best_session = null
 	var/best_score = -1
 
 	for (var/datum/D in sessions)
@@ -64,23 +64,27 @@
 			continue
 		var/datum/sex_session_tgui/S = D
 
-		var/datum/sex_action/A = null
+		var/datum/sex_action_session/I = null
 		for (var/id in S.current_actions)
-			var/datum/sex_action_session/I = S.current_actions[id]
+			I = S.current_actions[id]
 			if (I)
-				A = I.action
 				break
-		if (!A)
+		if (!I || !I.action)
 			continue
 
-		var/score = 0
+		var/init_type = S.node_organ_type(I.actor_node_id)
+		if (!init_type)
+			init_type = 0
+
+		var/score = init_type
 		if (U == S.target)
-			score = A.target_priority
+			score += 100
 		else if (U == S.user)
-			score = A.user_priority
+			score += 50
 
 		if (score > best_score)
 			best_score = score
 			best_session = S
 
 	return best_session
+

@@ -18,12 +18,13 @@
 #include "code\organ\vagina.dm"
 
 #include "code\actions\_sex_panel_action.dm"
-#include "code\actions\test_action.dm"
+//#include "code\actions\test_action.dm"
 
 #include "code\actions\masturbation\_self.dm"
 #include "code\actions\masturbation\hands\_hands.dm"
 #include "code\actions\masturbation\hands\breasts_play.dm"
-#include "code\actions\masturbation\hands\milking.dm"
+#include "code\actions\masturbation\hands\breasts_milking.dm"
+#include "code\actions\masturbation\hands\penis_milking.dm"
 #include "code\actions\masturbation\hands\fingering_anal.dm"
 #include "code\actions\masturbation\hands\fingering_oral.dm"
 #include "code\actions\masturbation\hands\fingering_vaginal.dm"

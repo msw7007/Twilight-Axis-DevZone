@@ -24,4 +24,10 @@
 	return TRUE
 
 /datum/sex_panel_action/self/handle_climax_message(mob/living/carbon/human/user, mob/living/carbon/human/target)
-	return "[user] оставляет под собой беспорядок"
+	var/message = span_love("[user] оставляет под собой беспорядок")
+	user.visible_message(message)
+	return TRUE
+
+/datum/sex_panel_action/self/on_perform(mob/living/carbon/human/user, mob/living/carbon/human/target)
+	. = ..()
+	SEND_SIGNAL(user, COMSIG_SEX_RECEIVE_ACTION, 1, 0, TRUE,  0)

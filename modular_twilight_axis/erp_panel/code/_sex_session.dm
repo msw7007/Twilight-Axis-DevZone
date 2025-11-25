@@ -207,17 +207,31 @@
 
 /datum/sex_session_tgui/proc/actions_for_menu()
 	var/list/actions = list()
-	for(var/key in GLOB.sex_panel_actions)
+
+	for (var/key in GLOB.sex_panel_actions)
 		var/datum/sex_panel_action/A = GLOB.sex_panel_actions[key]
-		if(!A)
+		if (!A)
 			continue
-		if(!A.shows_on_menu(user, target))
+		if (!A.shows_on_menu(user, target))
 			continue
+
+		if (A.required_init || A.required_target)
+			if (!user)
+				continue
+
+			var/mob/living/carbon/human/U = user
+			var/mob/living/carbon/human/T = target ? target : user
+
+			var/list/orgs = A.get_action_organs(U, T, FALSE, FALSE)
+			if (!orgs)
+				continue
+
 		actions += list(list(
 			"name" = A.name,
 			"type" = key,
 			"tags" = list(),
 		))
+
 	return actions
 
 /datum/sex_session_tgui/proc/inherent_perform_check(datum/sex_panel_action/A)
@@ -879,9 +893,7 @@
 	var/mob/living/carbon/human/T = choice.session.target
 
 	if(U && T && choice.action)
-		var/msg = choice.action.get_perform_message(U, T, TRUE)
-		if(msg)
-			U.visible_message(msg)
+		choice.action.on_perform(U, T)
 
 	broadcast_timer_id = addtimer(CALLBACK(src, PROC_REF(broadcast_tick)), 5 SECONDS, TIMER_STOPPABLE)
 
@@ -1043,3 +1055,22 @@
 		res += key
 
 	return res
+
+/datum/sex_session_tgui/proc/get_best_action_session_for(mob/living/carbon/human/U)
+	if(!U || !length(current_actions))
+		return null
+
+	var/datum/sex_action_session/best = null
+	var/best_score = -1
+
+	for(var/id in current_actions)
+		var/datum/sex_action_session/I = current_actions[id]
+		if(!I || QDELETED(I) || !I.action)
+			continue
+
+		var/score = I.get_priority_for(U)
+		if(score > best_score)
+			best_score = score
+			best = I
+
+	return best

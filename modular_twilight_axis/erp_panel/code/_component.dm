@@ -66,7 +66,22 @@
 	var/mob/living/carbon/human/mob = parent
 
 	var/list/parent_sessions = return_sessions_with_user_tgui(mob)
-	var/datum/sex_action_session/highest_priority = return_highest_priority_action_tgui(parent_sessions, mob)
+
+	var/datum/sex_action_session/highest_priority = null
+	var/best_score = -1
+
+	for(var/datum/sex_session_tgui/S in parent_sessions)
+		if(QDELETED(S))
+			continue
+
+		var/datum/sex_action_session/I = S.get_best_action_session_for(mob)
+		if(!I)
+			continue
+
+		var/score = I.get_priority_for(mob)
+		if(score > best_score)
+			best_score = score
+			highest_priority = I
 
 	playsound(mob, 'sound/misc/mat/endout.ogg', 50, TRUE, ignore_walls = FALSE)
 
@@ -76,20 +91,19 @@
 		return
 
 	if(!highest_priority)
-		mob.visible_message(span_love("[mob] makes a mess!"))
 		var/turf/turf = get_turf(mob)
 		new /obj/effect/decal/cleanable/coom(turf)
 		after_ejaculation(FALSE, mob, null)
 		return
 
 	var/datum/sex_action_session/S = highest_priority
-	var/mob/living/carbon/human/U = S.session.user
-	var/mob/living/carbon/human/T = S.session.target
+	var/datum/sex_session_tgui/SS = S.session
+	var/mob/living/carbon/human/U = SS.user
+	var/mob/living/carbon/human/T = SS.target
 	var/datum/sex_panel_action/A = S.action
 
 	var/return_type = A.handle_climax_message(U, T)
 	if(!return_type)
-		mob.visible_message(span_love("[mob] makes a mess!"))
 		var/turf/turf2 = get_turf(mob)
 		new /obj/effect/decal/cleanable/coom(turf2)
 		after_ejaculation(FALSE, U, T)
@@ -97,7 +111,7 @@
 		handle_climax(return_type, U, T)
 		after_ejaculation(return_type == "into" || return_type == "oral", U, T)
 
-	if(S.session.do_knot_action && A.can_knot && U)
+	if(SS.do_knot_action && A.can_knot && U)
 		var/obj/item/organ/penis/P = U.getorganslot(ORGAN_SLOT_PENIS)
 		var/datum/sex_organ/penis/PO = P ? P.sex_organ : null
 		if(PO && PO.have_knot)
