@@ -4,8 +4,8 @@
 /obj/item/book/manual/random/Initialize()
 	..()
 	var/static/banned_books = list(/obj/item/book/manual/random)
-	var/newtype = pick(subtypesof(/obj/item/book/manual) - banned_books)
-	new newtype(loc)
+	//var/newtype = pick(subtypesof(/obj/item/book/manual) - banned_books)
+	//new newtype(loc)
 	return INITIALIZE_HINT_QDEL
 
 /obj/item/book/random

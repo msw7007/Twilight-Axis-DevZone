@@ -203,8 +203,8 @@ SUBSYSTEM_DEF(outdoor_effects)
 			if(U.state != SKY_BLOCKED)
 				GLOB.SUNLIGHT_QUEUE_UPDATE += T.outdoor_effect
 
-		if(U.state != SKY_BLOCKED)
-			continue
+			if(U.state != SKY_BLOCKED)
+				continue
 
 		//This might need to be run more liberally
 		update_outdoor_effect_overlays(U)
