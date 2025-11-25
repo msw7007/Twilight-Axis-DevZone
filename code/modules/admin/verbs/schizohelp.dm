@@ -12,7 +12,7 @@ GLOBAL_LIST_EMPTY(voice_names)
 	if(!msg)
 		return
 
-	if((client?.prefs?.muted & MUTE_MEDITATE) || (is_banned_from(ckey, "MentorHelp")))
+	if((client?.prefs?.muted & MUTE_MEDITATE) || (is_banned_from(ckey, "MENTORHELP")))
 		to_chat(src, span_notice("You have been muted from mentor help."))
 		return
 
