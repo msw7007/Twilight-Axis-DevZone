@@ -12,15 +12,16 @@
 
 /datum/sex_panel_action/self/hands/breasts/get_start_message(mob/living/carbon/human/user, mob/living/carbon/human/target)
 	var/pose_state = get_pose_key(user, target)
-	return "<span class='love_low'>[user] [get_pose_text(pose_state)] начинает [name] с [target].</span>"
+	return "[user] располагает руки на своей груди."
 
 /datum/sex_panel_action/self/hands/breasts/get_perform_message(mob/living/carbon/human/user, mob/living/carbon/human/target)
 	var/pose_state = get_pose_key(user, target)
-	return "<span class='love_low'>[user] [get_pose_text(pose_state)] делает [name] с [target].</span>"
+	var/message = "[user] [get_pose_text(pose_state)], [get_force_text()] и [get_speed_text()] лапает свою грудь."
+	return spanify_force(message)
 
 /datum/sex_panel_action/self/hands/breasts/get_finish_message(mob/living/carbon/human/user, mob/living/carbon/human/target)
 	var/pose_state = get_pose_key(user, target)
-	return "<span class='love_low'>[user] [get_pose_text(pose_state)] заканчивает [name] с [target].</span>"
+	return "[user] убирает руки со своей груди."
 
 /datum/sex_panel_action/self/hands/breasts/on_start(mob/living/carbon/human/user, mob/living/carbon/human/target)
 	. = ..()
@@ -30,7 +31,7 @@
 
 	var/message = get_start_message(user, target)
 	if(message)
-		user.visible_message(message)
+		user.visible_message(span_warning(message))
 
 	return TRUE
 
@@ -45,17 +46,6 @@
 	. = ..()
 	var/message = get_finish_message(user, target)
 	if(message)
-		user.visible_message(message)
+		user.visible_message(span_warning(message))
 
 	return TRUE
-
-/datum/sex_panel_action/self/hands/breasts/get_pose_text(pose_state)
-	switch(pose_state)
-		if(SEX_POSE_BOTH_STANDING)
-			return "стоя"
-		if(SEX_POSE_USER_LYING)
-			return "снизу"
-		if(SEX_POSE_TARGET_LYING)
-			return "сверху"
-		if(SEX_POSE_BOTH_LYING)
-			return "лежа"

@@ -207,22 +207,33 @@
 	var/action_force = session.force
 	switch(action_force)
 		if(SEX_FORCE_LOW)
-			return "нежно"
+			return pick(list("нежно", "заботливо", "ласково", "мягко", "осторожно", "неторопливо"))
 		if(SEX_FORCE_MID)
-			return "страстно"
+			return pick(list("решительно", "энергично", "страстно", "уверенно", "увлеченно"))
 		if(SEX_FORCE_HIGH)
-			return "грубо"
+			return pick(list("грубо", "небрежно", "жестко", "пылко", "свирепо"))
 		if(SEX_FORCE_EXTREME)
-			return "неумолимо"
+			return pick(list("жестоко", "неистово", "неумолимо", "свирепо", "безжалостно"))
 
 /datum/sex_panel_action/proc/get_speed_text()
 	var/action_speed = session.speed
 	switch(action_speed)
 		if(SEX_SPEED_LOW)
-			return "медленно"
+			return pick(list("медленно", "неторопливо", "бережно", "тягуче", "размеренно"))
 		if(SEX_SPEED_MID)
-			return "плавно"
+			return pick(list("ритмично", "уверенно", "плавно", "напористо", "ровно"))
 		if(SEX_SPEED_HIGH)
-			return "быстро"
+			return pick(list("быстро", "часто", "торопливо", "резко", "интенсивно"))
 		if(SEX_SPEED_EXTREME)
-			return "агрессивно"
+			return pick(list("агрессивно", "стремительно", "бурно", "яростно", "взахлеб"))
+
+/datum/sex_panel_action/proc/spanify_force(string)
+	switch(force)
+		if(SEX_FORCE_LOW)
+			return "<span class='love_low'>[string]</span>"
+		if(SEX_FORCE_MID)
+			return "<span class='love_mid'>[string]</span>"
+		if(SEX_FORCE_HIGH)
+			return "<span class='love_high'>[string]</span>"
+		if(SEX_FORCE_EXTREME)
+			return "<span class='love_extreme'>[string]</span>"
