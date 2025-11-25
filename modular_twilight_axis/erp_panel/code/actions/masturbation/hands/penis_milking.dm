@@ -1,7 +1,7 @@
 /datum/sex_panel_action/self/hands/milking_penis
 	abstract_type = FALSE
 
-	name = "Мастурбация пенисом"
+	name = "Доениа члена"
 	required_target = SEX_ORGAN_PENIS
 	armor_slot_lock = BODY_ZONE_PRECISE_GROIN
 
