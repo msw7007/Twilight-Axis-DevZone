@@ -23,5 +23,5 @@
 
 	return TRUE
 
-/datum/sex_panel_action/proc/handle_climax_message(mob/living/carbon/human/user, mob/living/carbon/human/target)
+/datum/sex_panel_action/self/handle_climax_message(mob/living/carbon/human/user, mob/living/carbon/human/target)
 	return "[user] оставляет под собой беспорядок"
