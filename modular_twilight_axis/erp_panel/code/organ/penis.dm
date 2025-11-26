@@ -17,8 +17,8 @@
 	if(!testicles)
 		return
 
-	producing_reagent_rate = testicles.ball_size
-	stored_liquid_max = 5 * producing_reagent_rate
+	producing_reagent_rate = testicles.ball_size * 0.1
+	stored_liquid_max = 5 * testicles.ball_size
 
 	if(stored_liquid)
 		stored_liquid.maximum_volume = stored_liquid_max
@@ -35,3 +35,6 @@
 
 	if(have_knot && !owner.GetComponent(/datum/component/knotting))
 		owner.AddComponent(/datum/component/knotting)
+
+	if(producing_reagent_id && producing_reagent_rate > 0 && stored_liquid)
+		start_production_timer()

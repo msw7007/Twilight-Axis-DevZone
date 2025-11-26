@@ -5,33 +5,37 @@
 /datum/sex_organ
 	// Link to physical organ
 	var/atom/movable/organ_link
-	// how sensitive organ is - multiplayer to pleasure
+	// how sensitive organ is - multiplier to pleasure
 	var/sensivity = 0
-	// how painfull organ is - negative multiplayer to pleasure
+	// how painful organ is - negative multiplier to pleasure
 	var/pain = 0
-		// how sensitive organ max is - multiplayer to pleasure
+	// max sensitivity
 	var/sensivity_max = 2
-	// how painfull organ max is - negative multiplayer to pleasure
+	// max pain
 	var/pain_max = 2
 	// object that currently this organ stuffed in
 	var/datum/sex_organ/active_target = null
 	// list of objects that use this organ
-	var/list/datum/sex_organ/stuff_object  = list()
+	var/list/datum/sex_organ/stuff_object = list()
 	// type of sex organ
 	var/organ_type
-	// list and amount of liquid inside
+	// liquids
 	var/datum/reagents/stored_liquid
-	// amount of liquid can be stored inside
 	var/stored_liquid_max = 0
-	// active deflation timer
-	var/deflation_timer_id = null 
-	// reagent id that organ produce
+	// timers
+	var/deflation_timer_id = null
+	var/production_timer_id = null
+	// reagent id that organ produces over time
 	var/producing_reagent_id = null
-	// reagent producing rate
+	// production rate per tick
 	var/producing_reagent_rate = 0
-	// ammount of reagent that ejects by events
+	// amount of reagent that ejects by events
 	var/injection_amount = 0
-	
+	// intervals
+	var/production_interval = 5 SECONDS
+	var/drain_interval = 5 MINUTES
+
+
 /datum/sex_organ/New(atom/movable/organ)
 	. = ..()
 	organ_link = organ
@@ -42,11 +46,115 @@
 	if(stored_liquid_max)
 		stored_liquid = new(stored_liquid_max)
 
-	if(stored_liquid_max || (producing_reagent_id && producing_reagent_rate > 0))
-		renew_timer(5 MINUTES)
+/datum/sex_organ/Destroy()
+	if(deflation_timer_id)
+		deltimer(deflation_timer_id)
+	deflation_timer_id = null
+
+	if(production_timer_id)
+		deltimer(production_timer_id)
+	production_timer_id = null
+
+	return ..()
 
 /datum/sex_organ/proc/pleasure_bonus(datum/sex_organ/organ)
-	return clamp(sensivity, 0, SEX_SENSITIVITY_MAX)  - clamp(pain, 0, SEX_PAIN_MAX)
+	return clamp(sensivity, 0, SEX_SENSITIVITY_MAX) - clamp(pain, 0, SEX_PAIN_MAX)
+
+/datum/sex_organ/proc/has_storage()
+	return stored_liquid && stored_liquid_max > 0
+
+/datum/sex_organ/proc/total_volume()
+	if(!stored_liquid)
+		return 0
+	return stored_liquid.total_volume
+
+/datum/sex_organ/proc/add_reagent(datum/reagent/R, amount)
+	if(!has_storage() || amount <= 0 || !R)
+		return 0
+	var/added = stored_liquid.add_reagent(R.type, amount)
+	if(added > 0)
+		renew_timer(drain_interval)
+	return added
+
+/datum/sex_organ/proc/remove_reagent(datum/reagent/R, amount)
+	if(!has_storage() || amount <= 0 || !R)
+		return 0
+	return stored_liquid.remove_reagent(R.type, amount)
+
+/datum/sex_organ/proc/drain_uniform(amount)
+	if(!has_storage() || amount <= 0)
+		return 0
+
+	var/total = total_volume()
+	if(total <= 0)
+		return 0
+
+	var/factor = min(1, amount / total)
+	var/removed = 0
+	var/list/L = stored_liquid.reagent_list.Copy()
+
+	for(var/datum/reagent/rr in L)
+		var/take = rr.volume * factor
+		if(take > 0)
+			removed += stored_liquid.remove_reagent(rr.type, take)
+
+	return removed
+
+/datum/sex_organ/proc/can_receive_liquid(amount = 1)
+	if(!has_storage())
+		return FALSE
+
+	if(total_volume() >= stored_liquid_max)
+		return FALSE
+
+	if(amount <= 0)
+		return TRUE
+
+	return (total_volume() + amount) <= stored_liquid_max
+
+/datum/sex_organ/proc/renew_timer(time)
+	if(!has_storage())
+		return FALSE
+
+	if(deflation_timer_id)
+		deltimer(deflation_timer_id)
+	deflation_timer_id = addtimer(CALLBACK(src, PROC_REF(on_timer_end)), time, TIMER_STOPPABLE)
+	return TRUE
+
+/datum/sex_organ/proc/start_production_timer()
+	if(production_timer_id)
+		return FALSE
+	if(!has_storage())
+		return FALSE
+	if(!producing_reagent_id || producing_reagent_rate <= 0)
+		return FALSE
+
+	production_timer_id = addtimer(
+		CALLBACK(src, PROC_REF(on_production_tick)),
+		production_interval,
+		TIMER_STOPPABLE,
+	)
+	return TRUE
+
+/datum/sex_organ/proc/stop_production_timer()
+	if(!production_timer_id)
+		return
+	deltimer(production_timer_id)
+	production_timer_id = null
+
+/datum/sex_organ/proc/on_production_tick()
+	production_timer_id = null
+
+	if(!has_storage())
+		return
+	if(!producing_reagent_id || producing_reagent_rate <= 0)
+		return
+
+	if(total_volume() < stored_liquid_max)
+		produce_liquid(null, producing_reagent_rate)
+
+	if(has_storage() && producing_reagent_id && producing_reagent_rate > 0 && total_volume() < stored_liquid_max)
+		start_production_timer()
 
 /datum/sex_organ/proc/insert_organ(datum/sex_organ/organ)
 	if(!stuff_object)
@@ -57,46 +165,6 @@
 /datum/sex_organ/proc/remove_organ(datum/sex_organ/organ)
 	if(stuff_object && (organ in stuff_object))
 		stuff_object -= organ
-
-/datum/sex_organ/proc/add_reagent(datum/reagent/R, amount)
-	if(!stored_liquid || amount <= 0) 
-		return 0
-	renew_timer(5 MINUTES)
-	return stored_liquid.add_reagent(R.type, amount)
-
-/datum/sex_organ/proc/remove_reagent(datum/reagent/R, amount)
-	if(!stored_liquid || amount <= 0) 
-		return 0
-	return stored_liquid.remove_reagent(R.type, amount)
-
-/datum/sex_organ/proc/drain_uniform(amount)
-	if(!stored_liquid || !amount) 
-		return 0
-	var/total = stored_liquid.total_volume
-	if(!total) 
-		return 0
-
-	var/factor = min(1, amount/total)
-	var/removed = 0
-	var/list/L = stored_liquid.reagent_list.Copy()
-
-	for(var/datum/reagent/rr in L)
-		var/take = rr.volume * factor
-		if(take)
-			removed += stored_liquid.remove_reagent(rr.type, take)
-
-	return removed
-
-/datum/sex_organ/proc/renew_timer(time)
-	if(!stored_liquid)
-		return FALSE
-
-	if(deflation_timer_id)
-		deltimer(deflation_timer_id)
-		deflation_timer_id = null
-
-	deflation_timer_id = addtimer(CALLBACK(src, PROC_REF(on_timer_end)), time, TIMER_STOPPABLE)
-	return TRUE
 
 /datum/sex_organ/proc/is_active()
 	if(active_target)
@@ -154,28 +222,29 @@
 /datum/sex_organ/proc/on_timer_end()
 	deflation_timer_id = null
 
-	if(!stored_liquid)
+	if(!has_storage())
 		return
 
-	if(producing_reagent_id && producing_reagent_rate > 0)
-		if(stored_liquid.total_volume < stored_liquid_max)
-			produce_liquid(null, producing_reagent_rate)
+	var/current = total_volume()
+	if(current <= 0)
+		return
 
-	var/removed = 0
-	if(stored_liquid.total_volume > 0)
-		removed = drain_uniform(min(5, stored_liquid.total_volume))
-		if(removed > 0 && (organ_type == SEX_ORGAN_VAGINA || organ_type == SEX_ORGAN_ANUS))
-			var/mob/living/carbon/human/H = get_owner()
-			if(istype(H))
-				var/turf/T = get_turf(H)
-				if(T)
-					new /obj/effect/decal/cleanable/coom(T)
+	var/removed = drain_uniform(min(5, current))
+	if(removed <= 0)
+		return
 
-	if(stored_liquid.total_volume > 0 || (producing_reagent_id && producing_reagent_rate > 0))
-		renew_timer(5 MINUTES)
+	if(organ_type == SEX_ORGAN_VAGINA || organ_type == SEX_ORGAN_ANUS)
+		var/mob/living/carbon/human/H = get_owner()
+		if(istype(H))
+			var/turf/T = get_turf(H)
+			if(T)
+				new /obj/effect/decal/cleanable/coom(T)
+
+	if(total_volume() > 0)
+		renew_timer(drain_interval)
 
 /datum/sex_organ/proc/produce_liquid(datum/reagent/R, amount)
-	if(!stored_liquid || amount <= 0)
+	if(!has_storage() || amount <= 0)
 		return 0
 
 	if(!R && producing_reagent_id)
@@ -184,20 +253,10 @@
 	if(!R)
 		return 0
 
-	renew_timer(5 MINUTES)
-	return stored_liquid.add_reagent(R.type, amount)
-
-/datum/sex_organ/proc/can_receive_liquid(amount = 1)
-	if(!stored_liquid || stored_liquid_max <= 0)
-		return FALSE
-
-	if(stored_liquid.total_volume >= stored_liquid_max)
-		return FALSE
-
-	if(amount <= 0)
-		return TRUE
-
-	return (stored_liquid.total_volume + amount) <= stored_liquid_max
+	var/added = stored_liquid.add_reagent(R.type, amount)
+	if(added > 0)
+		renew_timer(drain_interval)
+	return added
 
 /datum/sex_organ/proc/is_valid_liquid_container(obj/item/I)
 	if(!I)
@@ -244,7 +303,7 @@
 	return null
 
 /datum/sex_organ/proc/inject_liquid()
-	if(!stored_liquid || stored_liquid.total_volume <= 0)
+	if(!has_storage() || total_volume() <= 0)
 		return 0
 
 	var/amount = injection_amount
@@ -252,11 +311,11 @@
 		amount = 5
 
 	var/moved = 0
-	if(active_target && active_target.stored_liquid)
+	if(active_target && active_target.has_storage())
 		if(active_target.can_receive_liquid(amount))
 			moved = stored_liquid.trans_to(active_target.stored_liquid, amount)
 			if(moved > 0)
-				active_target.renew_timer(5 MINUTES)
+				active_target.renew_timer(drain_interval)
 				return moved
 
 	var/obj/item/container = find_liquid_container()
@@ -283,14 +342,3 @@
 
 	moved = drain_uniform(amount)
 	return moved
-
-/datum/sex_organ/proc/tick_fluids()
-	if(!stored_liquid)
-		return
-
-	if(producing_reagent_id && producing_reagent_rate > 0)
-		if(stored_liquid.total_volume < stored_liquid_max)
-			produce_liquid(null, producing_reagent_rate)
-
-	if(stored_liquid.total_volume > 0)
-		renew_timer(5 MINUTES)
