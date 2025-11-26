@@ -235,7 +235,7 @@
 		if(SEX_SPEED_LOW)
 			return pick(list("медленно", "неторопливо", "бережно", "тягуче", "размеренно"))
 		if(SEX_SPEED_MID)
-			return pick(list("ритмично", "уверенно", "плавно", "напористо", "ровно"))
+			return pick(list("ритмично", "уверенно", "плавно", "напористо", "спокойно"))
 		if(SEX_SPEED_HIGH)
 			return pick(list("быстро", "часто", "торопливо", "резко", "интенсивно"))
 		if(SEX_SPEED_EXTREME)

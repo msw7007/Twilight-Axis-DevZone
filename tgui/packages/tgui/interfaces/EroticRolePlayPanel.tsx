@@ -20,6 +20,8 @@ export type OrgNode = {
   sensitivity?: number;
   pain?: number;
   fullness?: number;
+  erect?: number;
+  manual?: boolean;
 };
 
 export type SexAction = {
@@ -326,6 +328,16 @@ const ArousalBars: React.FC<{
   </Section>
 );
 
+// helper: вычисляем текущий режим эрекции по данным органа
+const getErectModeForOrg = (org: OrgNode | undefined): 'auto' | 'none' | 'partial' | 'hard' => {
+  if (!org) return 'auto';
+  if (!org.manual) return 'auto';
+  const e = org.erect ?? 0;
+  if (e >= 2) return 'hard';
+  if (e === 1) return 'partial';
+  return 'none';
+};
+
 const StatusPanel: React.FC<{
   data: SexSessionData;
   actorOrgans: OrgNode[];
@@ -333,7 +345,17 @@ const StatusPanel: React.FC<{
   partnerLabel?: string;
   editable?: boolean;
   onEditOrgan: (id: string, field: 'sensitivity' | 'pain') => void;
-}> = ({ data, actorOrgans, actorName, partnerLabel, editable, onEditOrgan }) => {
+  // NEW: коллбек для управления эрекцией
+  onSetErectState?: (id: string, state: 'auto' | 'none' | 'partial' | 'hard') => void;
+}> = ({
+  data,
+  actorOrgans,
+  actorName,
+  partnerLabel,
+  editable,
+  onEditOrgan,
+  onSetErectState,
+}) => {
   const links = data.active_links || [];
   const canEdit = editable !== false;
 
@@ -357,6 +379,10 @@ const StatusPanel: React.FC<{
         const sens = (org as any).sensitivity ?? 0;
         const pain = (org as any).pain ?? 0;
         const fullness = (org as any).fullness ?? 0;
+
+        // NEW: если это член — готовим режим для подсветки кнопок
+        const isPenis = org.id === 'genital_p';
+        const erectMode = isPenis ? getErectModeForOrg(org) : 'auto';
 
         return (
           <Box key={org.id} mb={1.5}>
@@ -395,6 +421,50 @@ const StatusPanel: React.FC<{
                 </Stack>
               </Stack.Item>
             </Stack>
+
+            {/* NEW: переключатель эрекции для члена */}
+            {isPenis && onSetErectState && (
+              <Box mt={0.25} ml={1}>
+                <Box as="div" style={{ fontSize: 11 }} color="label">
+                  Возбуждение:
+                </Box>
+                <Stack wrap align="center">
+                  <Stack.Item>
+                    <Pill
+                      selected={erectMode === 'auto'}
+                      onClick={() => onSetErectState(org.id, 'auto')}
+                    >
+                      АВТО
+                    </Pill>
+                  </Stack.Item>
+                  <Stack.Item>
+                    <Pill
+                      selected={erectMode === 'none'}
+                      onClick={() => onSetErectState(org.id, 'none')}
+                    >
+                      МЯГКИЙ
+                    </Pill>
+                  </Stack.Item>
+                  <Stack.Item>
+                    <Pill
+                      selected={erectMode === 'partial'}
+                      onClick={() => onSetErectState(org.id, 'partial')}
+                    >
+                      ПРИПОДНЯТ
+                    </Pill>
+                  </Stack.Item>
+                  <Stack.Item>
+                    <Pill
+                      selected={erectMode === 'hard'}
+                      onClick={() => onSetErectState(org.id, 'hard')}
+                    >
+                      ВСТАЛО
+                    </Pill>
+                  </Stack.Item>
+                </Stack>
+              </Box>
+            )}
+
             {fullness > 0 && (
               <Box
                 mt={0.25}
@@ -1020,6 +1090,9 @@ export const EroticRolePlayPanel: React.FC = () => {
                 partnerLabel={currentPartner?.name}
                 editable
                 onEditOrgan={editOrganField}
+                onSetErectState={(id, state) =>
+                  act('toggle_erect', { id, state })
+                }
               />
             </Stack.Item>
           )}

@@ -625,6 +625,29 @@
 			SStgui.update_uis(src)
 			return TRUE
 
+		if("toggle_erect")
+			var/target_state = params["state"]
+			var/id = params["id"]
+			if(!id || id != "genital_p") return FALSE
+
+			var/datum/sex_organ/O = resolve_organ_datum(user, id)
+			if(!O) return FALSE
+
+			var/obj/item/organ/penis/P = user.getorganslot(ORGAN_SLOT_PENIS)
+			if(!P) return FALSE
+
+			if(target_state == "auto")
+				P.disable_manual_erect()
+			else if(target_state == "none")
+				P.set_manual_erect_state(ERECT_STATE_NONE)
+			else if(target_state == "partial")
+				P.set_manual_erect_state(ERECT_STATE_PARTIAL)
+			else if(target_state == "hard")
+				P.set_manual_erect_state(ERECT_STATE_HARD)
+			
+			SStgui.update_uis(src)
+			return TRUE
+
 	return FALSE
 
 /datum/sex_session_tgui/proc/update_partners_proximity()
@@ -945,6 +968,12 @@
 			if(cur > 0)
 				fullness = clamp(round((cur / O.stored_liquid_max) * 100), 0, 100)
 
+		if(id == "genital_p")
+			var/obj/item/organ/penis/P = M.getorganslot(ORGAN_SLOT_PENIS)
+			if(P)
+				N["erect"] = P.erect_state
+				N["manual"] = P.manual_erection_override
+
 		out += list(list(
 			"id"          = id,
 			"name"        = N["name"],
@@ -953,8 +982,10 @@
 			"sensitivity" = sens,
 			"pain"        = pain,
 			"fullness"    = fullness,
+			"erect"       = N["erect"],
+			"manual"      = N["manual"],
 		))
-
+		
 	return out
 
 /datum/sex_session_tgui/proc/can_see_partner_arousal()
