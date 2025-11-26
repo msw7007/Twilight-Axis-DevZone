@@ -167,7 +167,8 @@
 			"side" = side,
 		))
 
-	if(M.getorganslot(ORGAN_SLOT_ANUS))
+	var/obj/item/bodypart/chest/C = M.get_bodypart(BODY_ZONE_CHEST)
+	if(C)
 		out += list(list(
 			"id"   = "genital_a",
 			"name" = "Анус",
@@ -249,9 +250,7 @@
 
 	if(A.check_same_tile)
 		var/same_tile = (dist == 0)
-		var/has_aggressive_grab = (user.get_highest_grab_state_on(target) == GRAB_AGGRESSIVE)
-
-		if(!same_tile && !has_aggressive_grab)
+		if(!same_tile)
 			return FALSE
 
 	if(A.require_grab)
@@ -279,6 +278,13 @@
 
 	var/a_type = a_id ? node_organ_type(a_id) : null
 	var/p_type = p_id ? node_organ_type(p_id) : null
+
+	if(a_type == SEX_ORGAN_PENIS)
+		var/mob/living/carbon/human/U = user
+		if(U)
+			var/datum/component/knotting/K = U.GetComponent(/datum/component/knotting)
+			if(K && K.knotted_status == KNOTTED_AS_TOP && K.knotted_recipient)
+				return FALSE
 
 	if(A.required_init && a_type && A.required_init != a_type)
 		return FALSE
@@ -319,7 +325,6 @@
 
 /datum/sex_session_tgui/ui_static_data(mob/user)
 	var/list/D = list()
-	D["actions"] = actions_for_menu()
 	D["speed_names"] = speed_names.Copy()
 	D["force_names"] = force_names.Copy()
 	D["has_knotted_penis"] = has_knotted_penis
@@ -327,6 +332,7 @@
 
 /datum/sex_session_tgui/ui_data(mob/user)
 	var/list/D = list()
+	D["actions"] = actions_for_menu()
 	D["title"] = "Соитие с [target?.name || "…"]"
 	D["session_name"] = "Private Session"
 	D["actor_name"] = user?.name || "—"

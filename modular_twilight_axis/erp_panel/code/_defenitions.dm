@@ -24,6 +24,17 @@
 
 #define ERP_UI_MAX_AROUSAL 100
 
+#define PAIN_BASE_SCALE 5
+#define FORCE_HIGH_PAIN_CRIT_CHANCE 20
+#define FORCE_EXTREME_PAIN_CRIT_CHANCE 40
+#define FORCE_PAIN_CRIT_MULT 2.0
+
+#define ORG_SENS_GAIN_RATE 0.05
+#define ORG_PAIN_GAIN_RATE 0.05
+
+#define BREAST_SPENT_PROD_MULT 1.5
+#define PENIS_SPENT_PROD_MULT 0.0
+
 GLOBAL_LIST_INIT(sex_panel_actions, build_sex_panel_actions())
 
 #define SEX_PANEL_ACTION(sex_action_type) (GLOB.sex_panel_actions[sex_action_type])

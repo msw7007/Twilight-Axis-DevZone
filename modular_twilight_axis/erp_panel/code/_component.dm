@@ -1,3 +1,6 @@
+/datum/component/arousal
+	var/chain_orgasm_lock = FALSE
+
 /datum/component/arousal/proc/spread_climax_to_partners(mob/living/carbon/human/source)
 	if(!source)
 		return
@@ -117,27 +120,100 @@
 		if(PO && PO.have_knot)
 			A.try_knot_on_climax(U, T)
 
-/datum/component/arousal/receive_sex_action(datum/source, arousal_amt, pain_amt, giving, applied_force, applied_speed)
-	var/mob/living/carbon/user = parent
+/datum/component/knotting/should_remove_knot_on_movement(mob/living/carbon/human/top, mob/living/carbon/human/btm)
+	var/list/arousal_data = list()
+	SEND_SIGNAL(top, COMSIG_SEX_GET_AROUSAL, arousal_data)
+
+	if(arousal_data["arousal"] < AROUSAL_HARD_ON_THRESHOLD)
+		knot_remove()
+		return TRUE
+
+	var/dist = get_dist(top, btm)
+
+	if(dist <= 1)
+		var/grabstate = top.get_highest_grab_state_on(btm)
+		if(grabstate && grabstate >= GRAB_AGGRESSIVE)
+			return FALSE
+
+	if(dist > 1 && dist < 6)
+		return FALSE
+
+	if(dist > 1)
+		knot_remove(forceful_removal = TRUE)
+		return TRUE
+
+	var/lupine_op = top.STASTR > (btm.STACON + 3)
+	if(!lupine_op && top.m_intent == MOVE_INTENT_RUN && (top.mobility_flags & MOBILITY_STAND))
+		knot_remove(forceful_removal = TRUE)
+		return TRUE
+
+	return FALSE
+
+/datum/component/arousal/receive_sex_action(datum/source, arousal_amt, pain_amt, giving, applied_force, applied_speed, organ_id)
+	var/mob/user = parent
 	arousal_amt *= get_force_pleasure_multiplier(applied_force, giving)
 	pain_amt *= get_force_pain_multiplier(applied_force)
 	pain_amt *= get_speed_pain_multiplier(applied_speed)
+	pain_amt *= PAIN_BASE_SCALE
+
+	var/final_pain = pain_amt
+	switch(applied_force)
+		if(SEX_FORCE_HIGH)
+			if(prob(FORCE_HIGH_PAIN_CRIT_CHANCE))
+				final_pain *= FORCE_PAIN_CRIT_MULT
+		if(SEX_FORCE_EXTREME)
+			if(prob(FORCE_EXTREME_PAIN_CRIT_CHANCE))
+				final_pain *= FORCE_PAIN_CRIT_MULT
 
 	if(user.stat == DEAD)
 		arousal_amt = 0
-		pain_amt = 0
-
-	if(user.cmode)
-		switch(applied_force)
-			if(SEX_FORCE_HIGH, SEX_FORCE_EXTREME)
-				pain_amt *= 2
+		final_pain = 0
 
 	if(!arousal_frozen)
 		adjust_arousal(source, arousal_amt)
 
-	damage_from_pain(pain_amt)
-	try_do_moan(arousal_amt, pain_amt, applied_force, giving)
-	try_do_pain_effect(pain_amt, giving)
+	if(final_pain > 0)
+		damage_from_pain(final_pain, organ_id)
+		try_do_pain_effect(final_pain, giving)
 
-/datum/component/arousal
-	var/chain_orgasm_lock = FALSE
+	try_do_moan(arousal_amt, final_pain, applied_force, giving)
+
+
+/datum/component/arousal/damage_from_pain(pain_amt, organ_id)
+	var/mob/living/carbon/user = parent
+	if(pain_amt <= 1)
+		return
+
+	var/excess = pain_amt - 1
+	var/damage = excess
+	var/zone = BODY_ZONE_CHEST
+	switch(organ_id)
+		if("mouth")
+			zone = BODY_ZONE_HEAD
+		if("left_hand")
+			zone = BODY_ZONE_L_ARM
+		if("right_hand")
+			zone = BODY_ZONE_R_ARM
+		if("legs")
+			zone = BODY_ZONE_R_LEG
+		if("tail")
+			zone = BODY_ZONE_CHEST
+		if("breasts")
+			zone = BODY_ZONE_CHEST
+		if("genital_v", "genital_p", "genital_a")
+			zone = BODY_ZONE_CHEST
+
+	var/obj/item/bodypart/part = user.get_bodypart(zone)
+	if(!part)
+		return
+
+	user.apply_damage(damage, BRUTE, zone)
+
+/datum/component/arousal/get_arousal(datum/source, list/arousal_data)
+	arousal_data += list(
+		"arousal" = arousal,
+		"frozen" = arousal_frozen,
+		"last_increase" = last_arousal_increase_time,
+		"arousal_multiplier" = arousal_multiplier,
+		"is_spent" = is_spent()
+	)

@@ -1,22 +1,22 @@
 /obj/item/organ
 	var/datum/sex_organ/sex_organ
 
-/obj/item/organ/breasts/Initialize()
+/obj/item/organ/breasts/Insert(mob/living/carbon/M, special, drop_if_replaced)
 	. = ..()
 	if(!sex_organ)
 		sex_organ = new /datum/sex_organ/breasts(src)
 	
-/obj/item/organ/penis/Initialize()
+/obj/item/organ/penis/Insert(mob/living/carbon/M, special, drop_if_replaced)
 	. = ..()
 	if(!sex_organ)
 		sex_organ = new /datum/sex_organ/penis(src)
 
-/obj/item/organ/vagina/Initialize()
+/obj/item/organ/vagina/Insert(mob/living/carbon/M, special, drop_if_replaced)
 	. = ..()
 	if(!sex_organ)
 		sex_organ = new /datum/sex_organ/vagina(src)
 
-/obj/item/organ/tail/Initialize()
+/obj/item/organ/tail/Insert(mob/living/carbon/M, special, drop_if_replaced)
 	. = ..()
 	if(!sex_organ)
 		sex_organ = new /datum/sex_organ/tail(src)
@@ -29,12 +29,12 @@
 	if(!sex_organ)
 		sex_organ = new /datum/sex_organ/mouth(src)
 
-/obj/item/bodypart/r_arm/Initialize()
+/obj/item/bodypart/r_arm/attach_limb(mob/living/carbon/C)
 	. = ..()
 	if(!sex_organ)
 		sex_organ = new /datum/sex_organ/hand/right(src)
 	
-/obj/item/bodypart/l_arm/Initialize()
+/obj/item/bodypart/l_arm/attach_limb(mob/living/carbon/C)
 	. = ..()
 	if(!sex_organ)
 		sex_organ = new /datum/sex_organ/hand(src)
@@ -42,7 +42,7 @@
 /mob/living/carbon/human
 	var/datum/sex_organ/legs/legs_organ
 
-/obj/item/bodypart/l_leg/Initialize()
+/obj/item/bodypart/l_leg/attach_limb(mob/living/carbon/C)
 	. = ..()
 	var/mob/living/carbon/human/H = owner
 	if(H)
@@ -50,7 +50,7 @@
 			H.legs_organ = new /datum/sex_organ/legs(src)
 		sex_organ = H.legs_organ
 
-/obj/item/bodypart/r_leg/Initialize()
+/obj/item/bodypart/r_leg/attach_limb(mob/living/carbon/C)
 	. = ..()
 	var/mob/living/carbon/human/H = owner
 	if(H)

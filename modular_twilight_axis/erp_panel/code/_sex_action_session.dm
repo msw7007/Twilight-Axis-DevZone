@@ -56,7 +56,7 @@
 	if(!I || I != src)
 		return
 
-	if(isnull(session.target.client))
+	if(isnull(session.target))//.client))
 		return session.stop_instance(instance_id)
 
 	if(!session.can_continue_action_session(src))
@@ -76,11 +76,11 @@
 
 	action.show_sex_effects(session.user)
 
-	var/list/pain_deltas = update_organ_response()
+	var/delta = calc_delta()
+	var/list/pain_deltas = update_organ_response(delta)
 	var/self_pain_delta = pain_deltas?["self"] || 0
 	var/target_pain_delta = pain_deltas?["target"] || 0
 
-	var/delta = calc_delta()
 	apply_arousal_delta(delta, self_pain_delta, target_pain_delta)
 
 	session.sync_arousal_ui()
@@ -89,55 +89,92 @@
 	next_tick_time = world.time + do_time
 	timer_id = addtimer(CALLBACK(src, PROC_REF(loop_tick)), world.tick_lag, TIMER_STOPPABLE)
 
-/datum/sex_action_session/proc/update_organ_response()
+/datum/sex_action_session/proc/update_organ_response(delta = 0)
 	if(!session || !action)
 		return list("self" = 0, "target" = 0)
 
 	var/datum/sex_organ/src_org = session.resolve_organ_datum(session.user, actor_node_id)
 	var/datum/sex_organ/tgt_org = session.resolve_organ_datum(session.target, partner_node_id)
 
-	var/self_sens_delta = 0
-	var/self_pain_delta = 0
+	if(delta <= 0)
+		delta = 1
+
+	var/base_sens_self   = delta * 0.10
+	var/base_sens_target = delta * 0.10
+	var/base_pain_self   = delta * 0.10
+	var/base_pain_target = delta * 0.10
+
+	var/self_sens_delta   = 0
+	var/self_pain_delta   = 0
 	var/target_sens_delta = 0
 	var/target_pain_delta = 0
 
+	var/pleasure_mult = 1.0
+	var/pain_mult = 0.0
+
 	switch(force)
 		if(SEX_FORCE_LOW)
-			self_sens_delta += 0.01
-			target_sens_delta += 0.02
+			pleasure_mult = 0.5
+			pain_mult = 0.0
 		if(SEX_FORCE_MID)
-			self_sens_delta += 0.02
-			target_sens_delta += 0.04
+			pleasure_mult = 1.0
+			pain_mult = 0.0
 		if(SEX_FORCE_HIGH)
-			self_sens_delta += 0.03
-			target_sens_delta += 0.06
-			target_pain_delta += 0.02
+			pleasure_mult = 1.25
+			pain_mult = 1.0
 		if(SEX_FORCE_EXTREME)
-			self_sens_delta += 0.04
-			target_sens_delta += 0.08
-			self_pain_delta += 0.01
-			target_pain_delta += 0.03
+			pleasure_mult = 1.5
+			pain_mult = 1.25
 
+	self_sens_delta   = base_sens_self   * pleasure_mult
+	target_sens_delta = base_sens_target * pleasure_mult
+
+	self_pain_delta   = base_pain_self   * pain_mult
+	target_pain_delta = base_pain_target * pain_mult
+
+	var/speed_sens_mult = 1.0
+	var/speed_pain_mult = 1.0
 	switch(speed)
 		if(SEX_SPEED_LOW)
-			self_sens_delta *= 0.8
-			target_sens_delta *= 0.8
+			speed_sens_mult = 0.8
+			speed_pain_mult = 0.8
+		if(SEX_SPEED_MID)
+			speed_sens_mult = 1.0
+			speed_pain_mult = 1.0
 		if(SEX_SPEED_HIGH)
-			self_sens_delta *= 1.2
-			target_sens_delta *= 1.2
+			speed_sens_mult = 1.2
+			speed_pain_mult = 1.2
 		if(SEX_SPEED_EXTREME)
-			self_sens_delta *= 1.4
-			target_sens_delta *= 1.4
-			self_pain_delta *= 1.2
-			target_pain_delta *= 1.2
+			speed_sens_mult = 1.4
+			speed_pain_mult = 1.4
+
+	self_sens_delta   *= speed_sens_mult
+	target_sens_delta *= speed_sens_mult
+	self_pain_delta   *= speed_pain_mult
+	target_pain_delta *= speed_pain_mult
+
+	self_sens_delta   *= ORG_SENS_GAIN_RATE
+	target_sens_delta *= ORG_SENS_GAIN_RATE
+	self_pain_delta   *= ORG_PAIN_GAIN_RATE
+	target_pain_delta *= ORG_PAIN_GAIN_RATE
+
+	var/knot_pain_mult = 0
+	var/mob/living/carbon/human/U = session.user
+	var/mob/living/carbon/human/T = session.target
+	if(U && T)
+		var/datum/component/knotting/K = U.GetComponent(/datum/component/knotting)
+		if(K && K.knotted_status == KNOTTED_AS_TOP && K.knotted_recipient == T)
+			knot_pain_mult = 0.25
+	
+	target_pain_delta += knot_pain_mult
 
 	if(src_org)
 		src_org.sensivity = clamp(src_org.sensivity + self_sens_delta, 0, src_org.sensivity_max)
-		src_org.pain = clamp(src_org.pain + self_pain_delta, 0, src_org.pain_max)
+		src_org.pain      = clamp(src_org.pain      + self_pain_delta, 0, src_org.pain_max)
 
 	if(tgt_org)
 		tgt_org.sensivity = clamp(tgt_org.sensivity + target_sens_delta, 0, tgt_org.sensivity_max)
-		tgt_org.pain = clamp(tgt_org.pain + target_pain_delta, 0, tgt_org.pain_max)
+		tgt_org.pain      = clamp(tgt_org.pain      + target_pain_delta, 0, tgt_org.pain_max)
 
 	return list(
 		"self"   = max(0, self_pain_delta),

@@ -253,6 +253,13 @@
 	if(!R)
 		return 0
 
+	// вот тут подключаем наш множитель
+	var/mult = get_production_multiplier()
+	if(mult <= 0)
+		return 0
+
+	amount *= mult
+
 	var/added = stored_liquid.add_reagent(R.type, amount)
 	if(added > 0)
 		renew_timer(drain_interval)
@@ -342,3 +349,33 @@
 
 	moved = drain_uniform(amount)
 	return moved
+
+/datum/sex_organ/proc/get_arousal_data()
+	var/mob/living/carbon/human/H = get_owner()	
+	if(!H || !ismob(H))
+		return null
+
+	var/list/data = list()
+	SEND_SIGNAL(H, COMSIG_SEX_GET_AROUSAL, data)
+	if(!length(data))
+		return null
+
+	return data
+
+/datum/sex_organ/proc/get_production_multiplier()
+	var/mult = 1.0
+
+	var/list/ad = get_arousal_data()
+	if(!ad)
+		return mult
+
+	if(!ad["is_spent"])
+		return mult
+
+	switch(organ_type)
+		if(SEX_ORGAN_PENIS)
+			return PENIS_SPENT_PROD_MULT
+		if(SEX_ORGAN_BREASTS)
+			return BREAST_SPENT_PROD_MULT
+
+	return mult

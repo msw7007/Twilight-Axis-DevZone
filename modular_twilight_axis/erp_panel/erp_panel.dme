@@ -50,6 +50,7 @@
 #include "code\actions\interaction\vagina\_vagina.dm"
 
 #include "code\actions\interaction\penis\_penis.dm"
+#include "code\actions\interaction\penis\anal_sex.dm"
 
 #include "code\actions\interaction\anus\_anus.dm"
 

@@ -20,7 +20,7 @@
 	/// Whether to check if user is incapacitated
 	var/check_incapacitated = TRUE
 	/// need to be on same tile
-	var/check_same_tile = TRUE
+	var/check_same_tile = FALSE
 	/// Whether this requires a grab
 	var/require_grab = FALSE
 	/// Minimum grab state required
