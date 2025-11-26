@@ -8,7 +8,6 @@
 	var/global_speed = SEX_SPEED_MID
 	var/global_force = SEX_FORCE_MID
 
-	var/frozen = FALSE
 	var/do_until_finished = TRUE
 	var/has_knotted_penis = FALSE
 	var/do_knot_action = FALSE
@@ -28,6 +27,8 @@
 
 	var/yield_to_partner = FALSE
 	var/broadcast_timer_id
+
+	var/arousal_frozen = FALSE
 
 /datum/sex_session_tgui/New(mob/living/carbon/human/U, mob/living/carbon/human/T)
 	. = ..()
@@ -336,7 +337,6 @@
 	D["selected_partner_organ"] = selected_partner_organ_id
 	D["speed"] = global_speed
 	D["force"] = global_force
-	D["actor_arousal"] = clamp(round(actor_arousal_ui), 0, 100)
 
 	if(can_see_partner_arousal())
 		D["partner_arousal"] = clamp(round(partner_arousal_ui), 0, 100)
@@ -345,7 +345,17 @@
 		D["partner_arousal"] = null
 		D["partner_arousal_hidden"] = TRUE
 		
-	D["frozen"] = frozen
+	var/list/ad_user = list()
+	if(src.user)
+		SEND_SIGNAL(src.user, COMSIG_SEX_GET_AROUSAL, ad_user)
+
+	var/cur_u = ad_user["arousal"] || 0
+	var/is_frozen = ad_user["frozen"] || FALSE
+	actor_arousal_ui = min(100, (cur_u / ERP_UI_MAX_AROUSAL) * 100)
+	arousal_frozen = is_frozen
+	D["actor_arousal"] = clamp(round(actor_arousal_ui), 0, 100)
+	D["frozen"] = arousal_frozen
+
 	D["do_until_finished"] = do_until_finished
 	var/can_knot_now = FALSE
 	if(has_knotted_penis && length(current_actions))
@@ -475,11 +485,6 @@
 			SStgui.update_uis(src)
 			return TRUE
 
-		if("freeze_arousal")
-			frozen = !frozen
-			SStgui.update_uis(src)
-			return TRUE
-
 		if("toggle_knot")
 			if(can_toggle_knot())
 				do_knot_action = !do_knot_action
@@ -600,6 +605,17 @@
 		if("flip")
 			if(user)
 				user.sexpanel_flip()
+			SStgui.update_uis(src)
+			return TRUE
+
+		if("freeze_arousal")
+			if(user)
+				SEND_SIGNAL(user, COMSIG_SEX_FREEZE_AROUSAL)
+
+				var/list/ad = list()
+				SEND_SIGNAL(user, COMSIG_SEX_GET_AROUSAL, ad)
+				arousal_frozen = !!ad["frozen"]
+
 			SStgui.update_uis(src)
 			return TRUE
 

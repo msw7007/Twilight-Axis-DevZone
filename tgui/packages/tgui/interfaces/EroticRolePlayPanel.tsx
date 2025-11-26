@@ -386,23 +386,11 @@ const StatusPanel: React.FC<{
                       </Box>
                     </Button>
                   </Stack.Item>
+                  {/* Боль больше не редактируем, просто отображаем при желании */}
                   <Stack.Item>
-                    <Button
-                      inline
-                      compact
-                      color="transparent"
-                      disabled={!canEdit}
-                      onClick={
-                        canEdit
-                          ? () => onEditOrgan(org.id, 'pain')
-                          : undefined
-                      }
-                    >
-                      Боль:{' '}
-                      <Box as="span" color="bad">
-                        {pain}
-                      </Box>
-                    </Button>
+                    <Box color="bad">
+                      Боль: {pain}
+                    </Box>
                   </Stack.Item>
                 </Stack>
               </Stack.Item>
@@ -776,10 +764,12 @@ const ActionsList: React.FC<{
 
 const BottomControls: React.FC<{
   yieldToPartner?: boolean;
+  frozen?: boolean;
   onFlipPose: () => void;
   onStopAll: () => void;
   onToggleYield: () => void;
-}> = ({ yieldToPartner, onFlipPose, onStopAll, onToggleYield }) => (
+  onToggleFreeze: () => void;
+}> = ({ yieldToPartner, frozen, onFlipPose, onStopAll, onToggleYield, onToggleFreeze }) => (
   <Section>
     <Stack justify="center">
       <Stack.Item style={{ marginInline: 4 }}>
@@ -791,6 +781,11 @@ const BottomControls: React.FC<{
       <Stack.Item style={{ marginInline: 4 }}>
         <Button selected={!!yieldToPartner} onClick={onToggleYield}>
           ПОДДАТЬСЯ
+        </Button>
+      </Stack.Item>
+      <Stack.Item style={{ marginInline: 4 }}>
+        <Button selected={!!frozen} onClick={onToggleFreeze}>
+          {frozen ? 'НЕ ВОЗБУЖДАТЬСЯ (ВКЛ)' : 'НЕ ВОЗБУЖДАТЬСЯ'}
         </Button>
       </Stack.Item>
     </Stack>
@@ -964,7 +959,7 @@ export const EroticRolePlayPanel: React.FC = () => {
     const current =
       field === 'sensitivity' ? org?.sensitivity ?? 0 : org?.pain ?? 0;
     const title =
-      field === 'sensitivity' ? 'Чувствительность 0–10' : 'Боль 0–10';
+      field === 'sensitivity' ? 'Чувствительность 0–2' : 'Боль 0–2';
 
     openNumericModal({ kind: 'organ', id, field }, title, current);
   };
@@ -1034,9 +1029,11 @@ export const EroticRolePlayPanel: React.FC = () => {
               <Stack.Item>
                 <BottomControls
                   yieldToPartner={data.yield_to_partner}
+                  frozen={data.frozen}
                   onFlipPose={() => act('flip', { dir: 1 })}
                   onStopAll={() => act('stop_all')}
                   onToggleYield={() => act('quick', { op: 'yield' })}
+                  onToggleFreeze={() => act('freeze_arousal')}
                 />
               </Stack.Item>
 
