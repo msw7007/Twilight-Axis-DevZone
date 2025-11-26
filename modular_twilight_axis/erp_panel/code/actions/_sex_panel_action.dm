@@ -94,13 +94,13 @@
 /datum/sex_panel_action/proc/on_start(mob/living/carbon/human/user, mob/living/carbon/human/target, datum/sex_action_session/new_session)
 	SHOULD_CALL_PARENT(TRUE)
 	session = new_session
-	var/list/orgs = connect_organs(user, target)
-	if(!orgs)
-		return FALSE
-
 	var/message = span_warning(get_start_message(user, target))
 	if(message)
 		user.visible_message(message)
+	
+	var/list/orgs = connect_organs(user, target)
+	if(!orgs)
+		return FALSE	
 
 	return TRUE
 
