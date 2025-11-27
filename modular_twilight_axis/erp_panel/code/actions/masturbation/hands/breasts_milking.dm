@@ -35,7 +35,7 @@
 	return spanify_force(message)
 
 /datum/sex_panel_action/self/hands/milking_breasts/get_finish_message(mob/living/carbon/human/user,mob/living/carbon/human/target)
-	return "[user] прекращается касаться груди."
+	return "[user] прекращает касаться груди."
 
 /datum/sex_panel_action/self/hands/milking_breasts/on_perform(mob/living/carbon/human/user,mob/living/carbon/human/target)
 	. = ..()

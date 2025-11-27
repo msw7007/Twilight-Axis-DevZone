@@ -50,3 +50,28 @@ GLOBAL_LIST_INIT(sex_panel_actions, build_sex_panel_actions())
 		L[key] = A
 
 	return L
+
+/proc/is_sex_toy(obj/item/I)
+	if(!I)
+		return FALSE
+
+	if(istype(I, /obj/item/dildo))
+		return TRUE
+
+	return FALSE
+
+/proc/get_speed_multiplier(s)
+	switch(s)
+		if(SEX_SPEED_LOW) return 1.0
+		if(SEX_SPEED_MID) return 1.5
+		if(SEX_SPEED_HIGH) return 2.0
+		if(SEX_SPEED_EXTREME) return 2.5
+	return 1.0
+
+/proc/get_stamina_cost_multiplier(f)
+	switch(f)
+		if(SEX_FORCE_LOW) return 1.0
+		if(SEX_FORCE_MID) return 1.5
+		if(SEX_FORCE_HIGH) return 2.0
+		if(SEX_FORCE_EXTREME) return 2.5
+	return 1.0

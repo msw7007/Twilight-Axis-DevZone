@@ -588,6 +588,7 @@
 
 			SStgui.update_uis(src)
 			return TRUE
+			
 		if("set_link_tuning")
 			var/id = params["id"]
 			var/field = params["field"]
@@ -644,7 +645,7 @@
 				P.set_manual_erect_state(ERECT_STATE_PARTIAL)
 			else if(target_state == "hard")
 				P.set_manual_erect_state(ERECT_STATE_HARD)
-			
+
 			SStgui.update_uis(src)
 			return TRUE
 

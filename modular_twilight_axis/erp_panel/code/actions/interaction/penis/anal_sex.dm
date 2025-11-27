@@ -16,7 +16,7 @@
 
 /datum/sex_panel_action/other/penis/anal_sex/get_perform_message(mob/living/carbon/human/user, mob/living/carbon/human/target)
 	var/pose_state = get_pose_key(user, target)
-	var/message = "[user] [get_pose_text(pose_state)], [get_force_text()] и [get_speed_text()] трахает [target] в задницу."
+	var/message = "[user] [get_pose_text(pose_state)], [get_force_text()] и [get_speed_text()] трахает [target] в задницу [get_knot_action(user, target)]."
 	return spanify_force(message)
 
 /datum/sex_panel_action/other/penis/anal_sex/get_finish_message(mob/living/carbon/human/user, mob/living/carbon/human/target)
