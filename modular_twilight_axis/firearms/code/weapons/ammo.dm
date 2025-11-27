@@ -321,7 +321,6 @@
 	possible_item_intents = list(/datum/intent/use)
 	max_integrity = 0
 	w_class = WEIGHT_CLASS_TINY
-	smeltresult = /obj/item/rogueore/iron
 
 /obj/item/ammo_casing/caseless/twilight_lead/runelock/Initialize()
 	. = ..()
