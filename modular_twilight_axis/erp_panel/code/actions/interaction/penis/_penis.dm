@@ -9,7 +9,7 @@
 	var/active_knot = FALSE
 
 /datum/sex_panel_action/other/penis/handle_climax_message(mob/living/carbon/human/user, mob/living/carbon/human/target)
-	var/message = span_love("[user] кончает в ")
+	var/message = span_love("[user] кончает ")
 	return message
 
 /datum/sex_panel_action/other/penis/proc/get_knot_action()

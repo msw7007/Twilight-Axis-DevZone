@@ -252,3 +252,28 @@
 			return "<span class='love_high'>[string]</span>"
 		if(SEX_FORCE_EXTREME)
 			return "<span class='love_extreme'>[string]</span>"
+
+/datum/sex_panel_action/proc/get_target_zone(mob/living/user)
+	var/list/zone_translations = list(
+		BODY_ZONE_HEAD = "голову",
+		BODY_ZONE_CHEST = "туловище",
+		BODY_ZONE_R_ARM = "правую руку",
+		BODY_ZONE_L_ARM = "левую руку",
+		BODY_ZONE_R_LEG = "правую ногу",
+		BODY_ZONE_L_LEG = "левую ногу",
+		BODY_ZONE_PRECISE_R_INHAND = "правую ладонь",
+		BODY_ZONE_PRECISE_L_INHAND = "левую ладонь",
+		BODY_ZONE_PRECISE_R_FOOT = "правую ступню",
+		BODY_ZONE_PRECISE_L_FOOT = "левую ступню",
+		BODY_ZONE_PRECISE_SKULL = "череп",
+		BODY_ZONE_PRECISE_EARS = "уши",
+		BODY_ZONE_PRECISE_R_EYE = "правый глаз",
+		BODY_ZONE_PRECISE_L_EYE = "левый глаз",
+		BODY_ZONE_PRECISE_NOSE = "нос",
+		BODY_ZONE_PRECISE_MOUTH = "рот",
+		BODY_ZONE_PRECISE_NECK = "шею",
+		BODY_ZONE_PRECISE_STOMACH = "живот",
+		BODY_ZONE_PRECISE_GROIN = "пах"
+	)
+	var/ru_zone_selected = zone_translations[user.zone_selected]
+	return ru_zone_selected

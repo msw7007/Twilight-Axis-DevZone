@@ -20,7 +20,7 @@
 	return spanify_force(message)
 
 /datum/sex_panel_action/other/penis/anal_sex/get_finish_message(mob/living/carbon/human/user, mob/living/carbon/human/target)
-	return "[user] вытаскивает член попки [target]."
+	return "[user] вытаскивает член из попки [target]."
 
 /datum/sex_panel_action/other/penis/anal_sex/on_perform(mob/living/carbon/human/user, mob/living/carbon/human/target)
 	. = ..()
@@ -33,7 +33,7 @@
 	if(!islist(result))
 		result = list(result)
 
-	result += "анус [target]"
+	result += "в анус [target]"
 	var/message = span_love(result.Join("\n"))
 	return message
 
