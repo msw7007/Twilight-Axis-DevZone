@@ -570,6 +570,10 @@ GLOBAL_LIST_EMPTY(loadout_items_by_category)
 	category = "Аксессуары"
 	path = /obj/item/clothing/head/roguetown/dendormask
 
+/datum/loadout_item/eorahood
+	name = "Opera Mask - Eoran Hood"
+	path = /obj/item/clothing/head/roguetown/roguehood/eorahood
+
 /datum/loadout_item/exoticsilkmask
 	name = "Exotic Silk Mask"
 	category = "Аксессуары"
@@ -675,6 +679,10 @@ GLOBAL_LIST_EMPTY(loadout_items_by_category)
 	category = "Аксессуары"
 	path = /obj/item/clothing/neck/roguetown/psicross/abyssor
 
+/datum/loadout_item/psicross/xylix
+	name = "Amulet of Xylix"
+	path = /obj/item/clothing/neck/roguetown/psicross/xylix
+
 /datum/loadout_item/psicross/dendor
 	name = "Amulet of Dendor"
 	category = "Аксессуары"
@@ -718,6 +726,14 @@ GLOBAL_LIST_EMPTY(loadout_items_by_category)
 /datum/loadout_item/zcross_iron
 	name = "Iron Zcross"
 	path = /obj/item/clothing/neck/roguetown/psicross/inhumen/iron
+
+/datum/loadout_item/psicross/matthios
+	name = "Amulet of Matthios"
+	path = /obj/item/clothing/neck/roguetown/psicross/inhumen/matthios
+
+/datum/loadout_item/psicross/graggar
+	name = "Amulet of Graggar"
+	path = /obj/item/clothing/neck/roguetown/psicross/inhumen/graggar
 
 /datum/loadout_item/wedding_band
 	name = "silver wedding band"
@@ -994,6 +1010,12 @@ GLOBAL_LIST_EMPTY(loadout_items_by_category)
 	path = /obj/item/clothing/suit/roguetown/shirt/twilight_elven/coat/alt
 	donatitem = TRUE
 
+/datum/loadout_item/donat/maid_dress
+	name = "Платье горничной"
+	category = list("Одежда", "Донат")
+	path = /obj/item/clothing/suit/roguetown/shirt/dress/maid
+	donatitem = TRUE
+
 // Табарды и плащи
 
 /datum/loadout_item/donat/matron
@@ -1110,6 +1132,12 @@ GLOBAL_LIST_EMPTY(loadout_items_by_category)
 	path = /obj/item/clothing/cloak/twilight_elven/short
 	donatitem = TRUE
 
+/datum/loadout_item/donat/maid_apron
+	name = "Фартук горничной"
+	category = list("Плащи", "Донат")
+	path = /obj/item/clothing/cloak/apron/waist/maid
+	donatitem = TRUE
+
 /datum/loadout_item/donat/scarf
 	name = "Шарф"
 	category = list("Аксессуары", "Донат")
@@ -1189,4 +1217,10 @@ GLOBAL_LIST_EMPTY(loadout_items_by_category)
 	name = "Шляпа мага(черная)"
 	category = list("Головные уборы", "Донат")
 	path = /obj/item/clothing/head/roguetown/wizhat/black
+	donatitem = TRUE
+
+/datum/loadout_item/donat/maid_headdress
+	name = "Чепчик горничной"
+	category = list("Головные уборы", "Донат")
+	path = /obj/item/clothing/head/roguetown/maidhead
 	donatitem = TRUE

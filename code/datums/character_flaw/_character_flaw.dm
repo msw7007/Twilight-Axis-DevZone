@@ -17,6 +17,7 @@ GLOBAL_LIST_INIT(character_flaws, list(
 	"Bad Sight"=/datum/charflaw/badsight,
 	"Cyclops (R)"=/datum/charflaw/noeyer,
 	"Cyclops (L)"=/datum/charflaw/noeyel,
+	"Blindness"=/datum/charflaw/noeyeall,
 	"Wood Arm (R)"=/datum/charflaw/limbloss/arm_r,
 	"Wood Arm (L)"=/datum/charflaw/limbloss/arm_l,
 	"Sleepless"=/datum/charflaw/sleepless,
@@ -258,6 +259,22 @@ GLOBAL_LIST_INIT(character_flaws, list(
 		H.equip_to_slot_or_del(new /obj/item/clothing/mask/rogue/eyepatch/left(H), SLOT_WEAR_MASK)
 	var/obj/item/bodypart/head/head = H.get_bodypart(BODY_ZONE_HEAD)
 	head?.add_wound(/datum/wound/facial/eyes/left/permanent)
+	H.update_fov_angles()
+
+/datum/charflaw/noeyeall
+	name = "Blindness"
+	desc = "I lost both of my eyes long ago."
+
+/datum/charflaw/noeyeall/on_mob_creation(mob/user)
+	..()
+	if(!ishuman(user))
+		return
+	var/mob/living/carbon/human/H = user
+	if(!H.wear_mask)
+		H.equip_to_slot_or_del(new /obj/item/clothing/glasses/blindfold(H), SLOT_WEAR_MASK)
+	var/obj/item/bodypart/head/head = H.get_bodypart(BODY_ZONE_HEAD)
+	head?.add_wound(/datum/wound/facial/eyes/left/permanent)
+	head?.add_wound(/datum/wound/facial/eyes/right/permanent)
 	H.update_fov_angles()
 
 /datum/charflaw/colorblind

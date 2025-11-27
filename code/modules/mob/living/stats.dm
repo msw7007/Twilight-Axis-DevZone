@@ -225,6 +225,8 @@
 			while(newamt > 20)
 				newamt--
 				BUFEND++
+
+			pain_threshold += amt * 10
 			STAWIL = newamt
 
 		if(STATKEY_SPD)

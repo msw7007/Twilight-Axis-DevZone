@@ -1,9 +1,8 @@
 /mob/living/carbon/Initialize()
 	..()
 
-	pain_threshold = HAS_TRAIT(src, TRAIT_ADRENALINE_RUSH) ? ((STAWIL + 5) * 10) : (STAWIL * 10)
-	if(has_flaw(/datum/charflaw/addiction/masochist)) // Masochists handle pain better by about 1 endurance point
-		pain_threshold += 10
+	pain_threshold = STAWIL * 10
+
 	if(HAS_TRAIT(src, TRAIT_NOPAIN))
 		pain_threshold = 250
 
@@ -599,7 +598,6 @@
 
 /mob/living/carbon
 	var/nausea = 0
-	var/pain_threshold = 0
 	var/bleeding_tier = 0 
 
 /mob/living/carbon/proc/add_nausea(amt)
