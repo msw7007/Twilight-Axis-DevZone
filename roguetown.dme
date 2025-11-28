@@ -2924,6 +2924,7 @@
 #include "modular_twilight_axis\code\modules\surgery\organs\feature_organs\tails.dm"
 #include "modular_twilight_axis\code\modules\surgery\organs\feature_organs\wings.dm"
 #include "modular_twilight_axis\code\onclick\click.dm"
+#include "modular_twilight_axis\erp_panel\code\actions\interaction\legs\teasing.dm"
 #include "modular_twilight_axis\firearms\code\clothes\feet.dm"
 #include "modular_twilight_axis\firearms\code\clothes\hats.dm"
 #include "modular_twilight_axis\firearms\code\craft\artificer_recipes.dm"
