@@ -35,6 +35,11 @@
 #define BREAST_SPENT_PROD_MULT 1.5
 #define PENIS_SPENT_PROD_MULT 0.0
 
+#define INJECT_MODE_NONE      0
+#define INJECT_MODE_ORGAN     1
+#define INJECT_MODE_CONTAINER 2
+#define INJECT_MODE_GROUND    3
+
 GLOBAL_LIST_INIT(sex_panel_actions, build_sex_panel_actions())
 
 #define SEX_PANEL_ACTION(sex_action_type) (GLOB.sex_panel_actions[sex_action_type])

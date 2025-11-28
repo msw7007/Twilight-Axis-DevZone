@@ -318,11 +318,15 @@
 		amount = 5
 
 	var/moved = 0
+	var/mode = INJECT_MODE_NONE
+
 	if(active_target && active_target.has_storage())
 		if(active_target.can_receive_liquid(amount))
 			moved = stored_liquid.trans_to(active_target.stored_liquid, amount)
 			if(moved > 0)
 				active_target.renew_timer(drain_interval)
+				mode = INJECT_MODE_ORGAN
+				on_after_inject(mode, moved, get_owner(), active_target, null, null)
 				return moved
 
 	var/obj/item/container = find_liquid_container()
@@ -338,17 +342,40 @@
 		if(R)
 			moved = stored_liquid.trans_to(R, amount)
 			if(moved > 0)
+				mode = INJECT_MODE_CONTAINER
+				on_after_inject(mode, moved, get_owner(), active_target, container, null)
 				return moved
 
 	var/mob/living/carbon/human/H = get_owner()
 	var/turf/T = H ? get_turf(H) : (organ_link ? get_turf(organ_link) : null)
+
 	if(T)
 		new /obj/effect/decal/cleanable/coom(T)
 		moved = drain_uniform(amount)
-		return moved
+		if(moved > 0)
+			mode = INJECT_MODE_GROUND
+			on_after_inject(mode, moved, H, active_target, null, T)
+			return moved
 
 	moved = drain_uniform(amount)
+	if(moved > 0)
+		on_after_inject(mode, moved, H, active_target, null, T)
+
 	return moved
+
+/datum/sex_organ/proc/on_after_inject(mode, moved, mob/living/carbon/human/owner, datum/sex_organ/target_org, obj/item/container, turf/T, context)
+	if(moved <= 0)
+		return
+
+	if(mode == INJECT_MODE_ORGAN && target_org)
+		var/mob/living/carbon/human/target = target_org.get_owner()
+
+		if(target && target_org.organ_type == SEX_ORGAN_MOUTH)
+			var/datum/reagents/R = stored_liquid
+			if(R && R.total_volume)
+				target.reagents.add_reagent(producing_reagent_id, moved)
+
+	return
 
 /datum/sex_organ/proc/get_arousal_data()
 	var/mob/living/carbon/human/H = get_owner()	

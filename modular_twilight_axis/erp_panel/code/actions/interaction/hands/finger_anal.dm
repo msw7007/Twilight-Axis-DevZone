@@ -1,7 +1,7 @@
 /datum/sex_panel_action/other/hands/rubbing
 	abstract_type = FALSE
 	name = "Фингеринг ануса"
-	required_target = SEX_ORGAN_ANAL
+	required_target = SEX_ORGAN_ANUS
 	stamina_cost = 0.05
 	affects_self_arousal = 0.06
 	affects_arousal      = 0.04

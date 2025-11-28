@@ -67,9 +67,7 @@
 
 /datum/component/arousal/ejaculate()
 	var/mob/living/carbon/human/mob = parent
-
 	var/list/parent_sessions = return_sessions_with_user_tgui(mob)
-
 	var/datum/sex_action_session/highest_priority = null
 	var/best_score = -1
 

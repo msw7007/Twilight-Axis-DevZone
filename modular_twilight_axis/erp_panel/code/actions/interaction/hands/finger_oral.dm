@@ -1,7 +1,7 @@
 /datum/sex_panel_action/other/hands/rubbing
 	abstract_type = FALSE
 	name = "Пустить пальцы в рот"
-	required_target = SEX_ORGAN_ORAL
+	required_target = SEX_ORGAN_MOUTH
 	stamina_cost = 0.05
 	affects_self_arousal = 0.06
 	affects_arousal      = 0.04
