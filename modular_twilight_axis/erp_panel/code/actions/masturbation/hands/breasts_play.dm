@@ -2,7 +2,7 @@
 	abstract_type = FALSE
 
 	name = "Лапать грудь"
-	required_target = SEX_ORGAN_breasts_play
+	required_target = SEX_ORGAN_BREASTS
 	armor_slot_lock = BODY_ZONE_PRECISE_STOMACH
 
 	affects_self_arousal = 0.1

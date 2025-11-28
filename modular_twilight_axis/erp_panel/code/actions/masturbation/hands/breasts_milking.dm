@@ -34,7 +34,7 @@
 /datum/sex_panel_action/self/hands/milking_breasts/get_perform_message(mob/living/carbon/human/user,mob/living/carbon/human/target)
 	var/pose_state = get_pose_key(user, target)
 	var/message = "[user] [get_pose_text(pose_state)], [get_force_text()] и [get_speed_text()] выжимает свою грудь."
-	prob(MILKING_BREAST_PROBABILITY)
+	if(prob(MILKING_BREAST_PROBABILITY))
 		breast_ref.inject_liquid()
 		user.visible_message("Я чувствую, как молоко покидает мою грудь.")
 	return spanify_force(message)

@@ -7,6 +7,23 @@
 	affects_arousal      = 0.04
 	affects_self_pain    = 0.01
 	affects_pain         = 0.01
+	var/datum/sex_organ/breasts/breast_ref
+
+/datum/sex_panel_action/other/hands/milking_breasts/can_perform(mob/living/carbon/human/user, mob/living/carbon/human/target)
+	. = ..()
+	if(!.)
+		return FALSE
+
+	var/datum/sex_session_tgui/SS = get_or_create_sex_session_tgui(user, target)
+	if(SS)
+		var/datum/sex_organ/O = SS.resolve_organ_datum(user, "breasts")
+		if(O)
+			breast_ref = O
+			var/obj/item/container = O.find_liquid_container()
+			if(container)
+				return TRUE
+
+	return FALSE
 
 /datum/sex_panel_action/other/hands/milking_breasts/get_start_message(mob/living/carbon/human/user, mob/living/carbon/human/target)
 	var/pose_state = get_pose_key(user, target)
@@ -15,7 +32,7 @@
 /datum/sex_panel_action/other/hands/milking_breasts/get_perform_message(mob/living/carbon/human/user, mob/living/carbon/human/target)
 	var/pose_state = get_pose_key(user, target)
 	var/message = "[user] [get_pose_text(pose_state)], [get_force_text()] и [get_speed_text()] водит руками по сиськам [target]."
-	prob(MILKING_BREAST_PROBABILITY)
+	if(prob(MILKING_BREAST_PROBABILITY))
 		breast_ref.inject_liquid()
 		target.visible_message("Я чувствую, как молоко покидает мою грудь.")
 		user.visible_message("Я чувствую, как соски [target] выплескивают молоко.")
