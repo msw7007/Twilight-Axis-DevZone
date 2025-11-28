@@ -9,6 +9,7 @@
 	affects_arousal      = 0
 	affects_self_pain    = 0.01
 	affects_pain         = 0
+	var/datum/sex_organ/breasts/breast_ref
 
 /datum/sex_panel_action/self/hands/milking_breasts/can_perform(mob/living/carbon/human/user, mob/living/carbon/human/target)
 	. = ..()
@@ -19,6 +20,7 @@
 	if(SS)
 		var/datum/sex_organ/O = SS.resolve_organ_datum(user, "breasts")
 		if(O)
+			breast_ref = O
 			var/obj/item/container = O.find_liquid_container()
 			if(container)
 				return TRUE
@@ -32,6 +34,9 @@
 /datum/sex_panel_action/self/hands/milking_breasts/get_perform_message(mob/living/carbon/human/user,mob/living/carbon/human/target)
 	var/pose_state = get_pose_key(user, target)
 	var/message = "[user] [get_pose_text(pose_state)], [get_force_text()] и [get_speed_text()] выжимает свою грудь."
+	prob(MILKING_BREAST_PROBABILITY)
+		breast_ref.inject_liquid()
+		user.visible_message("Я чувствую, как молоко покидает мою грудь.")
 	return spanify_force(message)
 
 /datum/sex_panel_action/self/hands/milking_breasts/get_finish_message(mob/living/carbon/human/user,mob/living/carbon/human/target)
