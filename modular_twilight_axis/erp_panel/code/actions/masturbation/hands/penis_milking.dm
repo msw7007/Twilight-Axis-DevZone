@@ -1,4 +1,4 @@
-/datum/sex_panel_action/self/hands/milking_penis
+/datum/sex_panel_action/self/hands/penis_milking
 	abstract_type = FALSE
 
 	name = "Доение члена"
@@ -10,7 +10,7 @@
 	affects_self_pain    = 0.01
 	affects_pain         = 0
 
-/datum/sex_panel_action/self/hands/milking_penis/can_perform(mob/living/carbon/human/user, mob/living/carbon/human/target)
+/datum/sex_panel_action/self/hands/penis_milking/can_perform(mob/living/carbon/human/user, mob/living/carbon/human/target)
 	. = ..()
 	if(!.)
 		return FALSE
@@ -25,25 +25,25 @@
 
 	return FALSE
 
-/datum/sex_panel_action/self/hands/milking_penis/get_start_message(mob/living/carbon/human/user, mob/living/carbon/human/target)
+/datum/sex_panel_action/self/hands/penis_milking/get_start_message(mob/living/carbon/human/user, mob/living/carbon/human/target)
 	var/pose_state = get_pose_key(user, target)
 	return "[user] [get_pose_text(pose_state)] берёт свой член в руку."
 
-/datum/sex_panel_action/self/hands/milking_penis/get_perform_message(mob/living/carbon/human/user, mob/living/carbon/human/target)
+/datum/sex_panel_action/self/hands/penis_milking/get_perform_message(mob/living/carbon/human/user, mob/living/carbon/human/target)
 	var/pose_state = get_pose_key(user, target)
 	var/message = "[user] [get_pose_text(pose_state)], [get_force_text()] и [get_speed_text()] мастурбирует рукой свой член."
 	return spanify_force(message)
 
-/datum/sex_panel_action/self/hands/milking_penis/get_finish_message(mob/living/carbon/human/user, mob/living/carbon/human/target)
+/datum/sex_panel_action/self/hands/penis_milking/get_finish_message(mob/living/carbon/human/user, mob/living/carbon/human/target)
 	return "[user] ослабляет хватку и останавливается."
 
-/datum/sex_panel_action/self/hands/milking_penis/on_perform(mob/living/carbon/human/user, mob/living/carbon/human/target)
+/datum/sex_panel_action/self/hands/penis_milking/on_perform(mob/living/carbon/human/user, mob/living/carbon/human/target)
 	. = ..()
 
 	do_onomatopoeia(user)
 	show_sex_effects(user)
 
-/datum/sex_panel_action/self/hands/milking_penis/handle_climax_message(mob/living/carbon/human/user, mob/living/carbon/human/target)
+/datum/sex_panel_action/self/hands/penis_milking/handle_climax_message(mob/living/carbon/human/user, mob/living/carbon/human/target)
 	. = ..()
 	var/datum/sex_session_tgui/SS = get_or_create_sex_session_tgui(user, target)
 	if(SS)
