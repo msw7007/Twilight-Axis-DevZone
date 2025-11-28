@@ -16,6 +16,10 @@
 /datum/sex_panel_action/other/breasts/breast_feed/get_perform_message(mob/living/carbon/human/user, mob/living/carbon/human/target)
 	var/pose_state = get_pose_key(user, target)
 	var/message = "[user] [get_pose_text(pose_state)], [get_force_text()] и [get_speed_text()] насильно водит лицом [target] по своей груди."
+	prob(MILKING_BREAST_PROBABILITY)
+		breast_ref.inject_liquid()
+		user.visible_message("Я чувствую, как молоко покидает мою грудь.")
+		target.visible_message("Я чувствую, как соски [target] выплескивают молоко мне в рот!")
 	return spanify_force(message)
 
 /datum/sex_panel_action/other/breasts/breast_feed/get_finish_message(mob/living/carbon/human/user, mob/living/carbon/human/target)

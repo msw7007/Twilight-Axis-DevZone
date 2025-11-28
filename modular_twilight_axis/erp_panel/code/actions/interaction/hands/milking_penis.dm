@@ -25,3 +25,13 @@
 
 	do_onomatopoeia(user)
 	show_sex_effects(user)
+
+/datum/sex_panel_action/other/hands/milking_penis/handle_climax_message(mob/living/carbon/human/user, mob/living/carbon/human/target)
+	. = ..()
+	var/datum/sex_session_tgui/SS = get_or_create_sex_session_tgui(user, target)
+	if(SS)
+		var/datum/sex_organ/O = SS.resolve_organ_datum(user, "genital_p")
+		if(O)
+			O.inject_liquid()
+			target.visible_message("Я чувствую, как моё семя выплескивается наружу!")
+			user.visible_message("Я чувствую, как семя [target] выплескивается наружу!")

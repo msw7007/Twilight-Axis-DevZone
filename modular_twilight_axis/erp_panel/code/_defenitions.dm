@@ -40,6 +40,8 @@
 #define INJECT_MODE_CONTAINER 2
 #define INJECT_MODE_GROUND    3
 
+#define MILKING_BREAST_PROBABILITY 33
+
 GLOBAL_LIST_INIT(sex_panel_actions, build_sex_panel_actions())
 
 #define SEX_PANEL_ACTION(sex_action_type) (GLOB.sex_panel_actions[sex_action_type])

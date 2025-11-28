@@ -50,3 +50,4 @@
 		var/datum/sex_organ/O = SS.resolve_organ_datum(user, "genital_p")
 		if(O)
 			O.inject_liquid()
+			user.visible_message("Я чувствую, как семя выплескивается наружу!")
