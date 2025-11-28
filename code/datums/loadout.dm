@@ -171,16 +171,16 @@ GLOBAL_LIST_EMPTY(loadout_items_by_category)
 /datum/loadout_item/surcoat
 	name = "Surcoat"
 	category = "Плащи"
-	path = /obj/item/clothing/cloak/stabard
+	path = /obj/item/clothing/cloak/tabard/stabard
 
 /datum/loadout_item/jupon
 	name = "Jupon"
 	category = "Плащи"
-	path = /obj/item/clothing/cloak/stabard/surcoat
+	path = /obj/item/clothing/cloak/tabard/stabard/surcoat
 
 /datum/loadout_item/jupon_short
 	name = "Short Jupon"
-	path = /obj/item/clothing/cloak/stabard/surcoat/short
+	path = /obj/item/clothing/cloak/tabard/stabard/surcoat/short
 
 /datum/loadout_item/cape
 	name = "Cape"
@@ -1075,7 +1075,7 @@ GLOBAL_LIST_EMPTY(loadout_items_by_category)
 /datum/loadout_item/donat/tabard/abyssor
 	name = "Табард-плащ Абиссора"
 	category = list("Плащи", "Донат")
-	path = /obj/item/clothing/cloak/abyssortabard
+	path = /obj/item/clothing/cloak/tabard/abyssortabard
 	donatitem = TRUE
 
 /datum/loadout_item/donat/tabard/crusader/ravox
@@ -1105,7 +1105,7 @@ GLOBAL_LIST_EMPTY(loadout_items_by_category)
 /datum/loadout_item/donat/tabard/crusader/psydon
 	name = "Табард Псайдона"
 	category = list("Плащи", "Донат")
-	path = /obj/item/clothing/cloak/psydontabard
+	path = /obj/item/clothing/cloak/tabard/psydontabard
 	donatitem = TRUE
 
 /datum/loadout_item/poncho
