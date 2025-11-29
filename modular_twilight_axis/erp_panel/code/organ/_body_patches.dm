@@ -97,3 +97,36 @@
 	. = ..()
 	if(!sex_organ)
 		sex_organ = new /datum/sex_organ/anus(src)
+
+/obj/item/bodypart/head/dullahan/Initialize()
+	. = ..()
+	if(!sex_organ)
+		sex_organ = new /datum/sex_organ/mouth(src)
+
+/obj/item/bodypart/head/dullahan/MiddleMouseDrop_T(atom/movable/dragged, mob/living/user)
+	var/mob/living/carbon/human/target = src.original_owner
+	if(user.mmb_intent)
+		return ..()
+
+	if(!istype(dragged))
+		return
+	if(dragged != user)
+		return
+
+	if(!user.can_do_sex())
+		to_chat(user, "<span class='warning'>I can't do this.</span>")
+		return
+	if(!user.client?.prefs?.sexable)
+		to_chat(user, "<span class='warning'>I don't want to touch [target]. (Your ERP preference, in the options)</span>")
+		return
+	if(!target.client || !target.client.prefs)
+		to_chat(user, span_warning("[target] is simply not there. I can't do this."))
+		log_combat(user, target, "tried ERP menu against d/ced")
+		return
+	if(!target.client.prefs.sexable)
+		to_chat(user, "<span class='warning'>[target] doesn't want to be touched. (Their ERP preference, in the options)</span>")
+		to_chat(target, "<span class='warning'>[user] failed to touch you. (Your ERP preference, in the options)</span>")
+		log_combat(user, target, "tried unwanted ERP menu against")
+		return
+
+	user.start_sex_session_with_dullahan_head(src)

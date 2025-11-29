@@ -2,6 +2,9 @@
 	var/mob/living/carbon/human/user
 	var/mob/living/carbon/human/target
 
+	/// Опциональный оверрайд для партнёра: отдельный бодипарт (например, голова дулахана)
+	var/obj/item/bodypart/partner_bodypart_override
+
 	var/selected_actor_organ_id
 	var/selected_partner_organ_id
 
@@ -48,6 +51,26 @@
 	if(target && target != user)
 		RegisterSignal(target, COMSIG_MOVABLE_MOVED, PROC_REF(on_moved))
 
+/datum/sex_session_tgui/Destroy()
+	if(user)
+		user.set_sex_surrender_to(null)
+		UnregisterSignal(user, list(COMSIG_SEX_CLIMAX, COMSIG_SEX_AROUSAL_CHANGED))
+		UnregisterSignal(user, list(COMSIG_SEX_CLIMAX, COMSIG_SEX_AROUSAL_CHANGED, COMSIG_MOVABLE_MOVED))
+	if(target && target != user)
+		UnregisterSignal(target, COMSIG_SEX_AROUSAL_CHANGED)
+		UnregisterSignal(target, list(COMSIG_SEX_AROUSAL_CHANGED, COMSIG_MOVABLE_MOVED))
+
+	partner_bodypart_override = null
+
+	for(var/id in current_actions)
+		var/datum/sex_action_session/I = current_actions[id]
+		if(I)
+			qdel(I)
+	current_actions.Cut()
+	locked_actor_categories.Cut()
+	partners.Cut()
+	return ..()
+
 /datum/sex_session_tgui/proc/update_knotted_penis_flag()
 	has_knotted_penis = FALSE
 	if(!user)
@@ -61,25 +84,6 @@
 		if(PENIS_TYPE_KNOTTED, PENIS_TYPE_TAPERED_DOUBLE_KNOTTED, PENIS_TYPE_BARBED_KNOTTED)
 			has_knotted_penis = TRUE
 
-/datum/sex_session_tgui/Destroy()
-	if(user)
-		user.set_sex_surrender_to(null)
-		UnregisterSignal(user, list(COMSIG_SEX_CLIMAX, COMSIG_SEX_AROUSAL_CHANGED))
-		UnregisterSignal(user, list(COMSIG_SEX_CLIMAX, COMSIG_SEX_AROUSAL_CHANGED, COMSIG_MOVABLE_MOVED))
-	if(target && target != user)
-		UnregisterSignal(target, COMSIG_SEX_AROUSAL_CHANGED)
-		UnregisterSignal(target, list(COMSIG_SEX_AROUSAL_CHANGED, COMSIG_MOVABLE_MOVED))
-		
-
-	for(var/id in current_actions)
-		var/datum/sex_action_session/I = current_actions[id]
-		if(I)
-			qdel(I)
-	current_actions.Cut()
-	locked_actor_categories.Cut()
-	partners.Cut()
-	return ..()
-
 /datum/sex_session_tgui/proc/add_partner(mob/living/carbon/human/M)
 	if(!M || M == user)
 		return
@@ -90,7 +94,24 @@
 	if(!current_partner_ref)
 		current_partner_ref = REF(M)
 
+/// Нормализованный вывод имени партнёра
+/datum/sex_session_tgui/proc/get_partner_display_name(mob/living/carbon/human/M)
+	if(partner_bodypart_override && M && M == target)
+		if(istype(partner_bodypart_override, /obj/item/bodypart/head/dullahan))
+			return "Голова [M.name]"
+		return "[partner_bodypart_override.name] ([M.name])"
+
+	return M?.name || "—"
+
+/// Сеттер для оверрайда-бодипарта
+/datum/sex_session_tgui/proc/set_partner_bodypart_override(obj/item/bodypart/B)
+	partner_bodypart_override = B
+
 /datum/sex_session_tgui/proc/build_org_nodes(mob/living/carbon/human/M, side)
+	// Если партнёрская сторона и есть оверрайд-бодипарт — строим узлы по нему
+	if(side == "partner" && partner_bodypart_override)
+		return build_org_nodes_for_bodypart(partner_bodypart_override, side)
+
 	var/list/out = list()
 	out += list(list("id" = SEX_ORGAN_FILTER_BODY, "name" = "Тело", "busy" = FALSE, "side" = side))
 
@@ -180,6 +201,21 @@
 
 	return out
 
+/// Узлы для отдельного бодипарта (голова и т.п.)
+/datum/sex_session_tgui/proc/build_org_nodes_for_bodypart(obj/item/bodypart/B, side)
+	var/list/out = list()
+	out += list(list("id" = SEX_ORGAN_FILTER_BODY, "name" = "Тело", "busy" = FALSE, "side" = side))
+
+	if(istype(B, /obj/item/bodypart/head) || istype(B, /obj/item/bodypart/head/dullahan))
+		out += list(list(
+			"id"   = SEX_ORGAN_FILTER_MOUTH,
+			"name" = "Рот",
+			"busy" = FALSE,
+			"side" = side,
+		))
+
+	return out
+
 /datum/sex_session_tgui/proc/category_of_actor_node(id)
 	switch(id)
 		if(SEX_ORGAN_FILTER_MOUTH)
@@ -202,31 +238,31 @@
 	return (category in locked_actor_categories)
 
 /datum/sex_session_tgui/proc/slot_available_for(id)
-    var/cat = category_of_actor_node(id)
-    if(!cat)
-        return FALSE
-    return !is_locked(cat)
+	var/cat = category_of_actor_node(id)
+	if(!cat)
+		return FALSE
+	return !is_locked(cat)
 
 /datum/sex_session_tgui/proc/actions_for_menu()
 	var/list/actions = list()
 
-	for (var/key in GLOB.sex_panel_actions)
+	for(var/key in GLOB.sex_panel_actions)
 		var/datum/sex_panel_action/A = GLOB.sex_panel_actions[key]
-		if (!A)
+		if(!A)
 			continue
-		if (!A.shows_on_menu(user, target))
+		if(!A.shows_on_menu(user, target))
 			continue
 
-		if (A.required_init || A.required_target)
-			if (!user)
+		if(A.required_init || A.required_target)
+			if(!user)
 				continue
 
 			var/mob/living/carbon/human/U = user
 			var/mob/living/carbon/human/T = target ? target : user
-
-			var/list/orgs = A.get_action_organs(U, T, FALSE, FALSE)
-			if (!orgs)
-				continue
+			if(!(partner_bodypart_override && A.required_target == SEX_ORGAN_MOUTH))
+				var/list/orgs = A.get_action_organs(U, T, FALSE, FALSE)
+				if(!orgs)
+					continue
 
 		actions += list(list(
 			"name" = A.name,
@@ -244,7 +280,11 @@
 	if(A.check_incapacitated && user.incapacitated())
 		return FALSE
 
-	var/dist = get_dist(user, target)
+	var/atom/real_target = target
+	if(partner_bodypart_override)
+		real_target = partner_bodypart_override
+
+	var/dist = get_dist(user, real_target)
 	if(dist > 1)
 		return FALSE
 
@@ -254,6 +294,7 @@
 			return FALSE
 
 	if(A.require_grab)
+		// Граб логически завязан на моба, поэтому оставляем target, не бодипарт
 		var/grabstate = user.get_highest_grab_state_on(target)
 		if(!grabstate || grabstate < A.required_grab_state)
 			return FALSE
@@ -333,10 +374,10 @@
 /datum/sex_session_tgui/ui_data(mob/user)
 	var/list/D = list()
 	D["actions"] = actions_for_menu()
-	D["title"] = "Соитие с [target?.name || "…"]"
+	D["title"] = "Соитие с [get_partner_display_name(target)]"
 	D["session_name"] = "Private Session"
 	D["actor_name"] = user?.name || "—"
-	D["partner_name"] = target?.name || "—"
+	D["partner_name"] = get_partner_display_name(target)
 	D["actor_organs"] = build_org_nodes(user, "actor")
 	D["partner_organs"] = build_org_nodes(target, "partner")
 	D["selected_actor_organ"] = selected_actor_organ_id
@@ -350,7 +391,7 @@
 	else
 		D["partner_arousal"] = null
 		D["partner_arousal_hidden"] = TRUE
-		
+
 	var/list/ad_user = list()
 	if(src.user)
 		SEND_SIGNAL(src.user, COMSIG_SEX_GET_AROUSAL, ad_user)
@@ -421,7 +462,7 @@
 	D["current_partner_ref"] = current_partner_ref
 
 	var/mob/living/carbon/human/active_partner = locate(current_partner_ref)
-	D["partner_name"] = active_partner ? active_partner.name : user?.name
+	D["partner_name"] = get_partner_display_name(active_partner ? active_partner : target)
 
 	var/list/links = list()
 	for(var/id in current_actions)
@@ -525,6 +566,7 @@
 				if(REF(M) == ref)
 					current_partner_ref = ref
 					target = M
+					partner_bodypart_override = null // переключились на обычного партнёра
 					SStgui.update_uis(src)
 					return TRUE
 
@@ -551,7 +593,7 @@
 
 		if("set_link_force")
 			var/id2 = params["id"]
-			var/value2 = clamp(text2num(params["value"]), SEX_FORCE_MIN, SEX_FORCE_MAX)
+			var/value2 = clamp(text2num(params["value"]), SEX_FORCE_MIN, SEX_SPEED_MAX)
 			var/datum/sex_action_session/I2 = current_actions[id2]
 			if(I2)
 				I2.force = value2
@@ -588,7 +630,7 @@
 
 			SStgui.update_uis(src)
 			return TRUE
-			
+
 		if("set_link_tuning")
 			var/id = params["id"]
 			var/field = params["field"]
@@ -629,13 +671,16 @@
 		if("toggle_erect")
 			var/target_state = params["state"]
 			var/id = params["id"]
-			if(!id || id != SEX_ORGAN_FILTER_PENIS) return FALSE
+			if(!id || id != SEX_ORGAN_FILTER_PENIS)
+				return FALSE
 
 			var/datum/sex_organ/O = resolve_organ_datum(user, id)
-			if(!O) return FALSE
+			if(!O)
+				return FALSE
 
 			var/obj/item/organ/penis/P = user.getorganslot(ORGAN_SLOT_PENIS)
-			if(!P) return FALSE
+			if(!P)
+				return FALSE
 
 			if(target_state == "auto")
 				P.disable_manual_erect()
@@ -668,11 +713,13 @@
 	if(!length(partners))
 		current_partner_ref = REF(user)
 		target = user
+		partner_bodypart_override = null
 	else
 		if(!locate(current_partner_ref))
 			var/mob/living/carbon/human/N = partners[1]
 			current_partner_ref = REF(N)
 			target = N
+			partner_bodypart_override = null
 
 /datum/sex_session_tgui/proc/try_start_action(action_type)
 	var/datum/sex_panel_action/A = SEX_PANEL_ACTION(action_type)
@@ -779,9 +826,26 @@
 	if(moved <= 0)
 		return
 
+/datum/sex_session_tgui/proc/resolve_organ_from_bodypart(obj/item/bodypart/B, id)
+	if(!B || !id)
+		return null
+
+	// HOOK: маппинг "узел -> орган" для конкретного бодипарта (головы и т.д.)
+	if(istype(B, /obj/item/bodypart/head) || istype(B, /obj/item/bodypart/head/dullahan))
+		if(id == SEX_ORGAN_FILTER_MOUTH)
+			return B.sex_organ
+
+	return null
+
 /datum/sex_session_tgui/proc/resolve_organ_datum(mob/living/carbon/human/M, id)
 	if(!M || !id)
 		return null
+
+	// Если это партнёр и есть оверрайд-бодипарт — сначала пытаемся взять орган с него
+	if(M == target && partner_bodypart_override)
+		var/datum/sex_organ/over_org = resolve_organ_from_bodypart(partner_bodypart_override, id)
+		if(over_org)
+			return over_org
 
 	switch(id)
 		if(SEX_ORGAN_FILTER_MOUTH)
@@ -985,7 +1049,7 @@
 			"erect"       = N["erect"],
 			"manual"      = N["manual"],
 		))
-		
+
 	return out
 
 /datum/sex_session_tgui/proc/can_see_partner_arousal()
@@ -1044,7 +1108,16 @@
 		var/mob/living/carbon/human/H = mover
 		to_chat(H, span_notice("Движение прерывает интимные действия."))
 
+/// Старый сигнатурный прок — оставляем как обёртку для совместимости
 /proc/get_or_create_sex_session_tgui(mob/living/carbon/human/user, mob/living/carbon/human/target)
+	return get_or_create_sex_session_tgui_with_bodypart(user, target, null)
+
+/// Новый прок с поддержкой бодипарта
+/proc/get_or_create_sex_session_tgui_with_bodypart(
+	mob/living/carbon/human/user,
+	mob/living/carbon/human/target,
+	obj/item/bodypart/body_override,
+)
 	if(!user)
 		return null
 
@@ -1062,6 +1135,9 @@
 		else
 			if(!(target in session.partners))
 				session.partners += target
+
+	if(body_override)
+		session.set_partner_bodypart_override(body_override)
 
 	session.update_knotted_penis_flag()
 

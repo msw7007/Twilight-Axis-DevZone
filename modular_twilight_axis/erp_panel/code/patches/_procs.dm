@@ -88,3 +88,8 @@
 
 	return best_session
 
+/proc/create_dullahan_head_partner(obj/item/bodypart/head/dullahan/H)
+    var/mob/living/carbon/human/erp_proxy/P = new()
+    P.source_part = H
+    P.name = "Голова [H.original_owner.name]"
+    return P

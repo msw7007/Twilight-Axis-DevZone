@@ -2,7 +2,7 @@
 	abstract_type = FALSE
 
 	name = "Использовать ягодицы"
-	required_target = null
+	required_target = SEX_ORGAN_ANUS
 	armor_slot_lock = BODY_ZONE_PRECISE_GROIN
 	can_knot = FALSE
 	

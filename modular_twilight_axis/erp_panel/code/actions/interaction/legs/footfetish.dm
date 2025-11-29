@@ -1,6 +1,6 @@
 /datum/sex_panel_action/other/legs/footfetish
 	abstract_type = FALSE
-	name = "заставить вылизать ножки"
+	name = "Заставить вылизать ножки"
 	required_target = SEX_ORGAN_MOUTH
 	stamina_cost = 0.05
 	affects_self_arousal = 0.06

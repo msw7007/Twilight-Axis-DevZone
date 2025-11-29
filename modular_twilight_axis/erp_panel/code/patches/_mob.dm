@@ -72,19 +72,25 @@
 			result += O.sex_organ
 
 	for(var/obj/item/bodypart/B in bodyparts)
-		if(B.sex_organ && !(B.sex_organ in seen))
+		if(!B.sex_organ)
+			continue
+		if(B.sex_organ in seen)
+			continue
+
+		if(istype(src, /mob/living/carbon/human/erp_proxy))
+			if(!istype(B, /obj/item/bodypart/head) && !istype(B, /obj/item/bodypart/head/dullahan))
+				continue
+
 			seen += B.sex_organ
 			result += B.sex_organ
+			continue
+
+		seen += B.sex_organ
+		result += B.sex_organ
 
 	result += legs_organ
 	return result
 
-/mob/living/carbon/human/proc/get_sex_organs_by_type(organ_type)
-	var/list/result = list()
-	for(var/datum/sex_organ/O in get_sex_organs())
-		if(O.organ_type == organ_type)
-			result += O
-	return result
 
 /mob/living/carbon/human/proc/get_sex_organ_by_type(organ_type, only_free = FALSE)
 	for(var/datum/sex_organ/O in get_sex_organs())
@@ -233,3 +239,28 @@
 		remove_status_effect(/datum/status_effect/mouth_full)
 
 	return TRUE
+
+/mob/living/carbon/human/erp_proxy
+	var/obj/item/bodypart/source_part
+	
+/mob/living/carbon/human/erp_proxy/Initialize(mapload)
+	..()
+	invisibility = 101
+	density = FALSE
+	anchored = TRUE
+	return INITIALIZE_HINT_NORMAL
+
+/mob/living/carbon/human/erp_proxy/Life(seconds_per_tick)
+	return
+
+/mob/living/proc/start_sex_session_with_dullahan_head(obj/item/bodypart/head/dullahan/H)
+	var/mob/living/carbon/human/erp_proxy/P = create_dullahan_head_partner(H)
+
+	var/datum/sex_session_tgui/S = new(src, P)
+	S.set_partner_bodypart_override(H)
+
+	S.current_partner_ref = REF(P)
+	S.partners = list(P)
+
+	S.ui_interact(src)
+	return S
