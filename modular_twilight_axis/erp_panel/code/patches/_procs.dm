@@ -93,3 +93,14 @@
     P.source_part = H
     P.name = "Голова [H.original_owner.name]"
     return P
+
+/proc/is_erp_zone_blocked_by_clothes(mob/living/carbon/human/user, mob/living/carbon/human/H, zone)
+	if(!H || !zone)
+		return FALSE
+
+	if(zone == BODY_ZONE_PRECISE_GROIN && user)
+		var/grabstate = user.get_highest_grab_state_on(H)
+		if(grabstate && grabstate >= GRAB_PASSIVE)
+			return FALSE
+
+	return H.is_sex_node_blocked_by_clothes(zone)

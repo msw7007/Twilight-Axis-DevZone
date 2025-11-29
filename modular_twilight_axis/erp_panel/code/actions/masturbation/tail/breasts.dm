@@ -13,14 +13,10 @@
 
 /datum/sex_panel_action/self/tail/squeeze_breasts/get_perform_message(user, target)
 	var/message = "[user] [get_force_text()] и [get_speed_text()] сжимает хвостом грудь."
+	do_onomatopoeia(user)
 	return spanify_force(message)
 
 /datum/sex_panel_action/self/tail/squeeze_breasts/get_finish_message(user, target)
 	return "[user] отпускает грудь."
 
-/datum/sex_panel_action/self/tail/squeeze_breasts/on_perform(user, target)
-	. = ..()
-
-	do_onomatopoeia(user)
-	show_sex_effects(user)
 

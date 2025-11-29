@@ -3,7 +3,7 @@
 
 	name = "Лапать грудь"
 	required_target = SEX_ORGAN_BREASTS
-	armor_slot_lock = BODY_ZONE_PRECISE_STOMACH
+	armor_slot_init = BODY_ZONE_PRECISE_STOMACH
 
 	affects_self_arousal = 0.1
 	affects_arousal      = 0
@@ -17,13 +17,8 @@
 /datum/sex_panel_action/self/hands/breasts_play/get_perform_message(mob/living/carbon/human/user, mob/living/carbon/human/target)
 	var/pose_state = get_pose_key(user, target)
 	var/message = "[user] [get_pose_text(pose_state)], [get_force_text()] и [get_speed_text()] лапает свою грудь."
+	do_onomatopoeia(user)
 	return spanify_force(message)
 
 /datum/sex_panel_action/self/hands/breasts_play/get_finish_message(mob/living/carbon/human/user, mob/living/carbon/human/target)
 	return "[user] убирает руки со своей груди."
-
-/datum/sex_panel_action/self/hands/breasts_play/on_perform(mob/living/carbon/human/user, mob/living/carbon/human/target)
-	. = ..()
-
-	do_onomatopoeia(user)
-	show_sex_effects(user)

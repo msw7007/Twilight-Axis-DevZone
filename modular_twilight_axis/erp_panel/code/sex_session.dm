@@ -320,12 +320,7 @@
 	var/a_type = a_id ? node_organ_type(a_id) : null
 	var/p_type = p_id ? node_organ_type(p_id) : null
 
-	if(a_type == SEX_ORGAN_PENIS)
-		var/mob/living/carbon/human/U = user
-		if(U)
-			var/datum/component/knotting/K = U.GetComponent(/datum/component/knotting)
-			if(K && K.knotted_status == KNOTTED_AS_TOP && K.knotted_recipient)
-				return FALSE
+	// ... твой чек про пенис и узел ...
 
 	if(A.required_init && a_type && A.required_init != a_type)
 		return FALSE
@@ -336,6 +331,9 @@
 		if(A.required_init && !a_type)
 			return FALSE
 		if(A.required_target && !p_type)
+			return FALSE
+
+		if(p_id && is_partner_node_reserved(p_id))
 			return FALSE
 
 		if(!inherent_perform_check(A))
@@ -423,11 +421,18 @@
 	D["do_knot_action"] = do_knot_action
 	D["can_knot_now"] = can_knot_now
 	D["yield_to_partner"] = yield_to_partner
-	D["status_organs"] = build_status_org_nodes(src.user)
+	
+	var/mob/living/carbon/human/human_viewer = null
+	if(ishuman(user))
+		human_viewer = user
+	else
+		human_viewer = src.user
+
+	D["status_organs"] = build_status_org_nodes(human_viewer)
 
 	var/list/can = list()
 	for(var/key in GLOB.sex_panel_actions)
-		if(can_perform_action_type(key))
+		if(can_start_action_now(key))
 			can += key
 	D["can_perform"] = can
 	D["organ_filtered"] = actions_matching_nodes()
@@ -735,9 +740,6 @@
 	if(!can_perform_action_type(action_type, TRUE, a_id, p_id))
 		return
 
-	selected_actor_organ_id = a_id
-	selected_partner_organ_id = p_id
-
 	var/cat = category_of_actor_node(a_id)
 	if(cat)
 		locked_actor_categories |= cat
@@ -830,7 +832,6 @@
 	if(!B || !id)
 		return null
 
-	// HOOK: маппинг "узел -> орган" для конкретного бодипарта (головы и т.д.)
 	if(istype(B, /obj/item/bodypart/head) || istype(B, /obj/item/bodypart/head/dullahan))
 		if(id == SEX_ORGAN_FILTER_MOUTH)
 			return B.sex_organ
@@ -841,7 +842,6 @@
 	if(!M || !id)
 		return null
 
-	// Если это партнёр и есть оверрайд-бодипарт — сначала пытаемся взять орган с него
 	if(M == target && partner_bodypart_override)
 		var/datum/sex_organ/over_org = resolve_organ_from_bodypart(partner_bodypart_override, id)
 		if(over_org)
@@ -926,9 +926,15 @@
 	return null
 
 /datum/sex_session_tgui/proc/pick_partner_node_for_action(datum/sex_panel_action/A)
+	if(!target)
+		return null
+
+	if(!A.required_target)
+		return SEX_ORGAN_FILTER_BODY
+
 	if(selected_partner_organ_id)
 		var/t = node_organ_type(selected_partner_organ_id)
-		if(!A.required_target || A.required_target == t)
+		if(A.required_target == t)
 			return selected_partner_organ_id
 
 	var/list/nodes = build_org_nodes(target, "partner")
@@ -998,6 +1004,20 @@
 		return FALSE
 
 	if(!inherent_perform_check(I.action))
+		return FALSE
+
+	var/datum/sex_organ/src_org = null
+	var/datum/sex_organ/tgt_org = null
+
+	if(I.actor_node_id)
+		src_org = resolve_organ_datum(user, I.actor_node_id)
+	if(I.partner_node_id)
+		tgt_org = resolve_organ_datum(target, I.partner_node_id)
+
+	if(I.action.required_init && !src_org)
+		return FALSE
+
+	if(I.action.required_target && !tgt_org)
 		return FALSE
 
 	var/a_type = I.actor_node_id ? node_organ_type(I.actor_node_id) : null
@@ -1102,17 +1122,33 @@
 	if(!length(current_actions))
 		return
 
-	stop_all_actions()
+	if(!ishuman(mover))
+		return
 
-	if(ishuman(mover))
-		var/mob/living/carbon/human/H = mover
-		to_chat(H, span_notice("Движение прерывает интимные действия."))
+	var/mob/living/carbon/human/H = mover
+	var/list/to_stop = list()
+	for(var/id in current_actions)
+		var/datum/sex_action_session/I = current_actions[id]
+		if(!I || QDELETED(I) || !I.action)
+			continue
 
-/// Старый сигнатурный прок — оставляем как обёртку для совместимости
+		if(H != src.user && H != src.target)
+			continue
+
+		if(!can_continue_action_session(I))
+			to_stop += id
+
+	for(var/id in to_stop)
+		stop_instance(id)
+
+	if(!length(to_stop))
+		return
+
+	to_chat(H, span_notice("Движение прерывает часть интимных действий."))
+
 /proc/get_or_create_sex_session_tgui(mob/living/carbon/human/user, mob/living/carbon/human/target)
 	return get_or_create_sex_session_tgui_with_bodypart(user, target, null)
 
-/// Новый прок с поддержкой бодипарта
 /proc/get_or_create_sex_session_tgui_with_bodypart(
 	mob/living/carbon/human/user,
 	mob/living/carbon/human/target,
@@ -1188,3 +1224,24 @@
 			best = I
 
 	return best
+
+/datum/sex_session_tgui/proc/can_start_action_now(action_type)
+	if(!action_type)
+		return FALSE
+
+	var/datum/sex_panel_action/A = SEX_PANEL_ACTION(action_type)
+	if(!A)
+		return FALSE
+
+	var/a_id = pick_actor_node_for_action(A)
+	var/p_id = pick_partner_node_for_action(A)
+
+	if(A.required_init && !a_id)
+		return FALSE
+	if(A.required_target && !p_id)
+		return FALSE
+
+	if(!can_perform_action_type(action_type, TRUE, a_id, p_id))
+		return FALSE
+
+	return TRUE

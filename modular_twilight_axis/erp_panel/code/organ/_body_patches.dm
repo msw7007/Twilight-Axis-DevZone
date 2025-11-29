@@ -79,14 +79,22 @@
 	var/datum/sex_organ/legs/legs_organ
 
 /mob/living/carbon/human/proc/ensure_legs_organ()
-	if(legs_organ)
-		return legs_organ
-
 	var/obj/item/bodypart/l_leg/LL = get_bodypart(BODY_ZONE_L_LEG)
 	var/obj/item/bodypart/r_leg/RL = get_bodypart(BODY_ZONE_R_LEG)
 	var/obj/item/bodypart/BP = LL || RL
+
 	if(!BP)
+		if(legs_organ)
+			qdel(legs_organ)
+			legs_organ = null
 		return null
+
+	if(legs_organ)
+		if(legs_organ.organ_link == BP)
+			return legs_organ
+
+		qdel(legs_organ)
+		legs_organ = null
 
 	var/datum/sex_organ/legs/L = new /datum/sex_organ/legs(BP)
 	legs_organ = L

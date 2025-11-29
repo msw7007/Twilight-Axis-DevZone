@@ -15,13 +15,8 @@
 /datum/sex_panel_action/other/mouth/rimming/get_perform_message(mob/living/carbon/human/user, mob/living/carbon/human/target)
 	var/pose_state = get_pose_key(user, target)
 	var/message = "[user] [get_pose_text(pose_state)], [get_force_text()] и [get_speed_text()] вылизывает языком анус [target]."
+	do_onomatopoeia(user)
 	return spanify_force(message)
 
 /datum/sex_panel_action/other/mouth/rimming/get_finish_message(mob/living/carbon/human/user, mob/living/carbon/human/target)
 	return "[user] убирает лицо от попки [target]."
-
-/datum/sex_panel_action/other/mouth/rimming/on_perform(mob/living/carbon/human/user, mob/living/carbon/human/target)
-	. = ..()
-
-	do_onomatopoeia(user)
-	show_sex_effects(user)

@@ -19,9 +19,3 @@
 
 /datum/sex_panel_action/other/body/rubbing/get_finish_message(mob/living/carbon/human/user, mob/living/carbon/human/target)
 	return "[user] отступает от [target]."
-
-/datum/sex_panel_action/other/body/rubbing/on_perform(mob/living/carbon/human/user, mob/living/carbon/human/target)
-	. = ..()
-
-	do_onomatopoeia(user)
-	show_sex_effects(user)

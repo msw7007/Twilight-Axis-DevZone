@@ -91,6 +91,11 @@ export type SexSessionData = {
   active_links?: ActiveLink[];
 };
 
+const fmt2 = (value?: number) =>
+  value === undefined || value === null
+    ? '0'
+    : Number(value).toFixed(2);
+
 const speedColors = ['#eac8de', '#e9a8d1', '#f05ee1', '#d146f5'];
 const forceColors = ['#eac8de', '#e9a8d1', '#f05ee1', '#d146f5'];
 
@@ -408,14 +413,14 @@ const StatusPanel: React.FC<{
                     >
                       Чувствительность:{' '}
                       <Box as="span" color="good">
-                        {sens}
+                        {fmt2(sens)}
                       </Box>
                     </Button>
                   </Stack.Item>
                   {/* Боль больше не редактируем, просто отображаем при желании */}
                   <Stack.Item>
                     <Box color="bad">
-                      Боль: {pain}
+                      Боль: {fmt2(pain)}
                     </Box>
                   </Stack.Item>
                 </Stack>
@@ -520,7 +525,7 @@ const SensitivityInline: React.FC<{
     disabled={disabled}
     onClick={onEdit}
   >
-    ЧУВСТВИТЕЛЬН.: {disabled ? '—' : sensitivity ?? 0}
+    ЧУВСТВИТЕЛЬН.: {disabled ? '—' : fmt2(sensitivity) ?? 0}
   </Button>
 );
 
@@ -881,7 +886,7 @@ export const EroticRolePlayPanel: React.FC = () => {
 
   const [searchText, setSearchText] = useState('');
   const [activeTags, setActiveTags] = useState<string[]>([]);
-  const [activeTab, setActiveTab] = useState<'status' | 'actions'>('status');
+  const [activeTab, setActiveTab] = useState<'status' | 'actions'>('actions');
 
   const [editContext, setEditContext] = useState<EditContext | null>(null);
   const [editTitle, setEditTitle] = useState('');
@@ -1019,7 +1024,7 @@ export const EroticRolePlayPanel: React.FC = () => {
     const link = (data.active_links || []).find((l) => l.id === linkId);
     openNumericModal(
       { kind: 'link_sens', id: linkId },
-      'Чувствительность 0–10',
+      'Чувствительность 0–2',
       link?.sensitivity ?? 0,
     );
   };

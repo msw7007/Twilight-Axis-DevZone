@@ -15,13 +15,9 @@
 /datum/sex_panel_action/other/hands/masturbation/get_perform_message(mob/living/carbon/human/user, mob/living/carbon/human/target)
 	var/pose_state = get_pose_key(user, target)
 	var/message = "[user] [get_pose_text(pose_state)], [get_force_text()] и [get_speed_text()] дрочит член [target]."
+	do_onomatopoeia(user)
+	show_sex_effects(user)
 	return spanify_force(message)
 
 /datum/sex_panel_action/other/hands/masturbation/get_finish_message(mob/living/carbon/human/user, mob/living/carbon/human/target)
 	return "[user] убирает руки от члена [target]."
-
-/datum/sex_panel_action/other/hands/masturbation/on_perform(mob/living/carbon/human/user, mob/living/carbon/human/target)
-	. = ..()
-
-	do_onomatopoeia(user)
-	show_sex_effects(user)

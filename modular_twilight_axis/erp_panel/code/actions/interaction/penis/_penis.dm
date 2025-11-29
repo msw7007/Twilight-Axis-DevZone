@@ -14,4 +14,15 @@
 
 /datum/sex_panel_action/other/penis/proc/get_knot_action()
 	var/datum/sex_session_tgui/S = session.session
-	return (!S.has_knotted_penis || !S.do_knot_action) ? " по самый узел" : ""
+	return (!S.has_knotted_penis || !S.do_knot_action) ? "" : " по самый узел"
+
+/datum/sex_panel_action/other/penis/get_pose_text(pose_state)
+	switch(pose_state)
+		if(SEX_POSE_BOTH_STANDING)
+			return "нависая"
+		if(SEX_POSE_USER_LYING)
+			return "снизу"
+		if(SEX_POSE_TARGET_LYING)
+			return "нависая"
+		if(SEX_POSE_BOTH_LYING)
+			return "лежа"

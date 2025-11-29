@@ -15,16 +15,12 @@
 /datum/sex_panel_action/other/hands/milking_penis/get_perform_message(mob/living/carbon/human/user, mob/living/carbon/human/target)
 	var/pose_state = get_pose_key(user, target)
 	var/message = "[user] [get_pose_text(pose_state)], [get_force_text()] и [get_speed_text()] водит руками по члену [target]."
+	do_onomatopoeia(user)
+	show_sex_effects(user)
 	return spanify_force(message)
 
 /datum/sex_panel_action/other/hands/milking_penis/get_finish_message(mob/living/carbon/human/user, mob/living/carbon/human/target)
 	return "[user] убирает руки от члена [target]."
-
-/datum/sex_panel_action/other/hands/milking_penis/on_perform(mob/living/carbon/human/user, mob/living/carbon/human/target)
-	. = ..()
-
-	do_onomatopoeia(user)
-	show_sex_effects(user)
 
 /datum/sex_panel_action/other/hands/milking_penis/handle_climax_message(mob/living/carbon/human/user, mob/living/carbon/human/target)
 	. = ..()
@@ -35,3 +31,5 @@
 			O.inject_liquid()
 			target.visible_message("Я чувствую, как моё семя выплескивается наружу!")
 			user.visible_message("Я чувствую, как семя [target] выплескивается наружу!")
+
+	return "onto"

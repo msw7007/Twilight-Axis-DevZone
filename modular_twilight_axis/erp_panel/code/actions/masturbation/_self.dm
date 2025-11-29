@@ -26,7 +26,7 @@
 /datum/sex_panel_action/self/handle_climax_message(mob/living/carbon/human/user, mob/living/carbon/human/target)
 	var/message = span_love("[user] оставляет под собой беспорядок")
 	user.visible_message(message)
-	return TRUE
+	return "self"
 
 /datum/sex_panel_action/self/on_perform(mob/living/carbon/human/user, mob/living/carbon/human/target)
 	. = ..()

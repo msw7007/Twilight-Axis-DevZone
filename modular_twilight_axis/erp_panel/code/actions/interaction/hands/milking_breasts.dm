@@ -32,10 +32,8 @@
 /datum/sex_panel_action/other/hands/milking_breasts/get_perform_message(mob/living/carbon/human/user, mob/living/carbon/human/target)
 	var/pose_state = get_pose_key(user, target)
 	var/message = "[user] [get_pose_text(pose_state)], [get_force_text()] и [get_speed_text()] водит руками по сиськам [target]."
-	if(prob(MILKING_BREAST_PROBABILITY))
-		breast_ref.inject_liquid()
-		target.visible_message("Я чувствую, как молоко покидает мою грудь.")
-		user.visible_message("Я чувствую, как соски [target] выплескивают молоко.")
+	do_onomatopoeia(user)
+	show_sex_effects(user)
 	return spanify_force(message)
 
 /datum/sex_panel_action/other/hands/milking_breasts/get_finish_message(mob/living/carbon/human/user, mob/living/carbon/human/target)
@@ -44,5 +42,9 @@
 /datum/sex_panel_action/other/hands/milking_breasts/on_perform(mob/living/carbon/human/user, mob/living/carbon/human/target)
 	. = ..()
 
-	do_onomatopoeia(user)
-	show_sex_effects(user)
+	if(prob(MILKING_BREAST_PROBABILITY))
+		do_liquid_injection(user, target)
+
+/datum/sex_panel_action/other/hands/milking_breasts/handle_injection_feedback(mob/living/carbon/human/user, mob/living/carbon/human/target, moved)
+	target.visible_message("Я чувствую, как молоко покидает мою грудь.")
+	user.visible_message("Я чувствую, как соски [target] выплескивают молоко.")

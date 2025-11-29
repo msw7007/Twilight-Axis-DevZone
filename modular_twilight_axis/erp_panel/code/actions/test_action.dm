@@ -15,7 +15,7 @@
 
 	required_init   = SEX_ORGAN_HANDS
 	required_target = SEX_ORGAN_HANDS
-	armor_slot_lock = null
+	armor_slot_init = null
 
 	affects_self_arousal = 0.5
 	affects_arousal      = 0.5
@@ -26,31 +26,31 @@
 	name = "Тестовое действие ртом"
 	required_init   = SEX_ORGAN_MOUTH
 	required_target = null
-	armor_slot_lock = BODY_ZONE_PRECISE_MOUTH
+	armor_slot_init = BODY_ZONE_PRECISE_MOUTH
 
 /datum/sex_panel_action/test_simple/anal
 	name = "Тестовое действие анусом"
 	required_init   = SEX_ORGAN_ANUS
 	required_target = null
-	armor_slot_lock = BODY_ZONE_PRECISE_GROIN
+	armor_slot_init = BODY_ZONE_PRECISE_GROIN
 
 /datum/sex_panel_action/test_simple/vaginal
 	name = "Тестовое действие вагиной"
 	required_init   = SEX_ORGAN_VAGINA
 	required_target = null
-	armor_slot_lock = BODY_ZONE_PRECISE_GROIN
+	armor_slot_init = BODY_ZONE_PRECISE_GROIN
 
 /datum/sex_panel_action/test_simple/breasts
 	name = "Тестовое действие грудью"
 	required_init   = SEX_ORGAN_BREASTS
 	required_target = null
-	armor_slot_lock = BODY_ZONE_CHEST
+	armor_slot_init = BODY_ZONE_CHEST
 
 /datum/sex_panel_action/test_simple/penis
 	name = "Тестовое действие членом"
 	required_init   = SEX_ORGAN_PENIS
 	required_target = null
-	armor_slot_lock = BODY_ZONE_PRECISE_GROIN
+	armor_slot_init = BODY_ZONE_PRECISE_GROIN
 	can_knot = TRUE
 
 /datum/sex_panel_action/test_simple/legs

@@ -10,7 +10,8 @@
 	/// Sex organ required to target
 	var/required_target
 	/// Armor slot that prevent action
-	var/armor_slot_lock
+	var/armor_slot_init
+	var/armor_slot_target
 	/// Whether this action can continue indefinitely
 	var/continous = TRUE
 	/// How long each iteration takes
@@ -37,6 +38,8 @@
 	var/pose_key = SEX_POSE_BOTH_STANDING
 	/// Link to session data
 	var/datum/sex_action_session/session
+	/// Is taregt organ reserverd for action
+	var/reserve_target_for_session = FALSE
 
 /datum/sex_panel_action/proc/shows_on_menu(mob/living/carbon/human/user, mob/living/carbon/human/target)
 	if(abstract_type)
@@ -85,9 +88,8 @@
 		if(owner.is_sex_node_restrained(node_id))
 			return FALSE
 
-		if(armor_slot_lock)
-			if(owner.is_sex_node_blocked_by_clothes(node_id))
-				return FALSE
+	if(!passes_armor_check(user, target))
+		return FALSE
 
 	return TRUE
 
@@ -277,3 +279,52 @@
 	)
 	var/ru_zone_selected = zone_translations[user.zone_selected]
 	return ru_zone_selected
+
+/datum/sex_panel_action/proc/do_liquid_injection(mob/living/carbon/human/user, mob/living/carbon/human/target)
+	// Родитель сам найдет init орган и сделает inject
+	var/list/orgs = get_action_organs(user, target, FALSE, FALSE)
+	if(!orgs) return 0
+
+	var/datum/sex_organ/init = orgs["init"]
+	if(!init) return 0
+
+	var/moved = init.inject_liquid()
+	if(moved > 0)
+		handle_injection_feedback(user, target, moved)
+	return moved
+
+/datum/sex_panel_action/proc/handle_injection_feedback(mob/living/carbon/human/user, mob/living/carbon/human/target, moved)
+	return
+
+/datum/sex_panel_action/proc/passes_armor_check(mob/living/carbon/human/user, mob/living/carbon/human/target)
+	if(armor_slot_init && user)
+		if(is_erp_zone_blocked_by_clothes(user, user, armor_slot_init))
+			return FALSE
+
+	if(armor_slot_target && target)
+		if(is_erp_zone_blocked_by_clothes(user, target, armor_slot_target))
+			return FALSE
+
+	return TRUE
+
+/datum/sex_session_tgui/proc/is_partner_node_reserved(node_id)
+	if(!node_id)
+		return FALSE
+
+	if(!length(current_actions))
+		return FALSE
+
+	for(var/id in current_actions)
+		var/datum/sex_action_session/I = current_actions[id]
+		if(!I || QDELETED(I) || !I.action)
+			continue
+
+		if(!I.action.reserve_target_for_session)
+			continue
+
+		if(I.partner_node_id != node_id)
+			continue
+
+		return TRUE
+
+	return FALSE
