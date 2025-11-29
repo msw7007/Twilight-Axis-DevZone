@@ -76,6 +76,7 @@
 			seen += B.sex_organ
 			result += B.sex_organ
 
+	result += legs_organ
 	return result
 
 /mob/living/carbon/human/proc/get_sex_organs_by_type(organ_type)
@@ -112,13 +113,13 @@
 	var/id = node_id
 	if(istext(id))
 		switch(id)
-			if("left_hand")   id = "left_hand"
-			if("right_hand")  id = "right_hand"
-			if("legs")        id = "legs"
-			if("mouth")       id = "mouth"
+			if(SEX_ORGAN_FILTER_LHAND)  id = SEX_ORGAN_FILTER_LHAND
+			if(SEX_ORGAN_FILTER_RHAND)  id = SEX_ORGAN_FILTER_RHAND
+			if(SEX_ORGAN_FILTER_LEGS)        id = SEX_ORGAN_FILTER_LEGS
+			if(SEX_ORGAN_FILTER_MOUTH)       id = SEX_ORGAN_FILTER_MOUTH
 
 	switch(id)
-		if("left_hand")
+		if(SEX_ORGAN_FILTER_LHAND)
 			if(handcuffed)
 				return TRUE
 
@@ -131,7 +132,7 @@
 
 			return FALSE
 
-		if("right_hand")
+		if(SEX_ORGAN_FILTER_RHAND)
 			if(handcuffed)
 				return TRUE
 
@@ -144,13 +145,13 @@
 
 			return FALSE
 
-		if("legs")
+		if(SEX_ORGAN_FILTER_LEGS)
 			if(legcuffed)
 				return TRUE
 
 			return FALSE
 
-		if("mouth")
+		if(SEX_ORGAN_FILTER_MOUTH)
 			if(is_mouth_covered())
 				return TRUE
 

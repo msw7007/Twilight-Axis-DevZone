@@ -157,19 +157,19 @@
 	var/damage = excess
 	var/zone = BODY_ZONE_CHEST
 	switch(organ_id)
-		if("mouth")
+		if(SEX_ORGAN_FILTER_MOUTH)
 			zone = BODY_ZONE_HEAD
-		if("left_hand")
+		if(SEX_ORGAN_FILTER_LHAND)
 			zone = BODY_ZONE_L_ARM
-		if("right_hand")
+		if(SEX_ORGAN_FILTER_RHAND)
 			zone = BODY_ZONE_R_ARM
-		if("legs")
+		if(SEX_ORGAN_FILTER_LEGS)
 			zone = BODY_ZONE_R_LEG
-		if("tail")
+		if(SEX_ORGAN_FILTER_TAIL)
 			zone = BODY_ZONE_CHEST
-		if("breasts")
+		if(SEX_ORGAN_FILTER_BREASTS)
 			zone = BODY_ZONE_CHEST
-		if("genital_v", "genital_p", "genital_a")
+		if(SEX_ORGAN_FILTER_VAGINA, SEX_ORGAN_FILTER_PENIS, SEX_ORGAN_FILTER_ANUS)
 			zone = BODY_ZONE_CHEST
 
 	var/obj/item/bodypart/part = user.get_bodypart(zone)

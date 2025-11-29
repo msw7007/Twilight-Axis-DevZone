@@ -18,7 +18,7 @@
 
 	var/datum/sex_session_tgui/SS = get_or_create_sex_session_tgui(user, target)
 	if(SS)
-		var/datum/sex_organ/O = SS.resolve_organ_datum(user, "breasts")
+		var/datum/sex_organ/O = SS.resolve_organ_datum(user, SEX_ORGAN_FILTER_BREASTS)
 		if(O)
 			breast_ref = O
 			var/obj/item/container = O.find_liquid_container()
@@ -47,9 +47,7 @@
 	
 	var/datum/sex_session_tgui/SS = get_or_create_sex_session_tgui(user, target)
 	if(SS)
-		var/datum/sex_organ/O = SS.resolve_organ_datum(user, "breasts")
-		if(O)
-			O.inject_liquid()
+		breast_ref.inject_liquid()
 
 	do_onomatopoeia(user)
 	show_sex_effects(user)

@@ -92,7 +92,7 @@
 
 /datum/sex_session_tgui/proc/build_org_nodes(mob/living/carbon/human/M, side)
 	var/list/out = list()
-	out += list(list("id" = "body", "name" = "Тело", "busy" = FALSE, "side" = side))
+	out += list(list("id" = SEX_ORGAN_FILTER_BODY, "name" = "Тело", "busy" = FALSE, "side" = side))
 
 	var/is_actor = (side == "actor")
 
@@ -101,27 +101,27 @@
 	var/obj/item/bodypart/head/HD = M.get_bodypart(BODY_ZONE_HEAD)
 	if(HD)
 		out += list(list(
-			"id"   = "mouth",
+			"id"   = SEX_ORGAN_FILTER_MOUTH,
 			"name" = "Рот",
-			"busy" = BUSY_FOR("mouth"),
+			"busy" = BUSY_FOR(SEX_ORGAN_FILTER_MOUTH),
 			"side" = side,
 		))
 
 	var/obj/item/bodypart/l_arm/LA = M.get_bodypart(BODY_ZONE_L_ARM)
 	if(LA)
 		out += list(list(
-			"id"   = "left_hand",
+			"id"   = SEX_ORGAN_FILTER_LHAND,
 			"name" = "Левая рука",
-			"busy" = BUSY_FOR("left_hand"),
+			"busy" = BUSY_FOR(SEX_ORGAN_FILTER_LHAND),
 			"side" = side,
 		))
 
 	var/obj/item/bodypart/r_arm/RA = M.get_bodypart(BODY_ZONE_R_ARM)
 	if(RA)
 		out += list(list(
-			"id"   = "right_hand",
+			"id"   = SEX_ORGAN_FILTER_RHAND,
 			"name" = "Правая рука",
-			"busy" = BUSY_FOR("right_hand"),
+			"busy" = BUSY_FOR(SEX_ORGAN_FILTER_RHAND),
 			"side" = side,
 		))
 
@@ -129,50 +129,50 @@
 	var/obj/item/bodypart/r_leg/RL = M.get_bodypart(BODY_ZONE_R_LEG)
 	if(LL || RL)
 		out += list(list(
-			"id"   = "legs",
+			"id"   = SEX_ORGAN_FILTER_LEGS,
 			"name" = "Ноги",
-			"busy" = BUSY_FOR("legs"),
+			"busy" = BUSY_FOR(SEX_ORGAN_FILTER_LEGS),
 			"side" = side,
 		))
 
 	if(M.getorganslot(ORGAN_SLOT_TAIL))
 		out += list(list(
-			"id"   = "tail",
+			"id"   = SEX_ORGAN_FILTER_TAIL,
 			"name" = "Хвост",
-			"busy" = BUSY_FOR("tail"),
+			"busy" = BUSY_FOR(SEX_ORGAN_FILTER_TAIL),
 			"side" = side,
 		))
 
 	if(M.getorganslot(ORGAN_SLOT_BREASTS))
 		out += list(list(
-			"id"   = "breasts",
+			"id"   = SEX_ORGAN_FILTER_BREASTS,
 			"name" = "Грудь",
-			"busy" = BUSY_FOR("breasts"),
+			"busy" = BUSY_FOR(SEX_ORGAN_FILTER_BREASTS),
 			"side" = side,
 		))
 
 	if(M.getorganslot(ORGAN_SLOT_VAGINA))
 		out += list(list(
-			"id"   = "genital_v",
+			"id"   = SEX_ORGAN_FILTER_VAGINA,
 			"name" = "Вагина",
-			"busy" = BUSY_FOR("genital_v"),
+			"busy" = BUSY_FOR(SEX_ORGAN_FILTER_VAGINA),
 			"side" = side,
 		))
 
 	if(M.getorganslot(ORGAN_SLOT_PENIS))
 		out += list(list(
-			"id"   = "genital_p",
+			"id"   = SEX_ORGAN_FILTER_PENIS,
 			"name" = "Член",
-			"busy" = BUSY_FOR("genital_p"),
+			"busy" = BUSY_FOR(SEX_ORGAN_FILTER_PENIS),
 			"side" = side,
 		))
 
 	var/obj/item/bodypart/chest/C = M.get_bodypart(BODY_ZONE_CHEST)
 	if(C)
 		out += list(list(
-			"id"   = "genital_a",
+			"id"   = SEX_ORGAN_FILTER_ANUS,
 			"name" = "Анус",
-			"busy" = BUSY_FOR("genital_a"),
+			"busy" = BUSY_FOR(SEX_ORGAN_FILTER_ANUS),
 			"side" = side,
 		))
 
@@ -182,20 +182,20 @@
 
 /datum/sex_session_tgui/proc/category_of_actor_node(id)
 	switch(id)
-		if("mouth")
-			return "mouth"
-		if("breasts")
-			return "breasts"
-		if("left_hand")
-			return "left_hand"
-		if("right_hand")
-			return "right_hand"
-		if("legs")
-			return "legs"
-		if("tail")
-			return "tail"
-		if("genital_v", "genital_p", "genital_a")
-			return "genital"
+		if(SEX_ORGAN_FILTER_MOUTH)
+			return SEX_ORGAN_FILTER_MOUTH
+		if(SEX_ORGAN_FILTER_BREASTS)
+			return SEX_ORGAN_FILTER_BREASTS
+		if(SEX_ORGAN_FILTER_LHAND)
+			return SEX_ORGAN_FILTER_LHAND
+		if(SEX_ORGAN_FILTER_RHAND)
+			return SEX_ORGAN_FILTER_RHAND
+		if(SEX_ORGAN_FILTER_LEGS)
+			return SEX_ORGAN_FILTER_LEGS
+		if(SEX_ORGAN_FILTER_TAIL)
+			return SEX_ORGAN_FILTER_TAIL
+		if(SEX_ORGAN_FILTER_VAGINA, SEX_ORGAN_FILTER_PENIS, SEX_ORGAN_FILTER_ANUS)
+			return SEX_ORGAN_FILTER_GENITAL
 	return null
 
 /datum/sex_session_tgui/proc/is_locked(category)
@@ -629,7 +629,7 @@
 		if("toggle_erect")
 			var/target_state = params["state"]
 			var/id = params["id"]
-			if(!id || id != "genital_p") return FALSE
+			if(!id || id != SEX_ORGAN_FILTER_PENIS) return FALSE
 
 			var/datum/sex_organ/O = resolve_organ_datum(user, id)
 			if(!O) return FALSE
@@ -784,58 +784,57 @@
 		return null
 
 	switch(id)
-		if("mouth")
+		if(SEX_ORGAN_FILTER_MOUTH)
 			var/obj/item/bodypart/head/HD = M.get_bodypart(BODY_ZONE_HEAD)
 			return HD?.sex_organ
-		if("left_hand")
+		if(SEX_ORGAN_FILTER_LHAND)
 			var/obj/item/bodypart/l_arm/LA = M.get_bodypart(BODY_ZONE_L_ARM)
 			return LA?.sex_organ
-		if("right_hand")
+		if(SEX_ORGAN_FILTER_RHAND)
 			var/obj/item/bodypart/r_arm/RA = M.get_bodypart(BODY_ZONE_R_ARM)
 			return RA?.sex_organ
-		if("legs")
-			var/obj/item/bodypart/l_leg/LL = M.get_bodypart(BODY_ZONE_L_LEG)
-			if(LL && LL.sex_organ)
-				return LL.sex_organ
-			var/obj/item/bodypart/r_leg/RL = M.get_bodypart(BODY_ZONE_R_LEG)
-			return RL?.sex_organ
-		if("tail")
+		if(SEX_ORGAN_FILTER_LEGS)
+			if(ishuman(M))
+				var/mob/living/carbon/human/H = M
+				return H.ensure_legs_organ()
+			return null
+		if(SEX_ORGAN_FILTER_TAIL)
 			var/obj/item/organ/tail/T = M.getorganslot(ORGAN_SLOT_TAIL)
 			return T?.sex_organ
-		if("breasts")
+		if(SEX_ORGAN_FILTER_BREASTS)
 			var/obj/item/organ/breasts/B = M.getorganslot(ORGAN_SLOT_BREASTS)
 			return B?.sex_organ
-		if("genital_v")
+		if(SEX_ORGAN_FILTER_VAGINA)
 			var/obj/item/organ/vagina/V = M.getorganslot(ORGAN_SLOT_VAGINA)
 			return V?.sex_organ
-		if("genital_p")
+		if(SEX_ORGAN_FILTER_PENIS)
 			var/obj/item/organ/penis/P = M.getorganslot(ORGAN_SLOT_PENIS)
 			return P?.sex_organ
-		if("genital_a")
+		if(SEX_ORGAN_FILTER_ANUS)
 			var/obj/item/bodypart/chest/A = M.get_bodypart(BODY_ZONE_CHEST)
 			return A?.sex_organ
-		if("body")
+		if(SEX_ORGAN_FILTER_BODY)
 			return null
 
 	return null
 
 /datum/sex_session_tgui/proc/node_organ_type(id)
 	switch(id)
-		if("mouth")
+		if(SEX_ORGAN_FILTER_MOUTH)
 			return SEX_ORGAN_MOUTH
-		if("left_hand", "right_hand")
+		if(SEX_ORGAN_FILTER_LHAND, SEX_ORGAN_FILTER_RHAND)
 			return SEX_ORGAN_HANDS
-		if("legs")
+		if(SEX_ORGAN_FILTER_LEGS)
 			return SEX_ORGAN_LEGS
-		if("tail")
+		if(SEX_ORGAN_FILTER_TAIL)
 			return SEX_ORGAN_TAIL
-		if("breasts")
+		if(SEX_ORGAN_FILTER_BREASTS)
 			return SEX_ORGAN_BREASTS
-		if("genital_v")
+		if(SEX_ORGAN_FILTER_VAGINA)
 			return SEX_ORGAN_VAGINA
-		if("genital_p")
+		if(SEX_ORGAN_FILTER_PENIS)
 			return SEX_ORGAN_PENIS
-		if("genital_a")
+		if(SEX_ORGAN_FILTER_ANUS)
 			return SEX_ORGAN_ANUS
 	return null
 
@@ -849,7 +848,7 @@
 	for(var/i in 1 to nodes.len)
 		var/list/N = nodes[i]
 		var/id = N["id"]
-		if(id == "body")
+		if(id == SEX_ORGAN_FILTER_BODY)
 			continue
 
 		var/t2 = node_organ_type(id)
@@ -872,7 +871,7 @@
 	for(var/i in 1 to nodes.len)
 		var/list/N = nodes[i]
 		var/id = N["id"]
-		if(id == "body")
+		if(id == SEX_ORGAN_FILTER_BODY)
 			continue
 
 		var/t2 = node_organ_type(id)
@@ -969,7 +968,7 @@
 			if(cur > 0)
 				fullness = clamp(round((cur / O.stored_liquid_max) * 100), 0, 100)
 
-		if(id == "genital_p")
+		if(id == SEX_ORGAN_FILTER_PENIS)
 			var/obj/item/organ/penis/P = M.getorganslot(ORGAN_SLOT_PENIS)
 			if(P)
 				N["erect"] = P.erect_state
@@ -1074,7 +1073,7 @@
 	if(!selected_actor_organ_id || !selected_partner_organ_id)
 		return res
 
-	if(selected_actor_organ_id == "body" || selected_partner_organ_id == "body")
+	if(selected_actor_organ_id == SEX_ORGAN_FILTER_BODY || selected_partner_organ_id == SEX_ORGAN_FILTER_BODY)
 		return res
 
 	for(var/key in GLOB.sex_panel_actions)

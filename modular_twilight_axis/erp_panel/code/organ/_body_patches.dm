@@ -78,21 +78,20 @@
 /mob/living/carbon/human
 	var/datum/sex_organ/legs/legs_organ
 
-/obj/item/bodypart/l_leg/attach_limb(mob/living/carbon/C)
-	. = ..()
-	var/mob/living/carbon/human/H = owner
-	if(H)
-		if(!H.legs_organ)
-			H.legs_organ = new /datum/sex_organ/legs(src)
-		sex_organ = H.legs_organ
+/mob/living/carbon/human/proc/ensure_legs_organ()
+	if(legs_organ)
+		return legs_organ
 
-/obj/item/bodypart/r_leg/attach_limb(mob/living/carbon/C)
-	. = ..()
-	var/mob/living/carbon/human/H = owner
-	if(H)
-		if(!H.legs_organ)
-			H.legs_organ = new /datum/sex_organ/legs(src)
-		sex_organ = H.legs_organ
+	var/obj/item/bodypart/l_leg/LL = get_bodypart(BODY_ZONE_L_LEG)
+	var/obj/item/bodypart/r_leg/RL = get_bodypart(BODY_ZONE_R_LEG)
+	var/obj/item/bodypart/BP = LL || RL
+	if(!BP)
+		return null
+
+	var/datum/sex_organ/legs/L = new /datum/sex_organ/legs(BP)
+	legs_organ = L
+	BP.sex_organ = L
+	return L
 
 /obj/item/bodypart/chest/Initialize()
 	. = ..()

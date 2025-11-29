@@ -30,7 +30,7 @@
 	. = ..()
 	var/datum/sex_session_tgui/SS = get_or_create_sex_session_tgui(user, target)
 	if(SS)
-		var/datum/sex_organ/O = SS.resolve_organ_datum(user, "genital_p")
+		var/datum/sex_organ/O = SS.resolve_organ_datum(user, SEX_ORGAN_FILTER_PENIS)
 		if(O)
 			O.inject_liquid()
 			target.visible_message("Я чувствую, как моё семя выплескивается наружу!")

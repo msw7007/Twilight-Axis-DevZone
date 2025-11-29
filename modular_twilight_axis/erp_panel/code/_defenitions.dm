@@ -40,6 +40,18 @@
 #define INJECT_MODE_CONTAINER 2
 #define INJECT_MODE_GROUND    3
 
+#define SEX_ORGAN_FILTER_MOUTH "mouth"
+#define SEX_ORGAN_FILTER_LHAND "left_hand"
+#define SEX_ORGAN_FILTER_RHAND "right_hand"
+#define SEX_ORGAN_FILTER_LEGS "legs"
+#define SEX_ORGAN_FILTER_TAIL "tail"
+#define SEX_ORGAN_FILTER_BREASTS "breasts"
+#define SEX_ORGAN_FILTER_VAGINA "genital_v"
+#define SEX_ORGAN_FILTER_PENIS "genital_p"
+#define SEX_ORGAN_FILTER_ANUS "genital_a"
+#define SEX_ORGAN_FILTER_GENITAL "genital"
+#define SEX_ORGAN_FILTER_BODY "body"
+
 #define MILKING_BREAST_PROBABILITY 33
 
 GLOBAL_LIST_INIT(sex_panel_actions, build_sex_panel_actions())
