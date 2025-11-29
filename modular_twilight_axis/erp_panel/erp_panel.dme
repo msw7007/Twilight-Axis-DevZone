@@ -101,7 +101,7 @@
 #include "code\actions\interaction\legs\_legs.dm"
 #include "code\actions\interaction\legs\footfetish.dm"
 #include "code\actions\interaction\legs\footjob.dm"
+#include "code\actions\interaction\legs\teasing.dm"
 #include "code\actions\interaction\body\_body.dm"
 #include "code\actions\interaction\body\rubbing.dm"
 #include "code\actions\interaction\body\grinding.dm"
-#include "code\actions\interaction\body\teasing.dm"
