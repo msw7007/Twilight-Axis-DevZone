@@ -1,6 +1,6 @@
 /datum/sex_panel_action/other/hands/spanking
 	abstract_type = FALSE
-	name = "Лапать тело"
+	name = "Шлепать ягодицы"
 	required_target = null
 	stamina_cost = 0.05
 	affects_self_arousal = 0.06
