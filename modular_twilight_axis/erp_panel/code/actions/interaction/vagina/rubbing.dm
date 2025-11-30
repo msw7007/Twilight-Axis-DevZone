@@ -16,7 +16,7 @@
 /datum/sex_panel_action/other/vagina/rubbing/get_perform_message(mob/living/carbon/human/user, mob/living/carbon/human/target)
 	var/pose_state = get_pose_key(user, target)
 	var/message = "[user] [get_pose_text(pose_state)], [get_force_text()] и [get_speed_text()] трется вагиной об [get_target_zone(user)] [target]."
-	do_onomatopoeia(user)
+	show_sex_effects(user)
 	return spanify_force(message)
 
 /datum/sex_panel_action/other/vagina/rubbing/get_finish_message(mob/living/carbon/human/user, mob/living/carbon/human/target)

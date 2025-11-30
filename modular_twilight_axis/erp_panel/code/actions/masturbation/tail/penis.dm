@@ -14,7 +14,7 @@
 
 /datum/sex_panel_action/self/tail/penis_tail/get_perform_message(user, target)
 	var/message = "[user] [get_force_text()] и [get_speed_text()] двигает хвостом по своему члену."
-	do_onomatopoeia(user)
+	show_sex_effects(user)
 	return spanify_force(message)
 
 /datum/sex_panel_action/self/tail/penis_tail/get_finish_message(user, target)

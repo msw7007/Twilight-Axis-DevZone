@@ -17,7 +17,9 @@
 	var/message = "[user] [get_pose_text(pose_state)], [get_force_text()] и [get_speed_text()] скачет задницей на члене [target]."
 	do_onomatopoeia(user)
 	show_sex_effects(user)
+	do_thrust_animate(user, target)
 	return spanify_force(message)
 
 /datum/sex_panel_action/other/anus/sex/get_finish_message(mob/living/carbon/human/user, mob/living/carbon/human/target)
 	return "[user] соскальзывает попкой с члена [target]."
+
