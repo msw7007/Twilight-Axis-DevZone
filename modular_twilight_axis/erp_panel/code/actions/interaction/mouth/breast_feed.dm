@@ -30,5 +30,5 @@
 		do_liquid_injection(user, target)
 
 /datum/sex_panel_action/other/mouth/breast_feed/handle_injection_feedback(mob/living/carbon/human/user, mob/living/carbon/human/target, moved)
-	user.visible_message("[user] чувствует, как молоко стекает из груди.")
-	target.visible_message("[target] ощущает вкус теплого молока во рту.")
+	to_chat(user, "Я чувствую, как грудь [user] попадает мне в рот!")
+	to_chat(target, "Я чувствую, как мои соски выпускает молоко!")

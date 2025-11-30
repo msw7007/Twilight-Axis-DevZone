@@ -46,5 +46,5 @@
 		var/datum/sex_organ/O = SS.resolve_organ_datum(user, SEX_ORGAN_FILTER_PENIS)
 		if(O)
 			O.inject_liquid()
-			user.visible_message("Я чувствую, как семя выплескивается наружу!")
+			to_chat(user, "Я чувствую, как семя выплескивается наружу!")
 	return "self"

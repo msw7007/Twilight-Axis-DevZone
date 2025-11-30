@@ -39,8 +39,8 @@
 	return "[user] убирает голову [target] от своей груди."
 
 /datum/sex_panel_action/other/breasts/breast_feed/handle_injection_feedback(mob/living/carbon/human/user, mob/living/carbon/human/target, moved)
-	user.visible_message("[user] чувствует, как молоко стекает из груди.")
-	target.visible_message("[target] ощущает вкус теплого молока во рту.")
+	to_chat(user, "Я чувствую, как мои соски выплескивают молоко.")
+	to_chat(target, "Я чувствую, как грудь [user] попадает мне в рот!")
 
 /datum/sex_panel_action/other/breasts/breast_feed/on_perform(mob/living/carbon/human/user, mob/living/carbon/human/target)
 	. = ..()

@@ -136,12 +136,6 @@
 	)
 	return TRUE
 
-/datum/sex_organ/proc/stop_production_timer()
-	if(!production_timer_id)
-		return
-	deltimer(production_timer_id)
-	production_timer_id = null
-
 /datum/sex_organ/proc/on_production_tick()
 	production_timer_id = null
 
@@ -153,7 +147,7 @@
 	if(total_volume() < stored_liquid_max)
 		produce_liquid(null, producing_reagent_rate)
 
-	if(has_storage() && producing_reagent_id && producing_reagent_rate > 0 && total_volume() < stored_liquid_max)
+	if(has_storage() && producing_reagent_id && producing_reagent_rate > 0)
 		start_production_timer()
 
 /datum/sex_organ/proc/insert_organ(datum/sex_organ/organ)

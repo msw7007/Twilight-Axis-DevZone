@@ -40,10 +40,32 @@
 	return "[user] прекращает касаться груди."
 
 /datum/sex_panel_action/self/hands/milking_breasts/handle_injection_feedback(mob/living/carbon/human/user, mob/living/carbon/human/target, moved)
-	user.visible_message("[user] чувствует, как молоко стекает из груди.")
+	to_chat(user, "Я чувствую, как молоко стекает из груди.")
 
 /datum/sex_panel_action/self/hands/milking_breasts/on_perform(mob/living/carbon/human/user, mob/living/carbon/human/target)
 	. = ..()
+	if(QDELETED(src) || QDELETED(user) || QDELETED(target))
+		return
 
-	if(prob(MILKING_BREAST_PROBABILITY))
-		do_liquid_injection(user, target)
+	if(!prob(MILKING_BREAST_PROBABILITY))
+		return
+
+	var/datum/sex_action_session/AS = session
+	if(!AS || QDELETED(AS))
+		return
+
+	var/datum/sex_session_tgui/SS = AS.session
+	if(!SS || QDELETED(SS))
+		return
+
+	var/datum/sex_organ/O = SS.resolve_organ_datum(user, SEX_ORGAN_FILTER_BREASTS)
+	if(!O)
+		SS.stop_instance(AS.instance_id)
+		return
+
+	var/obj/item/container = O.find_liquid_container()
+	if(!container)
+		SS.stop_instance(AS.instance_id)
+		return
+
+	do_liquid_injection(user, target)

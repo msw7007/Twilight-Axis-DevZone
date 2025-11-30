@@ -1,5 +1,6 @@
 /datum/component/arousal
 	var/chain_orgasm_lock = FALSE
+	var/last_ejaculation_world_time = -1	
 
 /datum/component/arousal/proc/spread_climax_to_partners(mob/living/carbon/human/source)
 	if(!source)
@@ -66,6 +67,10 @@
 		after_intimate_climax(user, target)
 
 /datum/component/arousal/ejaculate()
+	if(world.time <= (last_ejaculation_world_time  + 2 SECONDS))
+		return
+	last_ejaculation_world_time = world.time
+
 	var/mob/living/carbon/human/mob = parent
 	var/list/parent_sessions = return_sessions_with_user_tgui(mob)
 	var/datum/sex_action_session/highest_priority = null

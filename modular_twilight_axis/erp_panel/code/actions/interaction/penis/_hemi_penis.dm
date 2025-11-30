@@ -14,7 +14,7 @@
 	if(!PO)
 		return FALSE
 		
-	return (P.penis_type != PENIS_TYPE_TAPERED_DOUBLE && P.penis_type != PENIS_TYPE_TAPERED_DOUBLE_KNOTTED)
+	return (P.penis_type == PENIS_TYPE_TAPERED_DOUBLE || P.penis_type == PENIS_TYPE_TAPERED_DOUBLE_KNOTTED)
 
 /datum/sex_panel_action/other/penis/hemi/shows_on_menu(mob/living/carbon/human/user, mob/living/carbon/human/target)
 	if(!..())

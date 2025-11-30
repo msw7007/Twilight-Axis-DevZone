@@ -1019,6 +1019,9 @@
 	if(!inherent_perform_check(I.action))
 		return FALSE
 
+	if(!I.action.can_perform(user, target))
+		return FALSE
+
 	var/datum/sex_organ/src_org = null
 	var/datum/sex_organ/tgt_org = null
 
