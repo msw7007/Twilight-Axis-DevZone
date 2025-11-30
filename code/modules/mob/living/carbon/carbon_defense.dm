@@ -100,7 +100,7 @@
 	var/bleed_message = ""
 	if(I)
 		used_limb = parse_zone(I.sublimb_grabbed)
-		if(I.limb_grabbed.get_bleed_rate())
+		if(I.limb_grabbed?.get_bleed_rate())
 			bleed_message = ", thereby stemming some bleeding"
 
 	if(used_limb)

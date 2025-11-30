@@ -261,6 +261,8 @@
 			prob2break = 0
 		if(L.m_intent == MOVE_INTENT_RUN)
 			prob2break = 100
+		if (L.is_flying()) //if you're flying you shouldn't break things on the ground
+			prob2break = 0
 		if(prob(prob2break))
 			if(!(HAS_TRAIT(L, TRAIT_AZURENATIVE) || HAS_TRAIT(L, TRAIT_WOODWALKER) && L.m_intent != MOVE_INTENT_RUN))
 				playsound(src,'sound/items/seedextract.ogg', 100, FALSE)
@@ -392,6 +394,18 @@
 		/datum/element/slapcrafting,\
 		slapcraft_recipes = slapcraft_recipe_list,\
 		)
+
+/obj/item/grown/log/tree/stake/attack_obj(obj/O, mob/living/user)
+	. = ..()
+	if(isitem(O))
+		var/obj/item/I = O
+		if(I.anvilrepair)
+			if(I.smeltresult == /obj/item/ingot/iron)
+				if(!do_after(user, 4 SECONDS, target = I))
+					return
+				to_chat(user, span_warning("The [user] breaks an [I] using stake into small parts!"))
+				new /obj/item/scrap(get_turf(I))
+				qdel(I)
 
 /////////////
 // Planks //

@@ -238,6 +238,10 @@
 
 		if(H.mind)
 			H.mind?.special_items["Pouch of Coins"] = /obj/item/storage/belt/rogue/pouch/coins/readyuppouch
+			if (HAS_TRAIT(H, TRAIT_MEDIUMARMOR) || HAS_TRAIT(H, TRAIT_HEAVYARMOR))
+				H.mind?.special_items["Metal Scrap (Repair kit)"] = /obj/item/repair_kit/metal/bad
+			else
+				H.mind?.special_items["Fabric Patch (Repair kit)"] = /obj/item/repair_kit/bad
 
 		to_chat(M, span_notice("Rising early, you made sure to pack a pouch of coins in your stash and eat a hearty breakfast before starting your day. A true TRIUMPH!"))
 
@@ -248,13 +252,14 @@
 		scom_announce("[H.real_name] the [used_title] arrives to Twilight Axis.")
 
 	if(give_bank_account)
-		if(give_bank_account > 1)
+		if(give_bank_account > TRUE)
 			SStreasury.create_bank_account(H, give_bank_account)
-			if(noble_income)
-				SStreasury.noble_incomes[H] = noble_income
-
 		else
 			SStreasury.create_bank_account(H)
+
+		if(noble_income)
+			SStreasury.noble_incomes[H] = noble_income
+			SStreasury.give_money_account(noble_income, H, "Noble Estate")
 
 	if(show_in_credits)
 		SScrediticons.processing += H

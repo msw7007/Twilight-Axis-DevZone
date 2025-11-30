@@ -111,6 +111,9 @@
 		var/mob/living/carbon/human/H = usr
 		H.print_levels(H)
 
+/atom/movable/screen/skills/should_click_on_mouse_up(var/atom/original_object)
+	return FALSE
+
 /atom/movable/screen/craft
 	name = "crafting menu"
 	icon_state = "craft"
@@ -551,7 +554,7 @@
 	var/_y = text2num(params2list(params)["icon-y"])
 
 	if(_y<=9)
-		usr.mmb_intent_change(QINTENT_STEAL)
+		usr.mmb_intent_change(QINTENT_SPECIAL)
 
 	else if(_y>=9 && _y<=16)
 		usr.mmb_intent_change(QINTENT_KICK)
@@ -633,6 +636,9 @@
 		else
 			L.toggle_cmode()
 			update_icon()
+
+/atom/movable/screen/cmode/should_click_on_mouse_up(var/atom/original_object)
+	return FALSE
 
 /atom/movable/screen/mov_intent
 	name = "run/walk toggle"

@@ -16,7 +16,7 @@
 
 	give_bank_account = TRUE
 	noble_income = 20
-	min_pq = 4 //Probably a bad idea to have a complete newbie advising the monarch
+	min_pq = 5 //Probably a bad idea to have a complete newbie advising the monarch
 	max_pq = null
 	round_contrib_points = 2
 	cmode_music = 'sound/music/combat_noble.ogg'
@@ -58,10 +58,11 @@
 	shirt = /obj/item/clothing/suit/roguetown/shirt/undershirt/random
 	pants = /obj/item/clothing/under/roguetown/tights/random
 	shoes = /obj/item/clothing/shoes/roguetown/boots
+	saiga_shoes = /obj/item/clothing/shoes/roguetown/horseshoes
 	backl = /obj/item/storage/backpack/rogue/satchel
 	belt = /obj/item/storage/belt/rogue/leather/plaquesilver
 	beltl = /obj/item/storage/keyring/steward // If this turns out to be overbearing re:stewardry bump down to the clerk keyring instead.
 	beltr = /obj/item/rogueweapon/huntingknife/idagger/steel
-	cloak = /obj/item/clothing/cloak/stabard/surcoat/councillor
+	cloak = /obj/item/clothing/cloak/tabard/stabard/surcoat/councillor
 	if(H.mind)
 		SStreasury.give_money_account(ECONOMIC_RICH, H, "Savings.")

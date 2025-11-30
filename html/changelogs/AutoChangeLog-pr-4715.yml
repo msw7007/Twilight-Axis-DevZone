@@ -1,0 +1,5 @@
+author: "Ryan180602"
+delete-after: True
+changes:
+  - rscadd: "Tabards/surcoats can have symbols now"
+  - bugfix: "Knight tabards are editable"

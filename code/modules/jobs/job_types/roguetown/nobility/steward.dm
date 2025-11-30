@@ -13,7 +13,7 @@
 	outfit = /datum/outfit/job/roguetown/steward
 	give_bank_account = TRUE
 	noble_income = 16
-	min_pq = 5 //Please don't give the vault keys to somebody that's going to lock themselves in on accident
+	min_pq = 8 //Please don't give the vault keys to somebody that's going to lock themselves in on accident
 	max_pq = null
 	round_contrib_points = 3
 	cmode_music = 'sound/music/combat_noble.ogg'
@@ -71,6 +71,7 @@
 	armor = /obj/item/clothing/suit/roguetown/armor/leather/jacket/artijacket/handjacket
 	head = /obj/item/clothing/head/roguetown/stewardtophat
 	shoes = /obj/item/clothing/shoes/roguetown/shortboots
+	saiga_shoes = /obj/item/clothing/shoes/roguetown/horseshoes/gold
 	belt = /obj/item/storage/belt/rogue/leather/plaquegold/steward
 	beltr = /obj/item/storage/keyring/steward
 	beltl = /obj/item/storage/belt/rogue/pouch/merchant/coins

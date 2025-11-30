@@ -417,7 +417,10 @@
 			//puller and pullee more than one tile away or in diagonal position
 			if(get_dist(src, pulling) > 1 || (moving_diagonally != SECOND_DIAG_STEP && ((pull_dir - 1) & pull_dir)))
 				pulling.moving_from_pull = src
-				pulling.Move(T, get_dir(pulling, T), glide_size) //the pullee tries to reach our previous position
+				if(pull_dir in GLOB.cardinals)
+					pulling.Move(T, get_dir(pulling, T), glide_size) //the pullee tries to reach our previous position
+				else
+					pulling.forceMove(T) // if we're moving diagonally, warp us to the old position so we can resume normal movement afterwards
 				pulling.moving_from_pull = null
 			check_pulling()
 
@@ -537,7 +540,7 @@
 	SET_ACTIVE_MOVEMENT(oldloc, NONE, TRUE, null)
 
 	if(destination)
-		if(pulledby)
+		if(pulledby && get_dist(destination, pulledby) > 1)
 			pulledby.stop_pulling()
 		var/same_loc = oldloc == destination
 		var/area/old_area = get_area(oldloc)
@@ -782,8 +785,8 @@ GLOBAL_VAR_INIT(pixel_diff_time, 1)
 	animate(pixel_x = pixel_x - pixel_x_diff, pixel_y = pixel_y - pixel_y_diff, transform=initial_transform, time = GLOB.pixel_diff_time * 2, easing=SINE_EASING, flags = ANIMATION_PARALLEL)
 
 /atom/movable/proc/do_attack_animation(atom/A, visual_effect_icon, obj/item/used_item, no_effect, item_animation_override = null, datum/intent/used_intent = null, simplified = FALSE)
-	var/animation_type = item_animation_override || used_intent?.get_attack_animation_type()
 	if(used_item || !simplified)
+		var/animation_type = item_animation_override || used_intent?.get_attack_animation_type()
 		if(used_intent?.swingdelay)
 			//draw_swingdelay(A, used_intent.custom_swingdelay, used_intent.swingdelay)
 			if(isliving(src))
@@ -1294,4 +1297,3 @@ GLOBAL_VAR_INIT(pixel_diff_time, 1)
 			SSspatial_grid.remove_grid_awareness(movable_loc, SPATIAL_GRID_CONTENTS_TYPE_CLIENTS)
 		ASSOC_UNSETEMPTY(recursive_contents, RECURSIVE_CONTENTS_CLIENT_MOBS)
 		UNSETEMPTY(movable_loc.important_recursive_contents)
-

@@ -13,14 +13,14 @@
 	outfit = /datum/outfit/job/roguetown/keeper
 	display_order = JDO_KEEPER
 	give_bank_account = TRUE
-	min_pq = 2
+	min_pq = 3
 	max_pq = null
 	round_contrib_points = 3
 
 	job_traits = list(TRAIT_MEDICINE_EXPERT, TRAIT_HOMESTEAD_EXPERT,
 						  TRAIT_ALCHEMY_EXPERT, TRAIT_SEWING_EXPERT,
 						  TRAIT_SURVIVAL_EXPERT, TRAIT_NOSTINK,
-						  TRAIT_GRABIMMUNE, TRAIT_STEELHEARTED, TRAIT_CLERGY)
+						  TRAIT_GRABIMMUNE, TRAIT_STEELHEARTED)
 
 	advclass_cat_rolls = list(CTAG_KEEPER = 2)
 	job_subclasses = list(

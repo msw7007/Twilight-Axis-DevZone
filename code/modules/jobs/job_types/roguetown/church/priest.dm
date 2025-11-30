@@ -29,13 +29,13 @@ GLOBAL_LIST_EMPTY(heretical_players)
 	outfit = /datum/outfit/job/roguetown/priest
 	display_order = JDO_PRIEST
 	give_bank_account = TRUE
-	min_pq = 10 // You should know the basics of things if you're going to lead the town's entire religious sector
+	min_pq = 12 // You should know the basics of things if you're going to lead the town's entire religious sector
 	max_pq = null
 	round_contrib_points = 5
 	same_job_respawn_delay = 30 MINUTES
 	//No nobility for you, being a member of the clergy means you gave UP your nobility. It says this in many of the church tutorial texts.
 	virtue_restrictions = list(/datum/virtue/utility/noble)
-	job_traits = list(TRAIT_CHOSEN, TRAIT_RITUALIST, TRAIT_GRAVEROBBER, TRAIT_HOMESTEAD_EXPERT, TRAIT_CLERGY)
+	job_traits = list(TRAIT_CHOSEN, TRAIT_RITUALIST, TRAIT_GRAVEROBBER, TRAIT_HOMESTEAD_EXPERT)
 	advclass_cat_rolls = list(CTAG_BISHOP = 2)
 	job_subclasses = list(
 		/datum/advclass/bishop
@@ -602,3 +602,10 @@ code\modules\admin\verbs\divinewrath.dm has a variant with all the gods so keep 
 	to_chat(target, span_danger("You feel the weight of heresy lift from your soul as you embrace [user.patron.name]!"))
 
 	return TRUE
+
+#undef PRIEST_ANNOUNCEMENT_COOLDOWN
+#undef PRIEST_SERMON_COOLDOWN
+#undef PRIEST_APOSTASY_COOLDOWN
+#undef PRIEST_EXCOMMUNICATION_COOLDOWN
+#undef PRIEST_CURSE_COOLDOWN
+#undef PRIEST_SWAP_COOLDOWN
