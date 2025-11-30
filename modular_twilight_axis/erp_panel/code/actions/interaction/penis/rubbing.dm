@@ -3,7 +3,7 @@
 
 	name = "Тереться членом"
 	required_target = SEX_ORGAN_ANUS
-	armor_slot_init = BODY_ZONE_PRECISE_GROIN
+	armor_slot_target = null
 	can_knot = FALSE
 	check_same_tile = FALSE
 

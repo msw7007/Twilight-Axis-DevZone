@@ -16,7 +16,7 @@
 
 /datum/sex_panel_action/other/penis/oral_sex/get_perform_message(mob/living/carbon/human/user, mob/living/carbon/human/target)
 	var/pose_state = get_pose_key(user, target)
-	var/message = "[user] [get_pose_text(pose_state)], [get_force_text()] и [get_speed_text()] трахает [target] в рот [get_knot_action(user, target)]."
+	var/message = "[user] [get_pose_text(pose_state)], [get_force_text()] и [get_speed_text()] трахает [target] в рот[get_knot_action(user, target)]."
 	do_onomatopoeia(user)
 	show_sex_effects(user)
 	do_thrust_animate(user, target)
@@ -35,3 +35,6 @@
 	var/message = span_love(result.Join("\n"))
 	user.visible_message(message)
 	return "into"
+
+/datum/sex_panel_action/other/penis/anal_sex/get_knot_count()
+	return 1

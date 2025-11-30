@@ -53,7 +53,7 @@
 #define SEX_ORGAN_FILTER_BODY "body"
 #define SEX_ORGAN_FILTER_ALL "all"
 
-#define MILKING_BREAST_PROBABILITY 33
+#define MILKING_BREAST_PROBABILITY 66
 
 GLOBAL_LIST_INIT(sex_panel_actions, build_sex_panel_actions())
 

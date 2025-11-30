@@ -3,7 +3,7 @@
 
 	name = "Использовать ягодицы"
 	required_target = SEX_ORGAN_ANUS
-	armor_slot_init = BODY_ZONE_PRECISE_GROIN
+	armor_slot_target = BODY_ZONE_PRECISE_GROIN
 	can_knot = FALSE
 	
 	affects_self_arousal = 0.12

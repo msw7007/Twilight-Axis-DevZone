@@ -3,7 +3,6 @@
 
 	name = "Мастурбировать на партнера"
 	required_target = null
-	armor_slot_init = BODY_ZONE_PRECISE_GROIN
 	can_knot = FALSE
 	check_same_tile = FALSE
 
