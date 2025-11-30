@@ -264,3 +264,11 @@
 
 	S.ui_interact(src)
 	return S
+
+/mob/living/carbon/human/proc/apply_soft_arousal(delta = 0.25)
+	if(delta <= 0)
+		return
+	if(cmode)
+		return
+
+	SEND_SIGNAL(src, COMSIG_SEX_RECEIVE_ACTION, delta, 0, FALSE, SEX_FORCE_LOW, SEX_SPEED_LOW)
