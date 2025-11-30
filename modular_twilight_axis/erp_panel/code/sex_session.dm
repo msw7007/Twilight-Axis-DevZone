@@ -94,7 +94,6 @@
 	if(!current_partner_ref)
 		current_partner_ref = REF(M)
 
-/// Нормализованный вывод имени партнёра
 /datum/sex_session_tgui/proc/get_partner_display_name(mob/living/carbon/human/M)
 	if(partner_bodypart_override && M && M == target)
 		if(istype(partner_bodypart_override, /obj/item/bodypart/head/dullahan))
@@ -103,17 +102,27 @@
 
 	return M?.name || "—"
 
-/// Сеттер для оверрайда-бодипарта
 /datum/sex_session_tgui/proc/set_partner_bodypart_override(obj/item/bodypart/B)
 	partner_bodypart_override = B
 
 /datum/sex_session_tgui/proc/build_org_nodes(mob/living/carbon/human/M, side)
-	// Если партнёрская сторона и есть оверрайд-бодипарт — строим узлы по нему
 	if(side == "partner" && partner_bodypart_override)
 		return build_org_nodes_for_bodypart(partner_bodypart_override, side)
 
 	var/list/out = list()
-	out += list(list("id" = SEX_ORGAN_FILTER_BODY, "name" = "Тело", "busy" = FALSE, "side" = side))
+	out += list(list(
+		"id" = SEX_ORGAN_FILTER_ALL,
+		"name" = "Все",
+		"busy" = FALSE,
+		"side" = side,
+	))
+
+	out += list(list(
+		"id" = SEX_ORGAN_FILTER_BODY,
+		"name" = "Тело",
+		"busy" = FALSE,
+		"side" = side,
+	))
 
 	var/is_actor = (side == "actor")
 
@@ -294,7 +303,6 @@
 			return FALSE
 
 	if(A.require_grab)
-		// Граб логически завязан на моба, поэтому оставляем target, не бодипарт
 		var/grabstate = user.get_highest_grab_state_on(target)
 		if(!grabstate || grabstate < A.required_grab_state)
 			return FALSE
@@ -320,11 +328,23 @@
 	var/a_type = a_id ? node_organ_type(a_id) : null
 	var/p_type = p_id ? node_organ_type(p_id) : null
 
-	// ... твой чек про пенис и узел ...
+	if(a_type == SEX_ORGAN_PENIS) 
+		var/mob/living/carbon/human/U = user 
+		if(U) 
+			var/datum/component/knotting/K = U.GetComponent(/datum/component/knotting) 
+			if(K && K.knotted_status == KNOTTED_AS_TOP && K.knotted_recipient) 
+				return FALSE
 
 	if(A.required_init && a_type && A.required_init != a_type)
 		return FALSE
 	if(A.required_target && p_type && A.required_target != p_type)
+		return FALSE
+
+	if(!A.can_perform(user, target))
+		return FALSE
+
+	var/a_cat = a_id ? category_of_actor_node(a_id) : null
+	if(a_cat && is_locked(a_cat))
 		return FALSE
 
 	if(performing)
@@ -340,13 +360,6 @@
 			return FALSE
 
 		return TRUE
-
-	var/a_cat = a_id ? category_of_actor_node(a_id) : null
-	if(a_cat && is_locked(a_cat))
-		return FALSE
-
-	if(!A.can_perform(user, target))
-		return FALSE
 
 	return TRUE
 
@@ -1185,22 +1198,30 @@
 	if(!selected_actor_organ_id || !selected_partner_organ_id)
 		return res
 
-	if(selected_actor_organ_id == SEX_ORGAN_FILTER_BODY || selected_partner_organ_id == SEX_ORGAN_FILTER_BODY)
-		return res
+	var/a_sel = selected_actor_organ_id
+	var/p_sel = selected_partner_organ_id
+
+	var/a_type = node_organ_type(a_sel)
+	var/p_type = node_organ_type(p_sel)
 
 	for(var/key in GLOB.sex_panel_actions)
 		var/datum/sex_panel_action/A = GLOB.sex_panel_actions[key]
 		if(!A)
 			continue
 
-		var/a_type = node_organ_type(selected_actor_organ_id)
-		var/p_type = node_organ_type(selected_partner_organ_id)
+		if(a_sel == SEX_ORGAN_FILTER_BODY)
+			if(A.required_init)
+				continue
+		else if(a_sel != SEX_ORGAN_FILTER_ALL)
+			if(A.required_init && (!a_type || A.required_init != a_type))
+				continue
 
-		if(A.required_init && (!a_type || A.required_init != a_type))
-			continue
-
-		if(A.required_target && (!p_type || A.required_target != p_type))
-			continue
+		if(p_sel == SEX_ORGAN_FILTER_BODY)
+			if(A.required_target)
+				continue
+		else if(p_sel != SEX_ORGAN_FILTER_ALL)
+			if(A.required_target && (!p_type || A.required_target != p_type))
+				continue
 
 		res += key
 

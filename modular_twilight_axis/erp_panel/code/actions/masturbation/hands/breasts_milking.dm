@@ -9,7 +9,6 @@
 	affects_arousal      = 0
 	affects_self_pain    = 0.01
 	affects_pain         = 0
-	var/datum/sex_organ/breasts/breast_ref
 
 /datum/sex_panel_action/self/hands/milking_breasts/can_perform(mob/living/carbon/human/user, mob/living/carbon/human/target)
 	. = ..()
@@ -20,7 +19,6 @@
 	if(SS)
 		var/datum/sex_organ/O = SS.resolve_organ_datum(user, SEX_ORGAN_FILTER_BREASTS)
 		if(O)
-			breast_ref = O
 			var/obj/item/container = O.find_liquid_container()
 			if(container)
 				return TRUE

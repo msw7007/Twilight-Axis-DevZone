@@ -285,7 +285,7 @@
 	var/list/orgs = get_action_organs(user, target, FALSE, FALSE)
 	if(!orgs) return 0
 
-	var/datum/sex_organ/init = orgs["init"]
+	var/datum/sex_organ/init = orgs["target"]
 	if(!init) return 0
 
 	var/moved = init.inject_liquid()

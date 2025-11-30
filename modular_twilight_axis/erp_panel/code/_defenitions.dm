@@ -51,6 +51,7 @@
 #define SEX_ORGAN_FILTER_ANUS "genital_a"
 #define SEX_ORGAN_FILTER_GENITAL "genital"
 #define SEX_ORGAN_FILTER_BODY "body"
+#define SEX_ORGAN_FILTER_ALL "all"
 
 #define MILKING_BREAST_PROBABILITY 33
 

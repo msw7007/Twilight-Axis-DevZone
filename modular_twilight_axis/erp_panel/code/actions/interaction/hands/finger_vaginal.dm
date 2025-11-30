@@ -2,6 +2,7 @@
 	abstract_type = FALSE
 	name = "Фингеринг вагины"
 	required_target = SEX_ORGAN_VAGINA
+	armor_slot_target = BODY_ZONE_PRECISE_GROIN
 	stamina_cost = 0.05
 	affects_self_arousal = 0.06
 	affects_arousal      = 0.04

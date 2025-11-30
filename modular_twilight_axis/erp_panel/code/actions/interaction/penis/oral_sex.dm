@@ -3,6 +3,7 @@
 
 	name = "Оральный секс"
 	required_target = SEX_ORGAN_MOUTH
+	armor_slot_target = BODY_ZONE_PRECISE_MOUTH
 
 	affects_self_arousal = 0.12
 	affects_arousal      = 0

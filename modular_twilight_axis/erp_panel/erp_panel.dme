@@ -75,6 +75,7 @@
 #include "code\actions\interaction\vagina\face.dm"
 #include "code\actions\interaction\vagina\scissors.dm"
 #include "code\actions\interaction\vagina\rubbing.dm"
+#include "code\actions\interaction\vagina\masturbation.dm"
 #include "code\actions\interaction\anus\_anus.dm"
 #include "code\actions\interaction\anus\sex.dm"
 #include "code\actions\interaction\anus\butt.dm"

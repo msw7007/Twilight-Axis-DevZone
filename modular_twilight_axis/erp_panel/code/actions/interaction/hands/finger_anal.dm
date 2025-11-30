@@ -2,6 +2,7 @@
 	abstract_type = FALSE
 	name = "Фингеринг ануса"
 	required_target = SEX_ORGAN_ANUS
+	armor_slot_target = BODY_ZONE_PRECISE_GROIN
 	stamina_cost = 0.05
 	affects_self_arousal = 0.06
 	affects_arousal      = 0.04

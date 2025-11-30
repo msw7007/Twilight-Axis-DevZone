@@ -2,11 +2,23 @@
 	abstract_type = FALSE
 	name = "Ласкать тестикулы"
 	required_target = SEX_ORGAN_PENIS
+	armor_slot_target = BODY_ZONE_PRECISE_GROIN
 	stamina_cost = 0.05
 	affects_self_arousal = 0.06
 	affects_arousal      = 0.04
 	affects_self_pain    = 0.01
 	affects_pain         = 0.01
+	check_same_tile = FALSE
+
+/datum/sex_panel_action/other/penis/tea_bag/can_perform(mob/living/carbon/human/user, mob/living/carbon/human/target)
+	. = ..()
+
+	if(!target)
+		return
+
+	var/obj/item/organ/testicles/testicles = target.getorganslot(ORGAN_SLOT_TESTICLES)
+	if(!testicles)
+		return
 
 /datum/sex_panel_action/other/hands/tease_testicles/get_start_message(mob/living/carbon/human/user, mob/living/carbon/human/target)
 	var/pose_state = get_pose_key(user, target)

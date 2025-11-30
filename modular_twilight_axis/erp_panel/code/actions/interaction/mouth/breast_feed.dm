@@ -2,6 +2,7 @@
 	abstract_type = FALSE
 	name = "Облизать грудь"
 	required_target = SEX_ORGAN_BREASTS
+	armor_slot_target = BODY_ZONE_CHEST
 	stamina_cost = 0.02
 	affects_self_arousal = 0.12
 	affects_arousal      = 0.12

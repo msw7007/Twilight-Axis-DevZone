@@ -2,6 +2,7 @@
 	abstract_type = FALSE
 	name = "Римминг"
 	required_target = SEX_ORGAN_ANUS
+	armor_slot_target = BODY_ZONE_PRECISE_GROIN
 	stamina_cost = 0.01
 	affects_self_arousal = 0.12
 	affects_arousal      = 0.12

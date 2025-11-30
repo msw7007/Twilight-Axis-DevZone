@@ -11,6 +11,16 @@
 	affects_self_pain    = 0.03
 	affects_pain         = 0
 
+/datum/sex_panel_action/other/penis/tea_bag/can_perform(mob/living/carbon/human/user, mob/living/carbon/human/target)
+	. = ..()
+
+	if(!user)
+		return
+
+	var/obj/item/organ/testicles/testicles = user.getorganslot(ORGAN_SLOT_TESTICLES)
+	if(!testicles)
+		return
+
 /datum/sex_panel_action/other/penis/tea_bag/get_start_message(mob/living/carbon/human/user, mob/living/carbon/human/target)
 	var/pose_state = get_pose_key(user, target)
 	return "[user] [get_pose_text(pose_state)] приставляет тестикулами к лицу [target]."

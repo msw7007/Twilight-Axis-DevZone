@@ -5,6 +5,7 @@
 	required_target = SEX_ORGAN_ANUS
 	armor_slot_init = BODY_ZONE_PRECISE_GROIN
 	can_knot = FALSE
+	check_same_tile = FALSE
 
 	affects_self_arousal = 0.12
 	affects_arousal      = 0

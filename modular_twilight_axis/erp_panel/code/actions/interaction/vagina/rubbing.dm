@@ -7,7 +7,7 @@
 	affects_arousal      = 0.12
 	affects_self_pain    = 0.01
 	affects_pain         = 0.01
-	require_grab = TRUE
+	check_same_tile = FALSE
 
 /datum/sex_panel_action/other/vagina/rubbing/get_start_message(mob/living/carbon/human/user, mob/living/carbon/human/target)
 	var/pose_state = get_pose_key(user, target)
