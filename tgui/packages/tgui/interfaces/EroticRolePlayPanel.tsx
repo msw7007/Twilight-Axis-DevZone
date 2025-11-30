@@ -350,7 +350,7 @@ const StatusPanel: React.FC<{
   partnerLabel?: string;
   editable?: boolean;
   onEditOrgan: (id: string, field: 'sensitivity' | 'pain') => void;
-  // NEW: коллбек для управления эрекцией
+  // коллбек для управления эрекцией
   onSetErectState?: (id: string, state: 'auto' | 'none' | 'partial' | 'hard') => void;
 }> = ({
   data,
@@ -377,15 +377,16 @@ const StatusPanel: React.FC<{
   return (
     <Section title={`Состояние: ${actorName}`} fill scrollable>
       {actorOrgans.map((org) => {
+        // ВАЖНО: считаем орган затронутым только как ЦЕЛЬ
         const affecting = links.filter(
-          (l) => l.actor_organ_id === org.id || l.partner_organ_id === org.id,
+          (l) => l.partner_organ_id === org.id,
         );
 
         const sens = (org as any).sensitivity ?? 0;
         const pain = (org as any).pain ?? 0;
         const fullness = (org as any).fullness ?? 0;
 
-        // NEW: если это член — готовим режим для подсветки кнопок
+        // если это член — готовим режим для подсветки кнопок
         const isPenis = org.id === 'genital_p';
         const erectMode = isPenis ? getErectModeForOrg(org) : 'auto';
 
@@ -417,7 +418,7 @@ const StatusPanel: React.FC<{
                       </Box>
                     </Button>
                   </Stack.Item>
-                  {/* Боль больше не редактируем, просто отображаем при желании */}
+                  {/* Боль не редактируем, только отображаем */}
                   <Stack.Item>
                     <Box color="bad">
                       Боль: {fmt2(pain)}
@@ -427,7 +428,7 @@ const StatusPanel: React.FC<{
               </Stack.Item>
             </Stack>
 
-            {/* NEW: переключатель эрекции для члена */}
+            {/* переключатель эрекции для члена */}
             {isPenis && onSetErectState && (
               <Box mt={0.25} ml={1}>
                 <Box as="div" style={{ fontSize: 11 }} color="label">
@@ -480,26 +481,21 @@ const StatusPanel: React.FC<{
                 Заполненность: {Math.round(fullness)}%
               </Box>
             )}
+
             {affecting.length ? (
               <Stack vertical mt={0.5}>
-                {affecting.map((l) => {
-                  const isSource = l.actor_organ_id === org.id;
-                  const whoLabel = isSource
-                    ? actorName
-                    : partnerLabel || 'Партнёр';
-
-                  return (
-                    <Box key={l.id} ml={1}>
-                      <Box as="span" color="label">
-                        {whoLabel}:{' '}
-                      </Box>
-                      {l.action_name || '—'}{' '}
-                      <Box as="span" color="label">
-                        ({speedName(l.speed)}, {forceName(l.force)})
-                      </Box>
+                {affecting.map((l) => (
+                  <Box key={l.id} ml={1}>
+                    <Box as="span" color="label">
+                      {/* кто воздействует на орган — инициатор действия */}
+                      {actorName}:{' '}
                     </Box>
-                  );
-                })}
+                    {l.action_name || '—'}{' '}
+                    <Box as="span" color="label">
+                      ({speedName(l.speed)}, {forceName(l.force)})
+                    </Box>
+                  </Box>
+                ))}
               </Stack>
             ) : (
               <Box ml={1} color="label">
