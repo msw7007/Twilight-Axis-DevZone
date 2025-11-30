@@ -22,3 +22,11 @@
   - rscdel: Removed recent changes (which has not been recent for a long time)
   - balance: Fate Weaver / Dragonhide can no longer be enchanted
   - bugfix: Conjure Dragonhide text should terminate properly
+2025-11-30:
+  PPooch:
+  - bugfix: Simple bleeds now clear beneath negligible levels.
+  Ryan180602:
+  - rscadd: Tabards/surcoats can have symbols now
+  - bugfix: Knight tabards are editable
+  WeNeedMorePhoron:
+  - rscadd: Working changelog in TGUI has been ported from TGstation. Joy.
