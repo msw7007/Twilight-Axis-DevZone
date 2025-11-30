@@ -33,8 +33,6 @@
 					message_param = "pats %t on the head."
 				if(BODY_ZONE_PRECISE_EARS)
 					message_param = "pats %t on the ear."
-				if(BODY_ZONE_PRECISE_BACK)
-					message_param = "pats %t on the back."
 				else
 					message_param = "pats %t on [parse_zone(H.zone_selected)]."
 
@@ -108,7 +106,7 @@
 			else if(J.zone_selected == BODY_ZONE_PRECISE_EARS)
 				message_param = "licks the ear of %t."
 				var/mob/living/carbon/human/O = T
-				if(iself(O) || ishalfelf(O) || isdarkelf(O) || iswoodelf(E))
+				if(iself(O) || ishalfelf(O) || isdarkelf(O) || iswoodelf(O))
 					if(!O.cmode)
 						to_chat(O, span_love("It tickles..."))
 						O.apply_soft_arousal(0.5)
