@@ -121,22 +121,23 @@
 
 	return orgs
 
-/datum/sex_panel_action/other/penis/hemi/dp_vag_anal/get_start_message(user, target)
+/datum/sex_panel_action/other/penis/hemi/dp_vag_anal/get_start_message(mob/living/carbon/human/user, mob/living/carbon/human/target)
 	var/pose_state = get_pose_key(user, target)
 	return "[user] [get_pose_text(pose_state)] приставляет свои члены сразу к обоим дырочкам [target]."
 
-/datum/sex_panel_action/other/penis/hemi/dp_vag_anal/get_perform_message(user, target)
+/datum/sex_panel_action/other/penis/hemi/dp_vag_anal/get_perform_message(mob/living/carbon/human/user, mob/living/carbon/human/target)
 	var/pose_state = get_pose_key(user, target)
 	var/msg = "[user] [get_pose_text(pose_state)], [get_force_text()] и [get_speed_text()] трахает [target] сразу в киску и зад [get_knot_action()]."
 	do_onomatopoeia(user)
 	show_sex_effects(user)
 	do_thrust_animate(user, target)
+	do_sound_effect(user)
 	return spanify_force(msg)
 
 /datum/sex_panel_action/other/penis/hemi/dp_vag_anal/get_finish_message(mob/living/carbon/human/user, mob/living/carbon/human/target)
 	return "[user] вытаскивает члены из дырок[target]."
 
-/datum/sex_panel_action/other/penis/hemi/dp_vag_anal/handle_climax_message(user, target)
+/datum/sex_panel_action/other/penis/hemi/dp_vag_anal/handle_climax_message(mob/living/carbon/human/user, mob/living/carbon/human/target)
 	var/list/result = ..()
 	if(!islist(result))
 		result = list(result)

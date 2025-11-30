@@ -18,6 +18,7 @@
 	var/pose_state = get_pose_key(user, target)
 	var/message = "[user] [get_pose_text(pose_state)], [get_force_text()] и [get_speed_text()] лижет ножки [target]."
 	show_sex_effects(user)
+	user.make_sucking_noise()
 	return spanify_force(message)
 
 /datum/sex_panel_action/other/mouth/foot_lick/get_finish_message(mob/living/carbon/human/user, mob/living/carbon/human/target)

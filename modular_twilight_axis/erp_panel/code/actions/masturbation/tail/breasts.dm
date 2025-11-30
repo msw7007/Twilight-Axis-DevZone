@@ -14,6 +14,7 @@
 /datum/sex_panel_action/self/tail/squeeze_breasts/get_perform_message(user, target)
 	var/message = "[user] [get_force_text()] и [get_speed_text()] сжимает хвостом грудь."
 	show_sex_effects(user)
+	playsound(user, 'sound/misc/mat/fingering.ogg', 30, TRUE, -2, ignore_walls = FALSE)
 	return spanify_force(message)
 
 /datum/sex_panel_action/self/tail/squeeze_breasts/get_finish_message(user, target)

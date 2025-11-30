@@ -157,7 +157,13 @@
 			new /obj/effect/temp_visual/heart/sex_effects/red_heart(get_turf(user))
 
 /datum/sex_panel_action/proc/do_sound_effect(mob/living/carbon/human/user)
-	return
+	var/sound
+	switch(session.force)
+		if(SEX_FORCE_LOW, SEX_FORCE_MID)
+			sound = pick(SEX_SOUNDS_SLOW)
+		if(SEX_FORCE_HIGH, SEX_FORCE_EXTREME)
+			sound = pick(SEX_SOUNDS_HARD)
+	playsound(user, sound, 30, TRUE, -2, ignore_walls = FALSE)
 
 /datum/sex_panel_action/proc/get_action_organs(mob/living/carbon/human/user, mob/living/carbon/human/target, only_free_init = TRUE, only_free_target = FALSE)
 

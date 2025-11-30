@@ -17,6 +17,7 @@
 	var/message = "[user] [get_force_text()] и [get_speed_text()] обсасывает хвост в своем рту."
 	do_onomatopoeia(user)
 	show_sex_effects(user)
+	user.make_sucking_noise()
 	return spanify_force(message)
 
 /datum/sex_panel_action/self/tail/suck_tail/get_finish_message(mob/living/carbon/human/user, mob/living/carbon/human/target)

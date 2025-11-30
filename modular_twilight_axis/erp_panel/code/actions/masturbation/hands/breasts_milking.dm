@@ -33,6 +33,7 @@
 	var/pose_state = get_pose_key(user, target)
 	var/message = "[user] [get_pose_text(pose_state)], [get_force_text()] и [get_speed_text()] выжимает свою грудь."
 	show_sex_effects(user)
+	playsound(user, 'sound/misc/mat/fingering.ogg', 30, TRUE, -2, ignore_walls = FALSE)
 	return spanify_force(message)
 
 /datum/sex_panel_action/self/hands/milking_breasts/get_finish_message(mob/living/carbon/human/user,mob/living/carbon/human/target)

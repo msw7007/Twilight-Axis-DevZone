@@ -21,6 +21,7 @@
 	do_onomatopoeia(user)
 	show_sex_effects(user)
 	do_thrust_animate(user, target)
+	playsound(user, 'sound/misc/mat/fingering.ogg', 30, TRUE, -2, ignore_walls = FALSE)
 	return spanify_force(message)
 
 /datum/sex_panel_action/other/penis/tit_job/get_finish_message(mob/living/carbon/human/user, mob/living/carbon/human/target)

@@ -16,6 +16,7 @@
 	var/message = "[user] [get_force_text()] и [get_speed_text()] двигает хвостом в своей заднице."
 	do_onomatopoeia(user)
 	show_sex_effects(user)
+	playsound(user, 'sound/misc/mat/fingering.ogg', 30, TRUE, -2, ignore_walls = FALSE)
 	return spanify_force(message)
 
 /datum/sex_panel_action/self/tail/anal_tail/get_finish_message(user, target)

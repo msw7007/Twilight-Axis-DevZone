@@ -19,6 +19,7 @@
 	do_onomatopoeia(user)
 	show_sex_effects(user)
 	do_thrust_animate(user, target)
+	target.make_sucking_noise()
 	return spanify_force(message)
 
 /datum/sex_panel_action/other/tail/oral/get_finish_message(mob/living/carbon/human/user, mob/living/carbon/human/target)

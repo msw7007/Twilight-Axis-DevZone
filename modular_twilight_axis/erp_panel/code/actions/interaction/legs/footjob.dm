@@ -18,6 +18,7 @@
 	var/message = "[user] [get_pose_text(pose_state)], [get_force_text()] и [get_speed_text()] водит ножками по члену [target]."
 	show_sex_effects(user)
 	do_thrust_animate(user, target)
+	playsound(user, 'sound/misc/mat/fingering.ogg', 30, TRUE, -2, ignore_walls = FALSE)
 	return spanify_force(message)
 
 /datum/sex_panel_action/other/legs/footjob/get_finish_message(mob/living/carbon/human/user, mob/living/carbon/human/target)
