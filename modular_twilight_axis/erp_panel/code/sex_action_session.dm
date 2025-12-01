@@ -39,7 +39,10 @@
 	partner_node_id = partner_node
 
 	actor = S.user
-	//partner = S.target
+	var/mob/living/carbon/human/p = S.get_current_partner()
+	if(!p)
+		p = S.user
+	partner = p
 
 /datum/sex_action_session/Destroy()
 	var/datum/sex_organ/src_org = session?.resolve_organ_datum(actor, actor_node_id)
@@ -69,7 +72,7 @@
 	if(!I || I != src)
 		return
 
-	if(isnull(partner))//.client))
+	if(isnull(partner))
 		return session.stop_instance(instance_id)
 
 	if(!session.can_continue_action_session(src))
@@ -84,15 +87,13 @@
 		return
 
 	if(action.stamina_cost)
-		var/mob/living/carbon/human/U = session.user
-		U.sex_procs_active = TRUE
-		var/success = session.user.stamina_add(action.stamina_cost * get_stamina_cost_multiplier(force))
-		U.sex_procs_active = FALSE
-
-		if(!success)
-			return session.stop_instance(instance_id)
-
-	action.show_sex_effects(actor)
+		var/mob/living/carbon/human/U = actor
+		if(U)
+			U.sex_procs_active = TRUE
+			var/success = U.stamina_add(action.stamina_cost * get_stamina_cost_multiplier(force))
+			U.sex_procs_active = FALSE
+			if(!success)
+				return session.stop_instance(instance_id)
 
 	var/delta = calc_delta()
 	var/list/pain_deltas = update_organ_response(delta)
@@ -183,7 +184,7 @@
 		var/datum/component/knotting/K = U.GetComponent(/datum/component/knotting)
 		if(K && K.knotted_status == KNOTTED_AS_TOP && K.knotted_recipient == T)
 			knot_pain_mult = 0.25
-	
+
 	target_pain_delta += knot_pain_mult
 
 	if(src_org)
@@ -260,7 +261,7 @@
 			target_delta -= target_pain
 
 	if(U && (user_delta || user_pain))
-		SEND_SIGNAL(U, COMSIG_SEX_RECEIVE_ACTION, user_delta, user_pain, TRUE,  force, speed)
+		SEND_SIGNAL(U, COMSIG_SEX_RECEIVE_ACTION, user_delta, user_pain, TRUE, force, speed)
 	if(T && (target_delta || target_pain))
 		SEND_SIGNAL(T, COMSIG_SEX_RECEIVE_ACTION, target_delta, target_pain, FALSE, force, speed)
 
@@ -276,10 +277,10 @@
 		if(!S.action)
 			continue
 
-		if(S.session.user == M)
+		if(S.actor == M)
 			if(!S.action.affects_self_arousal)
 				continue
-		else if(S.session.target == M)
+		else if(S.partner == M)
 			if(!S.action.affects_arousal)
 				continue
 		else
