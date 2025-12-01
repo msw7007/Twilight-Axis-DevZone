@@ -67,7 +67,7 @@
 		after_intimate_climax(user, target)
 
 /datum/component/arousal/ejaculate()
-	if(world.time <= (last_ejaculation_world_time  + 2 SECONDS))
+	if(world.time <= (last_ejaculation_world_time + 2 SECONDS))
 		return
 	last_ejaculation_world_time = world.time
 
@@ -104,24 +104,32 @@
 
 	var/datum/sex_action_session/S = highest_priority
 	var/datum/sex_session_tgui/SS = S.session
-	var/mob/living/carbon/human/U = SS.user
-	var/mob/living/carbon/human/T = SS.target
+
+	var/mob/living/carbon/human/source = mob
+	var/mob/living/carbon/human/partner = null
+
+	if(istype(SS.user, /mob/living/carbon/human) && SS.user != source)
+		partner = SS.user
+	if(istype(SS.target, /mob/living/carbon/human) && SS.target != source)
+		if(!partner)
+			partner = SS.target
+
 	var/datum/sex_panel_action/A = S.action
 
-	var/return_type = A.handle_climax_message(U, T)
+	var/return_type = A.handle_climax_message(source, partner)
 	if(!return_type)
 		var/turf/turf2 = get_turf(mob)
 		new /obj/effect/decal/cleanable/coom(turf2)
-		after_ejaculation(FALSE, U, T)
+		after_ejaculation(FALSE, source, partner)
 	else
-		handle_climax(return_type, U, T)
-		after_ejaculation(return_type == "into" || return_type == "oral", U, T)
+		handle_climax(return_type, source, partner)
+		after_ejaculation(return_type == "into" || return_type == "oral", source, partner)
 
-	if(SS.do_knot_action && A.can_knot && U)
-		var/obj/item/organ/penis/P = U.getorganslot(ORGAN_SLOT_PENIS)
+	if(SS.do_knot_action && A.can_knot && source)
+		var/obj/item/organ/penis/P = source.getorganslot(ORGAN_SLOT_PENIS)
 		var/datum/sex_organ/penis/PO = P ? P.sex_organ : null
 		if(PO && PO.have_knot)
-			A.try_knot_on_climax(U, T)
+			A.try_knot_on_climax(source, partner)
 
 /datum/component/arousal/receive_sex_action(datum/source, arousal_amt, pain_amt, giving, applied_force, applied_speed, organ_id)
 	var/mob/user = parent
@@ -191,3 +199,34 @@
 		"arousal_multiplier" = arousal_multiplier,
 		"is_spent" = is_spent()
 	)
+
+/datum/component/arousal/handle_climax(climax_type, mob/living/carbon/human/user, mob/living/carbon/human/target)
+	switch(climax_type)
+		if("onto")
+			log_combat(user, target, "Came onto the target")
+			playsound(target, 'sound/misc/mat/endout.ogg', 50, TRUE, ignore_walls = FALSE)
+			var/turf/turf = get_turf(target)
+			new /obj/effect/decal/cleanable/coom(turf)
+			if(target)
+				var/datum/status_effect/facial/facial = target.has_status_effect(/datum/status_effect/facial)
+				if(!facial)
+					target.apply_status_effect(/datum/status_effect/facial)
+				else
+					facial.refresh_cum()
+		if("into")
+			log_combat(user, target, "Came inside the target")
+			playsound(target, 'sound/misc/mat/endin.ogg', 50, TRUE, ignore_walls = FALSE)
+			if(target)
+				var/status_type = /datum/status_effect/facial/internal
+				var/datum/status_effect/facial/internal_effect = target.has_status_effect(status_type)
+				if(!internal_effect)
+					target.apply_status_effect(status_type)
+				else
+					internal_effect.refresh_cum()
+		if("self")
+			log_combat(user, user, "Ejaculated")
+			playsound(user, 'sound/misc/mat/endout.ogg', 50, TRUE, ignore_walls = FALSE)
+			var/turf/turf = get_turf(target)
+			new /obj/effect/decal/cleanable/coom(turf)
+
+	after_ejaculation(climax_type == "into" || climax_type == "oral", user, target)

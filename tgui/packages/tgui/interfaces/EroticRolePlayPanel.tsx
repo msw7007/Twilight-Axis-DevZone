@@ -350,8 +350,9 @@ const StatusPanel: React.FC<{
   partnerLabel?: string;
   editable?: boolean;
   onEditOrgan: (id: string, field: 'sensitivity' | 'pain') => void;
-  // коллбек для управления эрекцией
   onSetErectState?: (id: string, state: 'auto' | 'none' | 'partial' | 'hard') => void;
+  // 🔥 НОВОЕ: в каком режиме показываем — что делает актёр или что принимает цель
+  viewAs?: 'actor' | 'target';
 }> = ({
   data,
   actorOrgans,
@@ -360,6 +361,7 @@ const StatusPanel: React.FC<{
   editable,
   onEditOrgan,
   onSetErectState,
+  viewAs = 'actor',
 }) => {
   const links = data.active_links || [];
   const canEdit = editable !== false;
@@ -377,16 +379,21 @@ const StatusPanel: React.FC<{
   return (
     <Section title={`Состояние: ${actorName}`} fill scrollable>
       {actorOrgans.map((org) => {
-        // ВАЖНО: считаем орган затронутым только как ЦЕЛЬ
-        const affecting = links.filter(
-          (l) => l.partner_organ_id === org.id,
-        );
+        // 🔥 КЛЮЧЕВОЕ МЕСТО
+        // viewAs = 'actor'  → показываем только то, что ИСХОДИТ от этих органов
+        // viewAs = 'target' → только то, что НАПРАВЛЕНО в эти органы
+        const affecting = links.filter((l) => {
+          if (viewAs === 'actor') {
+            return l.actor_organ_id === org.id;
+          }
+          // режим жертвы
+          return l.partner_organ_id === org.id;
+        });
 
         const sens = (org as any).sensitivity ?? 0;
         const pain = (org as any).pain ?? 0;
         const fullness = (org as any).fullness ?? 0;
 
-        // если это член — готовим режим для подсветки кнопок
         const isPenis = org.id === 'genital_p';
         const erectMode = isPenis ? getErectModeForOrg(org) : 'auto';
 
@@ -418,7 +425,6 @@ const StatusPanel: React.FC<{
                       </Box>
                     </Button>
                   </Stack.Item>
-                  {/* Боль не редактируем, только отображаем */}
                   <Stack.Item>
                     <Box color="bad">
                       Боль: {fmt2(pain)}
@@ -428,7 +434,6 @@ const StatusPanel: React.FC<{
               </Stack.Item>
             </Stack>
 
-            {/* переключатель эрекции для члена */}
             {isPenis && onSetErectState && (
               <Box mt={0.25} ml={1}>
                 <Box as="div" style={{ fontSize: 11 }} color="label">
@@ -484,18 +489,25 @@ const StatusPanel: React.FC<{
 
             {affecting.length ? (
               <Stack vertical mt={0.5}>
-                {affecting.map((l) => (
-                  <Box key={l.id} ml={1}>
-                    <Box as="span" color="label">
-                      {/* кто воздействует на орган — инициатор действия */}
-                      {actorName}:{' '}
+                {affecting.map((l) => {
+                  // для режима жертвы всё, что здесь есть — уже "что со мной делают"
+                  const whoLabel =
+                    viewAs === 'actor'
+                      ? (actorName || 'Вы')
+                      : (partnerLabel || 'Партнёр');
+
+                  return (
+                    <Box key={l.id} ml={1}>
+                      <Box as="span" color="label">
+                        {whoLabel}:{' '}
+                      </Box>
+                      {l.action_name || '—'}{' '}
+                      <Box as="span" color="label">
+                        ({speedName(l.speed)}, {forceName(l.force)})
+                      </Box>
                     </Box>
-                    {l.action_name || '—'}{' '}
-                    <Box as="span" color="label">
-                      ({speedName(l.speed)}, {forceName(l.force)})
-                    </Box>
-                  </Box>
-                ))}
+                  );
+                })}
               </Stack>
             ) : (
               <Box ml={1} color="label">

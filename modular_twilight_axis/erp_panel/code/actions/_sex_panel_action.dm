@@ -264,33 +264,65 @@
 		if(SEX_FORCE_EXTREME)
 			return "<span class='love_extreme'>[string]</span>"
 
-/datum/sex_panel_action/proc/get_target_zone(mob/living/user)
+/datum/sex_panel_action/proc/get_target_zone(mob/living/user, mob/living/target)
 	var/list/zone_translations = list(
-		BODY_ZONE_HEAD = "голову",
-		BODY_ZONE_CHEST = "туловище",
-		BODY_ZONE_R_ARM = "правую руку",
-		BODY_ZONE_L_ARM = "левую руку",
-		BODY_ZONE_R_LEG = "правую ногу",
-		BODY_ZONE_L_LEG = "левую ногу",
-		BODY_ZONE_PRECISE_R_INHAND = "правую ладонь",
-		BODY_ZONE_PRECISE_L_INHAND = "левую ладонь",
-		BODY_ZONE_PRECISE_R_FOOT = "правую ступню",
-		BODY_ZONE_PRECISE_L_FOOT = "левую ступню",
-		BODY_ZONE_PRECISE_SKULL = "череп",
-		BODY_ZONE_PRECISE_EARS = "уши",
-		BODY_ZONE_PRECISE_R_EYE = "правый глаз",
-		BODY_ZONE_PRECISE_L_EYE = "левый глаз",
-		BODY_ZONE_PRECISE_NOSE = "нос",
-		BODY_ZONE_PRECISE_MOUTH = "рот",
-		BODY_ZONE_PRECISE_NECK = "шею",
-		BODY_ZONE_PRECISE_STOMACH = "живот",
-		BODY_ZONE_PRECISE_GROIN = "пах"
+		BODY_ZONE_HEAD              = "голову",
+		BODY_ZONE_CHEST             = "туловище",
+		BODY_ZONE_R_ARM             = "правую руку",
+		BODY_ZONE_L_ARM             = "левую руку",
+		BODY_ZONE_R_LEG             = "правую ногу",
+		BODY_ZONE_L_LEG             = "левую ногу",
+		BODY_ZONE_PRECISE_R_INHAND  = "правую ладонь",
+		BODY_ZONE_PRECISE_L_INHAND  = "левую ладонь",
+		BODY_ZONE_PRECISE_R_FOOT    = "правую ступню",
+		BODY_ZONE_PRECISE_L_FOOT    = "левую ступню",
+		BODY_ZONE_PRECISE_SKULL     = "лоб",
+		BODY_ZONE_PRECISE_EARS      = "уши",
+		BODY_ZONE_PRECISE_R_EYE     = "правый глаз",
+		BODY_ZONE_PRECISE_L_EYE     = "левый глаз",
+		BODY_ZONE_PRECISE_NOSE      = "нос",
+		BODY_ZONE_PRECISE_MOUTH     = "рот",
+		BODY_ZONE_PRECISE_NECK      = "шею",
+		BODY_ZONE_PRECISE_STOMACH   = "живот",
+		BODY_ZONE_PRECISE_GROIN     = "пах",
 	)
-	var/ru_zone_selected = zone_translations[user.zone_selected]
+
+	var/zone = user?.zone_selected
+	var/ru_zone_selected = zone_translations[zone]
+
+	if(!ru_zone_selected)
+		return "тело"
+
+	if(target && ishuman(target))
+		var/mob/living/carbon/human/H = target
+
+		if(zone in list(BODY_ZONE_R_LEG, BODY_ZONE_L_LEG, BODY_ZONE_PRECISE_R_FOOT, BODY_ZONE_PRECISE_L_FOOT))
+			var/has_legs = H.get_bodypart(BODY_ZONE_R_LEG) || H.get_bodypart(BODY_ZONE_L_LEG)
+			if(!has_legs)
+				return "туловище"
+
+		if(zone in list(BODY_ZONE_R_ARM, BODY_ZONE_L_ARM, BODY_ZONE_PRECISE_R_INHAND, BODY_ZONE_PRECISE_L_INHAND))
+			var/has_arms = H.get_bodypart(BODY_ZONE_R_ARM) || H.get_bodypart(BODY_ZONE_L_ARM)
+			if(!has_arms)
+				return "туловище"
+
+		if(zone in list(
+			BODY_ZONE_HEAD,
+			BODY_ZONE_PRECISE_SKULL,
+			BODY_ZONE_PRECISE_EARS,
+			BODY_ZONE_PRECISE_R_EYE,
+			BODY_ZONE_PRECISE_L_EYE,
+			BODY_ZONE_PRECISE_NOSE,
+			BODY_ZONE_PRECISE_MOUTH,
+			BODY_ZONE_PRECISE_NECK,
+		))
+			var/has_head = H.get_bodypart(BODY_ZONE_HEAD)
+			if(!has_head)
+				return "туловище"
+
 	return ru_zone_selected
 
 /datum/sex_panel_action/proc/do_liquid_injection(mob/living/carbon/human/user, mob/living/carbon/human/target)
-	// Родитель сам найдет init орган и сделает inject
 	var/list/orgs = get_action_organs(user, target, FALSE, FALSE)
 	if(!orgs) return 0
 
@@ -306,15 +338,26 @@
 	return
 
 /datum/sex_panel_action/proc/passes_armor_check(mob/living/carbon/human/user, mob/living/carbon/human/target)
-	if(armor_slot_init && user)
-		if(is_erp_zone_blocked_by_clothes(user, user, armor_slot_init))
-			return FALSE
+	var/init_zone = armor_slot_init
+	var/target_zone = armor_slot_target
 
-	if(armor_slot_target && target)
-		if(is_erp_zone_blocked_by_clothes(user, target, armor_slot_target))
-			return FALSE
+	if(!init_zone && required_init)
+		init_zone = sex_organ_to_zone(required_init)
+	if(!target_zone && required_target)
+		target_zone = sex_organ_to_zone(required_target)
+
+	if(init_zone && user)
+		if(!has_aggressive_zone_grab(user, user, init_zone))
+			if(is_erp_zone_blocked_by_clothes(user, user, init_zone))
+				return FALSE
+
+	if(target_zone && target)
+		if(!has_aggressive_zone_grab(user, target, target_zone))
+			if(is_erp_zone_blocked_by_clothes(user, target, target_zone))
+				return FALSE
 
 	return TRUE
+
 
 /datum/sex_session_tgui/proc/is_partner_node_reserved(node_id)
 	if(!node_id)

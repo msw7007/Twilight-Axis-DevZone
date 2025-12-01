@@ -165,28 +165,6 @@
 
 	return FALSE
 
-
-/mob/living/carbon/human/proc/is_sex_node_blocked_by_clothes(node_id)
-	if(!node_id)
-		return FALSE
-
-	var/zone = BODY_ZONE_CHEST
-
-	switch(node_id)
-		if(SEX_ORGAN_MOUTH)
-			zone = BODY_ZONE_PRECISE_MOUTH
-		if(SEX_ORGAN_PENIS, SEX_ORGAN_VAGINA, SEX_ORGAN_ANUS)
-			zone = BODY_ZONE_PRECISE_GROIN
-
-
-	if(!zone)
-		return FALSE
-
-	if(!get_location_accessible(src, zone, skipundies = TRUE))
-		return TRUE
-
-	return FALSE
-
 /mob/living/carbon/human/grippedby(mob/living/carbon/user, instant = FALSE)
 	if(is_surrendering_to(user))
 		instant = TRUE
@@ -200,7 +178,6 @@
 
 	. = ..()
 	return .
-
 
 /mob/living/carbon/human/proc/sexpanel_flip(dir_step = 0)
 	if(lying)
@@ -272,3 +249,6 @@
 		return
 
 	SEND_SIGNAL(src, COMSIG_SEX_RECEIVE_ACTION, delta, 0, FALSE, SEX_FORCE_LOW, SEX_SPEED_LOW)
+
+/mob/living
+	var/sex_procs_active = FALSE

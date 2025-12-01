@@ -15,12 +15,16 @@
 		return FALSE
 
 	var/datum/sex_session_tgui/SS = get_or_create_sex_session_tgui(user, target)
-	if(SS)
-		var/datum/sex_organ/O = SS.resolve_organ_datum(user, SEX_ORGAN_FILTER_BREASTS)
-		if(O)
-			var/obj/item/container = O.find_liquid_container()
-			if(container)
-				return TRUE
+	if(!SS)
+		return FALSE
+
+	var/datum/sex_organ/O = SS.resolve_organ_datum(target, SEX_ORGAN_FILTER_BREASTS)
+	if(!O)
+		return FALSE
+
+	var/obj/item/container = find_best_container(user, target, O)
+	if(container)
+		return TRUE
 
 	return FALSE
 
@@ -41,11 +45,33 @@
 
 /datum/sex_panel_action/other/hands/milking_breasts/on_perform(mob/living/carbon/human/user, mob/living/carbon/human/target)
 	. = ..()
-
 	if(prob(MILKING_BREAST_PROBABILITY))
-		do_liquid_injection(user, target)
+		var/list/orgs = get_action_organs(user, target, FALSE, FALSE)
+		if(orgs)
+			var/datum/sex_organ/boobs = orgs["target"]
+			if(boobs)
+				var/obj/item/container = find_best_container(user, target, boobs)
+				var/moved = boobs.inject_liquid(container, user)
+				if(moved > 0)
+					handle_injection_feedback(user, target, moved)
 
 /datum/sex_panel_action/other/hands/milking_breasts/handle_injection_feedback(mob/living/carbon/human/user, mob/living/carbon/human/target, moved)
 	to_chat(user, "Я чувствую, как соски [target] выплескивают молоко.")
 	to_chat(target, "Я чувствую, как молоко покидает мою грудь.")
 
+/datum/sex_panel_action/other/hands/milking_breasts/proc/find_best_container(mob/living/carbon/human/user, mob/living/carbon/human/target, datum/sex_organ/boobs)
+	if(user)
+		var/obj/item/I_left = user.get_item_for_held_index(LEFT_HANDS)
+		if(istype(I_left, /obj/item/reagent_containers))
+			return I_left
+
+		var/obj/item/I_right = user.get_item_for_held_index(RIGHT_HANDS)
+		if(istype(I_right, /obj/item/reagent_containers))
+			return I_right
+
+	if(boobs)
+		var/obj/item/C = boobs.find_liquid_container()
+		if(C)
+			return C
+
+	return null

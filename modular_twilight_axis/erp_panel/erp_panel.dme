@@ -104,6 +104,7 @@
 #include "code\actions\interaction\penis\anal_sex_hemi.dm"
 #include "code\actions\interaction\penis\oral_sex_hemi.dm"
 #include "code\actions\interaction\penis\vaginal_sex_hemi.dm"
+#include "code\actions\interaction\penis\double_penetration.dm"
 #include "code\actions\interaction\legs\_legs.dm"
 #include "code\actions\interaction\legs\footfetish.dm"
 #include "code\actions\interaction\legs\footjob.dm"

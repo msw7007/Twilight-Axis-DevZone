@@ -54,6 +54,7 @@
 #define SEX_ORGAN_FILTER_ALL "all"
 
 #define MILKING_BREAST_PROBABILITY 66
+#define TRAIT_NO_ATHLETICS_FROM_STAMINA "no_athletics_from_stamina"
 
 GLOBAL_LIST_INIT(sex_panel_actions, build_sex_panel_actions())
 

@@ -48,6 +48,7 @@
 	return TRUE
 
 /datum/sex_panel_action/other/penis/hemi/dp_vag_anal/can_perform(user, target)
+	. = ..()
 	if(!user || !target)
 		return FALSE
 
@@ -143,6 +144,6 @@
 		result = list(result)
 
 	result += "одновременно заполняя и киску, и зад [target]."
-	var/message = span_love(result.Join("\n"))
+	var/message = span_love(result.Join(" "))
 	user.visible_message(message)
 	return "into"

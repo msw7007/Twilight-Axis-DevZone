@@ -33,7 +33,7 @@
 		result = list(result)
 
 	result += "в рот [target]"
-	var/message = span_love(result.Join("\n"))
+	var/message = span_love(result.Join(" "))
 	user.visible_message(message)
 	return "into"
 

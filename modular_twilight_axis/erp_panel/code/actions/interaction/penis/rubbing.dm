@@ -33,6 +33,6 @@
 		result = list(result)
 
 	result += "на [target]"
-	var/message = span_love(result.Join("\n"))
+	var/message = span_love(result.Join(" "))
 	user.visible_message(message)
 	return "onto"

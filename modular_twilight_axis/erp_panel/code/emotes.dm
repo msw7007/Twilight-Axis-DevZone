@@ -14,29 +14,13 @@
 
 /datum/emote/living/pat/adjacentaction(mob/user, mob/target)
 	. = ..()
-	message_param = initial(message_param)
 	if(!user || !target)
 		return
 
-	if(ishuman(user) && ishuman(target))
-		var/mob/living/carbon/human/H = user
-		var/do_change
-
-		if(target.loc == user.loc)
-			do_change = TRUE
-		if(!do_change && H.pulling == target)
-			do_change = TRUE
-
-		if(do_change)
-			switch(H.zone_selected)
-				if(BODY_ZONE_HEAD, BODY_ZONE_PRECISE_SKULL)
-					message_param = "pats %t on the head."
-				if(BODY_ZONE_PRECISE_EARS)
-					message_param = "pats %t on the ear."
-				else
-					message_param = "pats %t on [parse_zone(H.zone_selected)]."
+	message_param = "pats %t on the head."
 
 	playsound(target.loc, 'sound/misc/click.ogg', 50, FALSE, -1)
+
 
 /datum/emote/living/kiss/adjacentaction(mob/user, mob/target)
 	. = ..()

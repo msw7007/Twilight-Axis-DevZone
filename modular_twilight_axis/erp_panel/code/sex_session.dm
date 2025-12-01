@@ -77,12 +77,12 @@
 		return
 
 	var/obj/item/organ/penis/P = user.getorganslot(ORGAN_SLOT_PENIS)
-	if(!P)
+	if(!P || !P.sex_organ)
 		return
 
-	switch(P.penis_type)
-		if(PENIS_TYPE_KNOTTED, PENIS_TYPE_TAPERED_DOUBLE_KNOTTED, PENIS_TYPE_BARBED_KNOTTED)
-			has_knotted_penis = TRUE
+	var/datum/sex_organ/penis/PO = P.sex_organ
+	if(istype(PO) && PO.have_knot)
+		has_knotted_penis = TRUE
 
 /datum/sex_session_tgui/proc/add_partner(mob/living/carbon/human/M)
 	if(!M || M == user)
@@ -241,6 +241,8 @@
 			return SEX_ORGAN_FILTER_TAIL
 		if(SEX_ORGAN_FILTER_VAGINA, SEX_ORGAN_FILTER_PENIS, SEX_ORGAN_FILTER_ANUS)
 			return SEX_ORGAN_FILTER_GENITAL
+		if(SEX_ORGAN_FILTER_BODY)
+			return "body"
 	return null
 
 /datum/sex_session_tgui/proc/is_locked(category)
@@ -383,6 +385,7 @@
 	return D
 
 /datum/sex_session_tgui/ui_data(mob/user)
+	update_knotted_penis_flag()
 	var/list/D = list()
 	D["actions"] = actions_for_menu()
 	D["title"] = "Соитие с [get_partner_display_name(target)]"
@@ -709,6 +712,7 @@
 			else if(target_state == "hard")
 				P.set_manual_erect_state(ERECT_STATE_HARD)
 
+			update_knotted_penis_flag()
 			SStgui.update_uis(src)
 			return TRUE
 
@@ -754,10 +758,12 @@
 		return
 
 	var/cat = category_of_actor_node(a_id)
-	if(cat)
+	if(cat && cat != "body")
 		locked_actor_categories |= cat
 
+	var/mob/living/carbon/human/partner_now = locate(current_partner_ref)
 	var/datum/sex_action_session/I = new(src, A, a_id, p_id)
+	I.partner = partner_now
 	I.speed = global_speed
 	I.force = global_force
 
@@ -1165,11 +1171,7 @@
 /proc/get_or_create_sex_session_tgui(mob/living/carbon/human/user, mob/living/carbon/human/target)
 	return get_or_create_sex_session_tgui_with_bodypart(user, target, null)
 
-/proc/get_or_create_sex_session_tgui_with_bodypart(
-	mob/living/carbon/human/user,
-	mob/living/carbon/human/target,
-	obj/item/bodypart/body_override,
-)
+/proc/get_or_create_sex_session_tgui_with_bodypart(mob/living/carbon/human/user, mob/living/carbon/human/target, obj/item/bodypart/body_override)
 	if(!user)
 		return null
 
@@ -1182,11 +1184,14 @@
 		session = new /datum/sex_session_tgui(user, target)
 
 	if(target && target != user)
-		if(!session.target)
-			session.target = target
-		else
-			if(!(target in session.partners))
-				session.partners += target
+	if(!session.target)
+		session.target = target
+	else
+		if(!(target in session.partners))
+			session.partners += target
+
+	session.current_partner_ref = REF(target)
+	session.target = target
 
 	if(body_override)
 		session.set_partner_bodypart_override(body_override)
@@ -1216,14 +1221,19 @@
 			if(A.required_init)
 				continue
 		else if(a_sel != SEX_ORGAN_FILTER_ALL)
-			if(A.required_init && (!a_type || A.required_init != a_type))
+			if(!A.required_init || !a_type || A.required_init != a_type)
 				continue
+
+		if(a_sel == SEX_ORGAN_FILTER_BODY && A.required_target)
+			continue
+		if(p_sel == SEX_ORGAN_FILTER_BODY && A.required_init)
+			continue
 
 		if(p_sel == SEX_ORGAN_FILTER_BODY)
 			if(A.required_target)
 				continue
 		else if(p_sel != SEX_ORGAN_FILTER_ALL)
-			if(A.required_target && (!p_type || A.required_target != p_type))
+			if(!A.required_target || !p_type || A.required_target != p_type)
 				continue
 
 		res += key

@@ -1,9 +1,9 @@
 /datum/sex_panel_action/self/hands/fingering_oral
 	abstract_type = FALSE
 
-	name = "Фингеринг анальный"
-	required_target = SEX_ORGAN_ANUS
-	armor_slot_init = BODY_ZONE_PRECISE_GROIN
+	name = "Фингеринг оральный"
+	required_target = SEX_ORGAN_MOUTH
+	armor_slot_init = BODY_ZONE_PRECISE_MOUTH
 
 	affects_self_arousal = 0.01
 	affects_arousal      = 0

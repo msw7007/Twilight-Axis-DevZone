@@ -2,10 +2,10 @@
 	if(!T)
 		return
 
-	var/datum/sex_session_tgui/S = get_sex_session_tgui(src, T)
+//	if(!ishuman(src) || !ishuman(T))
+//		return
 
-	if(!S)
-		S = get_any_sex_session_tgui_for(src)
+	var/datum/sex_session_tgui/S = get_sex_session_tgui(src, T)
 
 	if(S)
 		if(istype(T, /mob/living/carbon/human))
@@ -14,6 +14,16 @@
 			S.target = H
 			S.current_partner_ref = REF(H)
 
+		S.ui_interact(src)
+		return S
+
+	S = get_any_sex_session_tgui_for(src)
+
+	if(S)
+		if(istype(T, /mob/living/carbon/human))
+			var/mob/living/carbon/human/H2 = T
+			S.add_partner(H2)
+			S.current_partner_ref = REF(H2)
 		S.ui_interact(src)
 		return S
 
@@ -98,9 +108,43 @@
 	if(!H || !zone)
 		return FALSE
 
-	if(zone == BODY_ZONE_PRECISE_GROIN && user)
-		var/grabstate = user.get_highest_grab_state_on(H)
-		if(grabstate && grabstate >= GRAB_PASSIVE)
-			return FALSE
+	if(user && has_aggressive_zone_grab(user, H, zone))
+		return FALSE
 
-	return H.is_sex_node_blocked_by_clothes(zone)
+	if(!get_location_accessible(H, zone, skipundies = TRUE))
+		return TRUE
+
+	return FALSE
+
+/proc/sex_organ_to_zone(organ_type)
+	switch(organ_type)
+		if(SEX_ORGAN_PENIS, SEX_ORGAN_VAGINA, SEX_ORGAN_ANUS)
+			return BODY_ZONE_PRECISE_GROIN
+		if(SEX_ORGAN_BREASTS)
+			return BODY_ZONE_CHEST
+		if(SEX_ORGAN_MOUTH)
+			return BODY_ZONE_PRECISE_MOUTH
+	return null
+
+/proc/has_aggressive_zone_grab(mob/living/carbon/human/grabber, mob/living/carbon/human/grabbed, zone)
+	if(!grabber || !grabbed || !zone)
+		return FALSE
+	if(!iscarbon(grabbed))
+		return FALSE
+
+	var/mob/living/carbon/C = grabbed
+
+	var/has_zone_grab = FALSE
+	for(var/obj/item/grabbing/G in C.grabbedby)
+		if(G.sublimb_grabbed == zone)
+			has_zone_grab = TRUE
+			break
+
+	if(!has_zone_grab)
+		return FALSE
+
+	var/grabstate = grabber.get_highest_grab_state_on(grabbed)
+	if(grabstate && grabstate >= GRAB_AGGRESSIVE)
+		return TRUE
+
+	return FALSE

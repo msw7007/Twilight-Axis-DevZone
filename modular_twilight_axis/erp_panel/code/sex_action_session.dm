@@ -3,6 +3,9 @@
 	var/datum/sex_panel_action/action
 	var/datum/sex_session_tgui/session
 
+	var/mob/living/carbon/human/actor
+	var/mob/living/carbon/human/partner
+
 	var/datum/sex_organ/init_organ
 	var/datum/sex_organ/target_organ
 
@@ -35,8 +38,11 @@
 	actor_node_id = actor_node
 	partner_node_id = partner_node
 
+	actor = S.user
+	//partner = S.target
+
 /datum/sex_action_session/Destroy()
-	var/datum/sex_organ/src_org = session?.resolve_organ_datum(session.user, actor_node_id)
+	var/datum/sex_organ/src_org = session?.resolve_organ_datum(actor, actor_node_id)
 	if(src_org)
 		src_org.unbind()
 	qdel(action)
@@ -44,26 +50,26 @@
 	return ..()
 
 /datum/sex_action_session/proc/start()
-	var/datum/sex_organ/src_org = session.resolve_organ_datum(session.user, actor_node_id)
-	var/datum/sex_organ/tgt_org = session.resolve_organ_datum(session.target, partner_node_id)
+	var/datum/sex_organ/src_org = session.resolve_organ_datum(actor, actor_node_id)
+	var/datum/sex_organ/tgt_org = session.resolve_organ_datum(partner, partner_node_id)
 
 	if(src_org)
 		src_org.bind_with(tgt_org)
 
-	action.on_start(session.user, session.target, src)
+	action.on_start(actor, partner, src)
 	loop_tick()
 
 /datum/sex_action_session/proc/loop_tick()
 	if(QDELETED(session))
 		return
-	if(QDELETED(session.user) || QDELETED(session.target))
+	if(QDELETED(actor) || QDELETED(partner))
 		return session.stop_instance(instance_id)
 
 	var/datum/sex_action_session/I = session.current_actions?[instance_id]
 	if(!I || I != src)
 		return
 
-	if(isnull(session.target))//.client))
+	if(isnull(partner))//.client))
 		return session.stop_instance(instance_id)
 
 	if(!session.can_continue_action_session(src))
@@ -78,10 +84,15 @@
 		return
 
 	if(action.stamina_cost)
-		if(!session.user.stamina_add(action.stamina_cost * get_stamina_cost_multiplier(force)))
+		var/mob/living/carbon/human/U = session.user
+		U.sex_procs_active = TRUE
+		var/success = session.user.stamina_add(action.stamina_cost * get_stamina_cost_multiplier(force))
+		U.sex_procs_active = FALSE
+
+		if(!success)
 			return session.stop_instance(instance_id)
 
-	action.show_sex_effects(session.user)
+	action.show_sex_effects(actor)
 
 	var/delta = calc_delta()
 	var/list/pain_deltas = update_organ_response(delta)
@@ -100,8 +111,8 @@
 	if(!session || !action)
 		return list("self" = 0, "target" = 0)
 
-	var/datum/sex_organ/src_org = session.resolve_organ_datum(session.user, actor_node_id)
-	var/datum/sex_organ/tgt_org = session.resolve_organ_datum(session.target, partner_node_id)
+	var/datum/sex_organ/src_org = session.resolve_organ_datum(actor, actor_node_id)
+	var/datum/sex_organ/tgt_org = session.resolve_organ_datum(partner, partner_node_id)
 
 	if(delta <= 0)
 		delta = 1
@@ -166,8 +177,8 @@
 	target_pain_delta *= ORG_PAIN_GAIN_RATE
 
 	var/knot_pain_mult = 0
-	var/mob/living/carbon/human/U = session.user
-	var/mob/living/carbon/human/T = session.target
+	var/mob/living/carbon/human/U = actor
+	var/mob/living/carbon/human/T = partner
 	if(U && T)
 		var/datum/component/knotting/K = U.GetComponent(/datum/component/knotting)
 		if(K && K.knotted_status == KNOTTED_AS_TOP && K.knotted_recipient == T)
@@ -192,8 +203,8 @@
 	if(!session || !action)
 		return 0
 
-	var/datum/sex_organ/src_org = session.resolve_organ_datum(session.user, actor_node_id)
-	var/datum/sex_organ/tgt_org = session.resolve_organ_datum(session.target, partner_node_id)
+	var/datum/sex_organ/src_org = session.resolve_organ_datum(actor, actor_node_id)
+	var/datum/sex_organ/tgt_org = session.resolve_organ_datum(partner, partner_node_id)
 
 	var/base = 1
 	var/mult = 1
@@ -209,8 +220,8 @@
 	if(delta <= 0 && self_pain_delta <= 0 && target_pain_delta <= 0)
 		return
 
-	var/mob/living/carbon/human/U = session.user
-	var/mob/living/carbon/human/T = session.target
+	var/mob/living/carbon/human/U = actor
+	var/mob/living/carbon/human/T = partner
 
 	var/user_sources   = get_arousal_source_count_for(U)
 	var/target_sources = get_arousal_source_count_for(T)
@@ -291,9 +302,9 @@
 			organ_priority = org_type
 
 	var/role_priority = 0
-	if(U == session.target)
+	if(U == partner)
 		role_priority = 100
-	else if(U == session.user)
+	else if(U == actor)
 		role_priority = 50
 
 	return organ_priority + role_priority
