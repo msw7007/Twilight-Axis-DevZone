@@ -87,7 +87,7 @@
 		to_chat(src, "<span class='warning'>[user] failed to touch you. (Your ERP preference under options)</span>")
 		return
 
-	if(!user.start_sex_session_tgui(target))
+	if(!user.start_sex_session_tgui(target)) // TWILIGHT AXIS EDITION - new ERP system
 		to_chat(user, "<span class='warning'>I'm already sexing.</span>")
 		return
 
