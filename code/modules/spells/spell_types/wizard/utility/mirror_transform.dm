@@ -371,6 +371,31 @@
 					should_update = TRUE
 
 		if("penis")
+			// TWILIGHT AXIS EDITION START - new ERP panel
+			// var/list/valid_penis_types = list("none")
+			// for(var/penis_path in subtypesof(/datum/sprite_accessory/penis))
+			// 	var/datum/sprite_accessory/penis/penis = new penis_path()
+			// 	valid_penis_types[penis.name] = penis_path
+
+			// var/new_style = input(H, "Choose your penis type", "Penis Customization") as null|anything in valid_penis_types
+			// if(new_style)
+			// 	if(new_style == "none")
+			// 		var/obj/item/organ/penis/penis = H.getorganslot(ORGAN_SLOT_PENIS)
+			// 		if(penis)
+			// 			penis.Remove(H)
+			// 			qdel(penis)
+			// 			H.update_body()
+			// 			should_update = TRUE
+			// 	else
+			// 		var/obj/item/organ/penis/penis = H.getorganslot(ORGAN_SLOT_PENIS)
+			// 		if(!penis)
+			// 			penis = new()
+			// 			penis.Insert(H, TRUE, FALSE)
+			// 		penis.accessory_type = valid_penis_types[new_style]
+			// 		penis.color = H.dna.features["mcolor"]
+			// 		H.update_body()
+			// 		should_update = TRUE
+			
 			var/list/valid_penis_types = list("none")
 			for(var/penis_path in subtypesof(/datum/sprite_accessory/penis))
 				var/datum/sprite_accessory/penis/penis = new penis_path()
@@ -412,7 +437,7 @@
 
 					H.update_body()
 					should_update = TRUE
-
+			// TWILIGHT AXIS EDITION END - new ERP panel
 
 		if("testicles")
 			var/list/valid_testicle_types = list("none")
