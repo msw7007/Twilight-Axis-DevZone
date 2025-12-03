@@ -8,16 +8,22 @@
 
 /datum/sex_organ/penis/New(obj/item/organ/penis/organ)
 	. = ..()
+	refresh_from_organ(organ)
 
+/datum/sex_organ/penis/proc/refresh_from_organ(obj/item/organ/penis/organ)
 	var/mob/living/carbon/human/owner = organ.owner
 	if(!owner)
 		return
+
+	var/datum/reagent/R = GLOB.chemical_reagents_list[producing_reagent_id]
+	if(!R)
+		return 
 
 	var/obj/item/organ/testicles/testicles = owner.getorganslot(ORGAN_SLOT_TESTICLES)
 	if(!testicles)
 		return
 
-	producing_reagent_rate = testicles.ball_size * 0.1
+	producing_reagent_rate = testicles.ball_size * 0.025
 	stored_liquid_max = 5 * testicles.ball_size
 
 	if(stored_liquid)
@@ -38,3 +44,32 @@
 
 	if(producing_reagent_id && producing_reagent_rate > 0 && stored_liquid)
 		start_production_timer()
+		stored_liquid.add_reagent(R.type, (stored_liquid_max/5))
+
+/datum/sex_organ/penis/inject_liquid(obj/item/container = null, mob/living/carbon/human/preferred_holder = null)
+	if(!has_storage() || total_volume() <= 0)
+		return ..(container, preferred_holder)
+
+	var/mob/living/carbon/human/H = get_owner()
+
+	var/ratio = PENIS_MIN_EJAC_FRACTION
+	if(istype(H))
+		if(H.has_flaw(/datum/charflaw/addiction/lovefiend))
+			ratio -= 0.05
+		if(istype(H.patron, /datum/patron/inhumen/baotha))
+			ratio += 0.10
+
+	ratio = clamp(ratio, 0.05, 0.75)
+
+	var/current = total_volume()
+	var/amount = round(current * ratio)
+	if(amount <= 0)
+		amount = 1
+
+	var/old_injection = injection_amount
+	injection_amount = amount
+
+	var/moved = ..(container, preferred_holder)
+
+	injection_amount = old_injection
+	return moved

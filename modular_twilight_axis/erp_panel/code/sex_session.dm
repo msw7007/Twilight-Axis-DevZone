@@ -312,13 +312,16 @@
 		return FALSE
 
 	if(A.check_same_tile)
-		var/same_tile = (dist == 0)
-		if(!same_tile)
+		var/same_tile = (get_turf(U) == get_turf(real_target))
+		var/grabstate = U.get_highest_grab_state_on(T)
+		var/grab_bypass = (grabstate && grabstate >= GRAB_PASSIVE)
+
+		if(!same_tile && !grab_bypass)
 			return FALSE
 
 	if(A.require_grab)
-		var/grabstate = U.get_highest_grab_state_on(T)
-		if(!grabstate || grabstate < A.required_grab_state)
+		var/grabstate2 = U.get_highest_grab_state_on(T)
+		if(!grabstate2 || grabstate2 < A.required_grab_state)
 			return FALSE
 
 	return TRUE
@@ -369,8 +372,10 @@
 		if(A.required_target && !p_type)
 			return FALSE
 
-		if(p_id && is_partner_node_reserved(p_id))
-			return FALSE
+		if(p_id)
+			var/mob/living/carbon/human/P = T
+			if(P && is_partner_node_reserved(p_id, P))
+				return FALSE
 
 		if(!inherent_perform_check(A, U, T))
 			return FALSE
@@ -694,6 +699,14 @@
 
 		if("flip")
 			if(user)
+				if(!islist(user.mob_timers))
+					user.mob_timers = list()
+
+				var/last = user.mob_timers["sexpanel_flip"] || 0
+				if(world.time < last + 1 SECONDS)
+					return FALSE
+
+				user.mob_timers["sexpanel_flip"] = world.time
 				user.sexpanel_flip()
 			SStgui.update_uis(src)
 			return TRUE
@@ -1221,14 +1234,14 @@
 
 	if(target && target != user)
 		session.add_partner(target)
-		session.current_partner_ref = REF(target)
-		session.target = target
+		if(!session.current_partner_ref || !locate(session.current_partner_ref))
+			session.current_partner_ref = REF(target)
+			session.target = target
 
 	if(body_override)
 		session.set_partner_bodypart_override(body_override)
 
 	session.update_knotted_penis_flag()
-
 	return session
 
 /datum/sex_session_tgui/proc/actions_matching_nodes()

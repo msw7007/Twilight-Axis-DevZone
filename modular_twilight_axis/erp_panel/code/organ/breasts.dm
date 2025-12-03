@@ -1,3 +1,14 @@
+#define BREAST_BASE_PROD_PER_SIZE		0.05
+#define BREAST_STORAGE_PER_SIZE			100
+#define BREAST_INJECTION_PER_SIZE		2
+#define BREAST_NUTRITION_COST_PER_UNIT	0.2
+
+/datum/sex_organ/breasts
+	organ_type = SEX_ORGAN_BREASTS
+	producing_reagent_id = /datum/reagent/consumable/milk/erp
+	stored_liquid_max = 75
+	producing_reagent_rate = 0
+
 /datum/sex_organ/breasts
 	organ_type = SEX_ORGAN_BREASTS
 	producing_reagent_id = /datum/reagent/consumable/milk/erp
@@ -6,10 +17,80 @@
 
 /datum/sex_organ/breasts/New(obj/item/organ/breasts/organ)
 	. = ..()
-	stored_liquid_max = max(75, organ.breast_size * 100)
-	producing_reagent_rate = organ.breast_size
-	injection_amount = organ.breast_size
-	stored_liquid.maximum_volume = stored_liquid_max
+	if(!organ || !organ.lactating)
+		return
+	
+	var/datum/reagent/R = GLOB.chemical_reagents_list[producing_reagent_id]
+	if(!R)
+		return 
 
-	if(producing_reagent_id && producing_reagent_rate > 0 && stored_liquid)
+	var/size = clamp(organ.breast_size, 1, 5)
+
+	stored_liquid_max = max(75, size * BREAST_STORAGE_PER_SIZE)
+	producing_reagent_rate = size * BREAST_BASE_PROD_PER_SIZE
+	injection_amount = size * BREAST_INJECTION_PER_SIZE
+
+	if(stored_liquid)
+		stored_liquid.maximum_volume = stored_liquid_max
+	else
+		stored_liquid = new(stored_liquid_max)
+
+	if(producing_reagent_id && producing_reagent_rate > 0 && has_storage())
 		start_production_timer()
+		stored_liquid.add_reagent(R.type, (stored_liquid_max/10))
+
+/datum/sex_organ/breasts/proc/get_hunger_mult()
+	var/mob/living/carbon/human/H = get_owner()
+	if(!istype(H))
+		return 1.0
+
+	var/nut = H.nutrition
+
+	if(nut <= NUTRITION_LEVEL_STARVING)
+		return 0.1
+	if(nut <= NUTRITION_LEVEL_HUNGRY)
+		return 0.4
+	if(nut <= NUTRITION_LEVEL_FED)
+		return 0.7
+
+	return 1.0
+
+/datum/sex_organ/breasts/produce_liquid(datum/reagent/R, amount)
+	if(!has_storage() || amount <= 0)
+		return 0
+
+	if(!R && producing_reagent_id)
+		R = GLOB.chemical_reagents_list[producing_reagent_id]
+	if(!R)
+		return 0
+
+	var/mob/living/carbon/human/H = get_owner()
+	var/mult = get_production_multiplier()
+	if(mult <= 0)
+		return 0
+
+	var/h_mult = get_hunger_mult()
+	if(h_mult <= 0)
+		return 0
+
+	amount *= mult * h_mult
+	if(istype(H))
+		var/max_from_nutrition = max(0, H.nutrition - NUTRITION_LEVEL_STARVING)
+		if(max_from_nutrition <= 0)
+			return 0
+		if(amount > max_from_nutrition)
+			amount = max_from_nutrition
+
+	pending_production += amount
+	if(pending_production < SEX_MIN_REAGENT_QUANT)
+		return 0
+
+	var/to_add = pending_production
+	var/added = stored_liquid.add_reagent(R.type, to_add)
+	if(added > 0)
+		pending_production = max(0, pending_production - added)
+		renew_timer(drain_interval)
+		if(istype(H))
+			H.adjust_nutrition(-added * BREAST_NUTRITION_COST_PER_UNIT)
+
+	return added

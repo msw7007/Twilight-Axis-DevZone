@@ -23,3 +23,8 @@
 
 /datum/sex_panel_action/other/vagina/scissors/get_finish_message(mob/living/carbon/human/user, mob/living/carbon/human/target)
 	return "[user] расцепляет вагины с [target]."
+
+/datum/sex_panel_action/other/vagina/scissors/handle_climax_message(mob/living/carbon/human/user, mob/living/carbon/human/target)
+	user.visible_message(span_love("[user] кончает прямо на промежность [target]"))
+	target.visible_message(span_love("[user] кончает прямо на промежность [target]"))
+	return "onto"

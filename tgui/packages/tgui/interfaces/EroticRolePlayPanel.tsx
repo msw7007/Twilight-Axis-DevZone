@@ -1,4 +1,4 @@
-import { type CSSProperties, type ReactNode, useMemo, useState } from 'react';
+import { type CSSProperties, type ReactNode, useEffect, useMemo, useState } from 'react';
 import { useBackend } from 'tgui/backend';
 import { Window } from 'tgui/layouts';
 import {
@@ -333,7 +333,6 @@ const ArousalBars: React.FC<{
   </Section>
 );
 
-// helper: вычисляем текущий режим эрекции по данным органа
 const getErectModeForOrg = (org: OrgNode | undefined): 'auto' | 'none' | 'partial' | 'hard' => {
   if (!org) return 'auto';
   if (!org.manual) return 'auto';
@@ -351,7 +350,6 @@ const StatusPanel: React.FC<{
   editable?: boolean;
   onEditOrgan: (id: string, field: 'sensitivity' | 'pain') => void;
   onSetErectState?: (id: string, state: 'auto' | 'none' | 'partial' | 'hard') => void;
-  // 🔥 НОВОЕ: в каком режиме показываем — что делает актёр или что принимает цель
   viewAs?: 'actor' | 'target';
 }> = ({
   data,
@@ -379,14 +377,10 @@ const StatusPanel: React.FC<{
   return (
     <Section title={`Состояние: ${actorName}`} fill scrollable>
       {actorOrgans.map((org) => {
-        // 🔥 КЛЮЧЕВОЕ МЕСТО
-        // viewAs = 'actor'  → показываем только то, что ИСХОДИТ от этих органов
-        // viewAs = 'target' → только то, что НАПРАВЛЕНО в эти органы
         const affecting = links.filter((l) => {
           if (viewAs === 'actor') {
             return l.actor_organ_id === org.id;
           }
-          // режим жертвы
           return l.partner_organ_id === org.id;
         });
 
@@ -490,7 +484,6 @@ const StatusPanel: React.FC<{
             {affecting.length ? (
               <Stack vertical mt={0.5}>
                 {affecting.map((l) => {
-                  // для режима жертвы всё, что здесь есть — уже "что со мной делают"
                   const whoLabel =
                     viewAs === 'actor'
                       ? (actorName || 'Вы')
@@ -567,12 +560,14 @@ const ActiveLinksPanel: React.FC<{
   const links = data.active_links || [];
   if (!links.length) return null;
 
+  const showKnotToggle = Boolean(hasKnottedPenis && canKnotNow && onToggleKnot);
+
   const getOrg = (id: string, list: OrgNode[]) =>
     list.find((o) => o.id === id);
 
   return (
     <Stack vertical>
-      {hasKnottedPenis && canKnotNow && onToggleKnot && (
+      {showKnotToggle && (
         <Box mb={0.5} textAlign="center">
           <Button
             inline
@@ -774,6 +769,19 @@ const ActionsList: React.FC<{
   canPerform,
   onClickAction,
 }) => {
+  const [singleColumn, setSingleColumn] = useState(false);
+
+  useEffect(() => {
+    const handleResize = () => {
+      if (typeof window === 'undefined') return;
+      setSingleColumn(window.innerWidth < 500);
+    };
+
+    handleResize();
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
   const leftColumn = actions.filter((_, i) => i % 2 === 0);
   const rightColumn = actions.filter((_, i) => i % 2 === 1);
   const activeSet = new Set(currentActionTypes ?? []);
@@ -823,19 +831,35 @@ const ActionsList: React.FC<{
           Выберите по одному органу слева и справа, чтобы увидеть доступные
           действия.
         </NoticeBox>
+      ) : singleColumn ? (
+        <Stack fill>
+          <Stack.Item basis="100%">
+            <Stack vertical>
+              {actions.map((action) => (
+                <Stack.Item key={action.type}>
+                  {renderButton(action)}
+                </Stack.Item>
+              ))}
+            </Stack>
+          </Stack.Item>
+        </Stack>
       ) : (
         <Stack fill>
           <Stack.Item basis="50%">
             <Stack vertical>
               {leftColumn.map((action) => (
-                <Stack.Item key={action.type}>{renderButton(action)}</Stack.Item>
+                <Stack.Item key={action.type}>
+                  {renderButton(action)}
+                </Stack.Item>
               ))}
             </Stack>
           </Stack.Item>
           <Stack.Item basis="50%">
             <Stack vertical>
               {rightColumn.map((action) => (
-                <Stack.Item key={action.type}>{renderButton(action)}</Stack.Item>
+                <Stack.Item key={action.type}>
+                  {renderButton(action)}
+                </Stack.Item>
               ))}
             </Stack>
           </Stack.Item>
@@ -852,26 +876,60 @@ const BottomControls: React.FC<{
   onStopAll: () => void;
   onToggleYield: () => void;
   onToggleFreeze: () => void;
-}> = ({ yieldToPartner, frozen, onFlipPose, onStopAll, onToggleYield, onToggleFreeze }) => (
+  compact?: boolean;
+}> = ({
+  yieldToPartner,
+  frozen,
+  onFlipPose,
+  onStopAll,
+  onToggleYield,
+  onToggleFreeze,
+  compact = false,
+}) => (
   <Section>
-    <Stack justify="center">
-      <Stack.Item style={{ marginInline: 4 }}>
-        <Button onClick={onFlipPose}>ПЕРЕВЕРНУТЬСЯ</Button>
-      </Stack.Item>
-      <Stack.Item style={{ marginInline: 4 }}>
-        <Button onClick={onStopAll}>ОСТАНОВИТЬСЯ</Button>
-      </Stack.Item>
-      <Stack.Item style={{ marginInline: 4 }}>
-        <Button selected={!!yieldToPartner} onClick={onToggleYield}>
-          ПОДДАТЬСЯ
-        </Button>
-      </Stack.Item>
-      <Stack.Item style={{ marginInline: 4 }}>
-        <Button selected={!!frozen} onClick={onToggleFreeze}>
-          {frozen ? 'НЕ ВОЗБУЖДАТЬСЯ (ВКЛ)' : 'НЕ ВОЗБУЖДАТЬСЯ'}
-        </Button>
-      </Stack.Item>
-    </Stack>
+    {compact ? (
+      <Stack vertical align="center">
+        <Stack justify="center" wrap>
+          <Stack.Item style={{ marginInline: 4, marginBlock: 2 }}>
+            <Button onClick={onFlipPose}>ПЕРЕВЕРНУТЬСЯ</Button>
+          </Stack.Item>
+          <Stack.Item style={{ marginInline: 4, marginBlock: 2 }}>
+            <Button onClick={onStopAll}>ОСТАНОВИТЬСЯ</Button>
+          </Stack.Item>
+        </Stack>
+        <Stack justify="center" wrap>
+          <Stack.Item style={{ marginInline: 4, marginBlock: 2 }}>
+            <Button selected={!!yieldToPartner} onClick={onToggleYield}>
+              ПОДДАТЬСЯ
+            </Button>
+          </Stack.Item>
+          <Stack.Item style={{ marginInline: 4, marginBlock: 2 }}>
+            <Button selected={!!frozen} onClick={onToggleFreeze}>
+              {frozen ? 'НЕ ВОЗБУЖДАТЬСЯ (ВКЛ)' : 'НЕ ВОЗБУЖДАТЬСЯ'}
+            </Button>
+          </Stack.Item>
+        </Stack>
+      </Stack>
+    ) : (
+      <Stack justify="center" wrap>
+        <Stack.Item style={{ marginInline: 4 }}>
+          <Button onClick={onFlipPose}>ПЕРЕВЕРНУТЬСЯ</Button>
+        </Stack.Item>
+        <Stack.Item style={{ marginInline: 4 }}>
+          <Button onClick={onStopAll}>ОСТАНОВИТЬСЯ</Button>
+        </Stack.Item>
+        <Stack.Item style={{ marginInline: 4 }}>
+          <Button selected={!!yieldToPartner} onClick={onToggleYield}>
+            ПОДДАТЬСЯ
+          </Button>
+        </Stack.Item>
+        <Stack.Item style={{ marginInline: 4 }}>
+          <Button selected={!!frozen} onClick={onToggleFreeze}>
+            {frozen ? 'НЕ ВОЗБУЖДАТЬСЯ (ВКЛ)' : 'НЕ ВОЗБУЖДАТЬСЯ'}
+          </Button>
+        </Stack.Item>
+      </Stack>
+    )}
   </Section>
 );
 
@@ -1048,7 +1106,7 @@ export const EroticRolePlayPanel: React.FC = () => {
   };
 
   return (
-    <Window title="Утолить Желания" width={680} height={900}>
+    <Window title="Утолить Желания" width={650} height={900}>
       <Window.Content scrollable>
         <Stack vertical fill>
           <Stack.Item>

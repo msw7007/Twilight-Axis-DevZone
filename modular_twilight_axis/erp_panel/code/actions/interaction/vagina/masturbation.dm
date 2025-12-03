@@ -4,6 +4,7 @@
 	name = "Мастурбировать на партнера"
 	required_target = null
 	armor_slot_init = BODY_ZONE_PRECISE_GROIN
+	check_same_tile = FALSE
 
 	affects_self_arousal = 0.12
 	affects_arousal      = 0

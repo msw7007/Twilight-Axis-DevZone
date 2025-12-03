@@ -7,12 +7,40 @@
 		sex_organ = new /datum/sex_organ/breasts(src)
 
 /obj/item/organ/penis
-    var/manual_erection_override = FALSE
+	var/manual_erection_override = FALSE
+
+/obj/item/organ/penis/proc/sync_knotting_component()
+	var/mob/living/carbon/human/H = owner
+	if(!H)
+		return
+
+	var/needs_knot = (penis_type in list(
+		PENIS_TYPE_KNOTTED,
+		PENIS_TYPE_TAPERED_DOUBLE_KNOTTED,
+		PENIS_TYPE_BARBED_KNOTTED,
+	))
+
+	var/datum/component/knotting/K = H.GetComponent(/datum/component/knotting)
+
+	if(needs_knot)
+		if(!K)
+			H.AddComponent(/datum/component/knotting)
+	else
+		if(K)
+			qdel(K)
 
 /obj/item/organ/penis/Insert(mob/living/carbon/M, special, drop_if_replaced)
 	. = ..()
-	if(!sex_organ)
-		sex_organ = new /datum/sex_organ/penis(src)
+	RegisterSignal(M, COMSIG_SEX_AROUSAL_CHANGED, PROC_REF(on_arousal_changed), TRUE)
+	sync_knotting_component()
+	refresh_sex_organ()
+
+/obj/item/organ/penis/Remove(mob/living/carbon/M, special, drop_if_replaced)
+	. = ..()
+	UnregisterSignal(M, COMSIG_SEX_AROUSAL_CHANGED)
+	var/datum/component/knotting/K = M.GetComponent(/datum/component/knotting)
+	if(K)
+		qdel(K)
 
 /obj/item/organ/penis/on_arousal_changed()
 	if(manual_erection_override)
@@ -35,6 +63,13 @@
 			new_state = ERECT_STATE_HARD
 
 	update_erect_state(new_state)
+
+/obj/item/organ/penis/proc/refresh_sex_organ()
+	if(!sex_organ)
+		sex_organ = new /datum/sex_organ/penis(src)
+	else
+		var/datum/sex_organ/penis/SP = sex_organ
+		SP.refresh_from_organ(src)
 
 /obj/item/organ/penis/proc/set_manual_erect_state(state)
 	manual_erection_override = TRUE

@@ -104,18 +104,6 @@
     P.name = "Голова [H.original_owner.name]"
     return P
 
-/proc/is_erp_zone_blocked_by_clothes(mob/living/carbon/human/user, mob/living/carbon/human/H, zone)
-	if(!H || !zone)
-		return FALSE
-
-	if(user && has_aggressive_zone_grab(user, H, zone))
-		return FALSE
-
-	if(!get_location_accessible(H, zone, skipundies = TRUE))
-		return TRUE
-
-	return FALSE
-
 /proc/sex_organ_to_zone(organ_type)
 	switch(organ_type)
 		if(SEX_ORGAN_PENIS, SEX_ORGAN_VAGINA, SEX_ORGAN_ANUS)
@@ -126,25 +114,55 @@
 			return BODY_ZONE_PRECISE_MOUTH
 	return null
 
-/proc/has_aggressive_zone_grab(mob/living/carbon/human/grabber, mob/living/carbon/human/grabbed, zone)
-	if(!grabber || !grabbed || !zone)
+/proc/can_access_erp_zone(mob/living/carbon/human/user, mob/living/carbon/human/target,	zone, require_grab = FALSE,	min_grab_state = GRAB_PASSIVE)
+	if(!target || !zone)
 		return FALSE
-	if(!iscarbon(grabbed))
-		return FALSE
-
-	var/mob/living/carbon/C = grabbed
 
 	var/has_zone_grab = FALSE
-	for(var/obj/item/grabbing/G in C.grabbedby)
-		if(G.sublimb_grabbed == zone)
-			has_zone_grab = TRUE
-			break
+	var/grabstate = 0
 
-	if(!has_zone_grab)
+	if(user)
+		for(var/obj/item/grabbing/G in target.grabbedby)
+			if(G.sublimb_grabbed == zone)
+				has_zone_grab = TRUE
+				break
+
+		grabstate = user.get_highest_grab_state_on(target) || 0
+
+	var/has_enough_grab = (grabstate >= min_grab_state)
+
+	if(require_grab && !(has_zone_grab && has_enough_grab))
 		return FALSE
 
-	var/grabstate = grabber.get_highest_grab_state_on(grabbed)
-	if(grabstate && grabstate >= GRAB_AGGRESSIVE)
+	if(has_zone_grab && has_enough_grab)
 		return TRUE
 
-	return FALSE
+	if(!get_location_accessible(target, zone, skipundies = TRUE))
+		return FALSE
+
+	return TRUE
+
+/proc/get_penis_organ_type_for_style(style)
+	switch(style)
+		if("Plain")
+			return /obj/item/organ/penis
+		if("Knotted")
+			return /obj/item/organ/penis/knotted
+		if("Flared")
+			return /obj/item/organ/penis/equine
+		if("Knotted 2")
+			return /obj/item/organ/penis/tapered_mammal
+		if("Tapered")
+			return /obj/item/organ/penis/tapered
+		if("Hemi")
+			return /obj/item/organ/penis/tapered_double
+		if("Knotted Hemi")
+			return /obj/item/organ/penis/tapered_double_knotted
+		if("Barbed")
+			return /obj/item/organ/penis/barbed
+		if("Barbed, Knotted")
+			return /obj/item/organ/penis/barbed_knotted
+		if("Tentacled")
+			return /obj/item/organ/penis/tentacle
+
+	return /obj/item/organ/penis

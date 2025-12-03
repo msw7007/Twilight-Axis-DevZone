@@ -347,22 +347,18 @@
 		target_zone = sex_organ_to_zone(required_target)
 
 	if(init_zone && user)
-		if(!has_aggressive_zone_grab(user, user, init_zone))
-			if(is_erp_zone_blocked_by_clothes(user, user, init_zone))
-				return FALSE
+		if(!can_access_erp_zone(user, user, init_zone, FALSE, GRAB_PASSIVE))
+			return FALSE
 
 	if(target_zone && target)
-		if(!has_aggressive_zone_grab(user, target, target_zone))
-			if(is_erp_zone_blocked_by_clothes(user, target, target_zone))
-				return FALSE
+		if(!can_access_erp_zone(user, target, target_zone, FALSE, GRAB_PASSIVE))
+			return FALSE
 
 	return TRUE
 
-
-/datum/sex_session_tgui/proc/is_partner_node_reserved(node_id)
-	if(!node_id)
+/datum/sex_session_tgui/proc/is_partner_node_reserved(node_id, mob/living/carbon/human/P)
+	if(!node_id || !P)
 		return FALSE
-
 	if(!length(current_actions))
 		return FALSE
 
@@ -374,6 +370,8 @@
 		if(!I.action.reserve_target_for_session)
 			continue
 
+		if(I.partner != P)
+			continue
 		if(I.partner_node_id != node_id)
 			continue
 

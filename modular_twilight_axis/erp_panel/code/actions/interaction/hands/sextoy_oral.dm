@@ -3,6 +3,7 @@
 
 	name = "Секс-игрушка оральная"
 	required_target = SEX_ORGAN_MOUTH
+	check_same_tile = FALSE
 
 	affects_self_arousal = 0.15
 	affects_arousal      = 0

@@ -8,7 +8,7 @@
 
 /datum/reagent/erpjuice/cum/on_mob_add(mob/living/carbon/carbon) //cum additional effect on nymphos and baotha's worshippers
 	if(ishuman(carbon))
-		if(HAS_TRAIT(carbon, TRAIT_CRACKHEAD))
+		if(istype(carbon.patron, /datum/patron/inhumen/baotha))
 			to_chat(carbon, "<span class='love_mid'>Она радуется, глядя на меня...</span>")
 			carbon.add_stress(/datum/stressevent/nympho_taste/baotha)
 		else if(carbon.has_flaw(/datum/charflaw/addiction/lovefiend))

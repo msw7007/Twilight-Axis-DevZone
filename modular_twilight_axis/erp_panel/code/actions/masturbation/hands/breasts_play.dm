@@ -3,7 +3,7 @@
 
 	name = "Лапать грудь"
 	required_target = SEX_ORGAN_BREASTS
-	armor_slot_init = BODY_ZONE_PRECISE_STOMACH
+	armor_slot_init = BODY_ZONE_CHEST
 
 	affects_self_arousal = 0.1
 	affects_arousal      = 0

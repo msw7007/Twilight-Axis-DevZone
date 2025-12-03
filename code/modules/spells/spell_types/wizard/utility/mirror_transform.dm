@@ -379,21 +379,40 @@
 			var/new_style = input(H, "Choose your penis type", "Penis Customization") as null|anything in valid_penis_types
 			if(new_style)
 				if(new_style == "none")
-					var/obj/item/organ/penis/penis = H.getorganslot(ORGAN_SLOT_PENIS)
-					if(penis)
-						penis.Remove(H)
-						qdel(penis)
+					var/obj/item/organ/penis/old = H.getorganslot(ORGAN_SLOT_PENIS)
+					if(old)
+						old.Remove(H)
+						qdel(old)
 						H.update_body()
 						should_update = TRUE
 				else
-					var/obj/item/organ/penis/penis = H.getorganslot(ORGAN_SLOT_PENIS)
-					if(!penis)
-						penis = new()
-						penis.Insert(H, TRUE, FALSE)
+					var/obj/item/organ/penis/old = H.getorganslot(ORGAN_SLOT_PENIS)
+					if(old)
+						old.Remove(H)
+						qdel(old)
+
+					var/penis_type_path = get_penis_organ_type_for_style(new_style)
+					var/obj/item/organ/penis/penis = new penis_type_path
+					penis.Insert(H, TRUE, FALSE)
 					penis.accessory_type = valid_penis_types[new_style]
-					penis.color = H.dna.features["mcolor"]
+					if(H.dna && H.dna.species)
+						var/datum/species/S = H.dna.species
+						if((MUTCOLORS in S.species_traits) || (DYNCOLORS in S.species_traits))
+							penis.color = H.dna.features["mcolor"]
+						else
+							penis.color = initial(penis.color)
+
+					if(penis.sex_organ)
+						var/datum/sex_organ/penis/SP = penis.sex_organ
+						SP.refresh_from_organ(penis)
+					else
+						penis.refresh_sex_organ()
+
+					penis.sync_knotting_component()
+
 					H.update_body()
 					should_update = TRUE
+
 
 		if("testicles")
 			var/list/valid_testicle_types = list("none")

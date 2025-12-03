@@ -29,12 +29,12 @@
 	var/producing_reagent_id = null
 	// production rate per tick
 	var/producing_reagent_rate = 0
+	var/pending_production = 0
 	// amount of reagent that ejects by events
 	var/injection_amount = 0
 	// intervals
 	var/production_interval = 5 SECONDS
 	var/drain_interval = 5 MINUTES
-
 
 /datum/sex_organ/New(atom/movable/organ)
 	. = ..()
@@ -144,8 +144,17 @@
 	if(!producing_reagent_id || producing_reagent_rate <= 0)
 		return
 
+	var/produced = 0
+
 	if(total_volume() < stored_liquid_max)
-		produce_liquid(null, producing_reagent_rate)
+		produced = produce_liquid(null, producing_reagent_rate)
+
+	if(produced > 0)
+		var/mob/living/carbon/human/H = get_owner()
+		if(istype(H))
+			var/datum/component/arousal/A = H.GetComponent(/datum/component/arousal)
+			if(A)
+				A.on_sex_organ_produced(src, produced)
 
 	if(has_storage() && producing_reagent_id && producing_reagent_rate > 0)
 		start_production_timer()
@@ -243,20 +252,26 @@
 
 	if(!R && producing_reagent_id)
 		R = GLOB.chemical_reagents_list[producing_reagent_id]
-
 	if(!R)
 		return 0
 
-	// вот тут подключаем наш множитель
 	var/mult = get_production_multiplier()
 	if(mult <= 0)
 		return 0
 
 	amount *= mult
+	pending_production += amount
 
-	var/added = stored_liquid.add_reagent(R.type, amount)
+	if(pending_production < SEX_MIN_REAGENT_QUANT)
+		return 0
+
+	var/to_add = pending_production
+	var/added = stored_liquid.add_reagent(R.type, to_add)
+
 	if(added > 0)
+		pending_production = max(0, pending_production - added)
 		renew_timer(drain_interval)
+
 	return added
 
 /datum/sex_organ/proc/is_valid_liquid_container(obj/item/I)
@@ -389,17 +404,22 @@
 /datum/sex_organ/proc/get_production_multiplier()
 	var/mult = 1.0
 
+	var/mob/living/carbon/human/H = get_owner()
+	if(istype(H))
+		if(organ_type == SEX_ORGAN_PENIS)
+			if(H.has_flaw(/datum/charflaw/addiction/lovefiend))
+				mult *= NYMPHO_PROD_MULT
+			if(istype(H.patron, /datum/patron/inhumen/baotha))
+				mult *= BAOTIST_PROD_MULT
+
 	var/list/ad = get_arousal_data()
-	if(!ad)
-		return mult
-
-	if(!ad["is_spent"])
-		return mult
-
-	switch(organ_type)
-		if(SEX_ORGAN_PENIS)
-			return PENIS_SPENT_PROD_MULT
-		if(SEX_ORGAN_BREASTS)
-			return BREAST_SPENT_PROD_MULT
+	if(ad && ad["is_spent"])
+		switch(organ_type)
+			if(SEX_ORGAN_PENIS)
+				mult *= PENIS_SPENT_PROD_MULT
+			if(SEX_ORGAN_BREASTS)
+				mult *= BREAST_SPENT_PROD_MULT
 
 	return mult
+
+

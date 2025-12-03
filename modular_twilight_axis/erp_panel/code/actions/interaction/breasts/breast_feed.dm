@@ -18,9 +18,7 @@
 	if(SS)
 		var/datum/sex_organ/O = SS.resolve_organ_datum(user, SEX_ORGAN_FILTER_BREASTS)
 		if(O)
-			var/obj/item/container = O.find_liquid_container()
-			if(container)
-				return TRUE
+			return TRUE
 
 	return FALSE
 
