@@ -26,4 +26,5 @@
 
 /datum/sex_panel_action/other/vagina/scissors/handle_climax_message(mob/living/carbon/human/user, mob/living/carbon/human/target, is_active = TRUE)
 	var/message = "[is_active ? user : target] кончает на промежность [is_active ? target : user]"
+	user.visible_message(span_love(message))
 	return "onto"
