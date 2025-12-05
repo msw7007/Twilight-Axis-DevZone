@@ -69,41 +69,10 @@
 	return FALSE
 
 /datum/component/knotting/can_knot(mob/living/carbon/human/user, mob/living/carbon/human/target)
-	if(!target || !ishuman(target))
+	if(!user || !target || !ishuman(target))
 		return FALSE
 
 	if(get_dist(user, target) > 1)
-		return FALSE
-
-	var/list/sessions = return_sessions_with_user_tgui(user)
-	var/linked = FALSE
-
-	for(var/datum/sex_session_tgui/S in sessions)
-		if(QDELETED(S))
-			continue
-		if(!length(S.current_actions))
-			continue
-
-		for(var/id in S.current_actions)
-			var/datum/sex_action_session/I = S.current_actions[id]
-			if(!I || QDELETED(I) || !I.action)
-				continue
-
-			if(I.actor != user || I.partner != target)
-				continue
-
-			if(S.node_organ_type(I.actor_node_id) != SEX_ORGAN_PENIS)
-				continue
-			if(!I.action.can_knot)
-				continue
-
-			linked = TRUE
-			break
-
-		if(linked)
-			break
-
-	if(!linked)
 		return FALSE
 
 	if(!check_knot_penis_type())
@@ -111,7 +80,9 @@
 
 	var/list/arousal_data = list()
 	SEND_SIGNAL(user, COMSIG_SEX_GET_AROUSAL, arousal_data)
-	if(arousal_data["arousal"] < AROUSAL_HARD_ON_THRESHOLD)
+	var/arous = arousal_data["arousal"] || 0
+
+	if(arous < AROUSAL_HARD_ON_THRESHOLD)
 		if(!knotted_status)
 			to_chat(user, span_notice("My knot was too soft to tie."))
 		if(knotted_recipient != target)

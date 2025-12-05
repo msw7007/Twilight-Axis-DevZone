@@ -22,3 +22,8 @@
 
 /datum/sex_panel_action/other/mouth/rimming/get_finish_message(mob/living/carbon/human/user, mob/living/carbon/human/target)
 	return "[user] убирает лицо от попки [target]."
+
+/datum/sex_panel_action/other/mouth/rimming/handle_climax_message(mob/living/carbon/human/user, mob/living/carbon/human/target, is_active = TRUE)
+	var/message = is_active ? "[user] кончает под себя" : "[target] кончает под себя"
+	user.visible_message(span_love(message))
+	return "self"

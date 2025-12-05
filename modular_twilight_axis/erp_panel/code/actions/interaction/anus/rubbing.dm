@@ -23,3 +23,7 @@
 /datum/sex_panel_action/other/anus/rubbing/get_finish_message(mob/living/carbon/human/user, mob/living/carbon/human/target)
 	return "[user] уводит круп от  [target]."
 
+/datum/sex_panel_action/other/anus/rubbing/handle_climax_message(mob/living/carbon/human/user, mob/living/carbon/human/target, is_active = TRUE)
+	var/message = is_active ? "[user] кончает под себя" : "[target] кончает под себя"
+	user.visible_message(span_love(message))
+	return "self"

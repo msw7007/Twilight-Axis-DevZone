@@ -26,12 +26,10 @@
 /datum/sex_panel_action/other/penis/hemi/oral_double/get_finish_message(mob/living/carbon/human/user, mob/living/carbon/human/target)
 	return "[user] вытаскивает члены из влагалища [target]."
 
-/datum/sex_panel_action/other/penis/hemi/oral_double/handle_climax_message(mob/living/carbon/human/user, mob/living/carbon/human/target)
-	var/list/result = ..()
-	if(!islist(result))
-		result = list(result)
-
-	result += "в лоно [target]"
-	var/message = span_love(result.Join(" "))
-	user.visible_message(message)
+/datum/sex_panel_action/other/penis/hemi/oral_double/handle_climax_message(mob/living/carbon/human/user, mob/living/carbon/human/target, is_active = TRUE)
+	var/message = is_active ? "[user] кончает в рот [target]" : "[target] кончает под себя!"
+	user.visible_message(span_love(message))
 	return "into"
+
+/datum/sex_panel_action/other/penis/hemi/oral_double/get_knot_count()
+	return 1

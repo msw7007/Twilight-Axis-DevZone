@@ -23,7 +23,7 @@
 /datum/sex_panel_action/other/mouth/cunnilingus/get_finish_message(mob/living/carbon/human/user, mob/living/carbon/human/target)
 	return "[user] убирает лицо от паха [target]."
 
-/datum/sex_panel_action/other/mouth/cunnilingus/handle_climax_message(mob/living/carbon/human/user, mob/living/carbon/human/target)
-	user.visible_message(span_love("[target] кончает прямо в рот [user]"))
-	target.visible_message(span_love("[target] кончает прямо в рот [user]"))
+/datum/sex_panel_action/other/mouth/cunnilingus/handle_climax_message(mob/living/carbon/human/user, mob/living/carbon/human/target, is_active = TRUE)
+	var/message = is_active ? "[target] кончает на лицо [user]" : "[user] кончает под себя!"
+	user.visible_message(span_love(message))
 	return "onto"

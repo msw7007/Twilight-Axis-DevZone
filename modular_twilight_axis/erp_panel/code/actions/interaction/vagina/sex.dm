@@ -23,3 +23,8 @@
 
 /datum/sex_panel_action/other/vagina/sex/get_finish_message(mob/living/carbon/human/user, mob/living/carbon/human/target)
 	return "[user] соскальзывает вагиной с члена [target]."
+
+/datum/sex_panel_action/other/mouth/rimming/handle_climax_message(mob/living/carbon/human/user, mob/living/carbon/human/target, is_active = TRUE)
+	var/message = is_active ? "[user] кончает, киской сжимая член [target]" : "[target] кончает в лоно [user]"
+	user.visible_message(span_love(message))
+	return "into"

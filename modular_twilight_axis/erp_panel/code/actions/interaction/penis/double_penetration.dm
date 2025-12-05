@@ -141,14 +141,9 @@
 /datum/sex_panel_action/other/penis/hemi/dp_vag_anal/get_finish_message(mob/living/carbon/human/user, mob/living/carbon/human/target)
 	return "[user] вытаскивает члены из дырок [target]."
 
-/datum/sex_panel_action/other/penis/hemi/dp_vag_anal/handle_climax_message(mob/living/carbon/human/user, mob/living/carbon/human/target)
-	var/list/result = ..()
-	if(!islist(result))
-		result = list(result)
-
-	result += "одновременно заполняя и киску, и зад [target]."
-	var/message = span_love(result.Join(" "))
-	user.visible_message(message)
+/datum/sex_panel_action/other/penis/hemi/dp_vag_anal/handle_climax_message(mob/living/carbon/human/user, mob/living/carbon/human/target, is_active = TRUE)
+	var/message = is_active ? "[user] кончает одновременно в киску и зад [target]" : "[target] кончает под себя!"
+	user.visible_message(span_love(message))
 	return "into"
 
 /datum/sex_panel_action/other/penis/hemi/dp_vag_anal/get_reserved_target_organ_types()
@@ -156,3 +151,6 @@
 		return null
 
 	return list(SEX_ORGAN_VAGINA, SEX_ORGAN_ANUS)
+
+/datum/sex_panel_action/other/penis/hemi/dp_vag_anal/get_knot_count()
+	return 2

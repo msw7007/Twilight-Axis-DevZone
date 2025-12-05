@@ -123,6 +123,19 @@
 
 	var/mob/living/carbon/human/source = mob
 	var/mob/living/carbon/human/partner = null
+	var/is_active = TRUE
+
+	if(S.actor == source)
+		is_active = TRUE
+		if(istype(S.partner, /mob/living/carbon/human))
+			partner = S.partner
+	else if(S.partner == source)
+		is_active = FALSE
+		if(istype(S.actor, /mob/living/carbon/human))
+			partner = S.actor
+	else
+		is_active = TRUE
+		partner = null
 
 	if(istype(S.partner, /mob/living/carbon/human))
 		partner = S.partner
@@ -130,9 +143,12 @@
 	if(partner == source)
 		partner = null
 
+	if(partner == source)
+		partner = null
+
 	do_ejac_inject_from_session(source, S)
 	var/datum/sex_panel_action/A = S.action
-	var/return_type = A.handle_climax_message(source, partner)
+	var/return_type = A.handle_climax_message(source, partner, is_active)
 	if(!return_type)
 		var/turf/turf2 = get_turf(mob)
 		new /obj/effect/decal/cleanable/coom(turf2)

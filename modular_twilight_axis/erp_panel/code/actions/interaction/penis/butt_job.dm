@@ -26,12 +26,7 @@
 /datum/sex_panel_action/other/penis/butt_job/get_finish_message(mob/living/carbon/human/user, mob/living/carbon/human/target)
 	return "[user] убирает член от попки [target]."
 
-/datum/sex_panel_action/other/penis/butt_job/handle_climax_message(mob/living/carbon/human/user, mob/living/carbon/human/target)
-	var/list/result = ..()
-	if(!islist(result))
-		result = list(result)
-
-	result += "меж ягодиц [target]"
-	var/message = span_love(result.Join(" "))
-	user.visible_message(message)
+/datum/sex_panel_action/other/penis/butt_job/handle_climax_message(mob/living/carbon/human/user, mob/living/carbon/human/target, is_active = TRUE)
+	var/message = is_active ? "[user] кончает на ягодицы [target]" : "[target] кончает под себя!"
+	user.visible_message(span_love(message))
 	return "onto"

@@ -39,7 +39,7 @@
 /datum/sex_panel_action/self/hands/penis_milking/get_finish_message(mob/living/carbon/human/user, mob/living/carbon/human/target)
 	return "[user] ослабляет хватку и останавливается."
 
-/datum/sex_panel_action/self/hands/penis_milking/handle_climax_message(mob/living/carbon/human/user, mob/living/carbon/human/target)
+/datum/sex_panel_action/self/hands/penis_milking/handle_climax_message(mob/living/carbon/human/user, mob/living/carbon/human/target, is_active = TRUE)
 	. = ..()
 	var/datum/sex_session_tgui/SS = get_or_create_sex_session_tgui(user, target)
 	if(SS)

@@ -26,16 +26,10 @@
 /datum/sex_panel_action/other/penis/oral_sex/get_finish_message(mob/living/carbon/human/user, mob/living/carbon/human/target)
 	return "[user] вытаскивает член из рта [target]."
 
-
-/datum/sex_panel_action/other/penis/oral_sex/handle_climax_message(mob/living/carbon/human/user, mob/living/carbon/human/target)
-	var/list/result = ..()
-	if(!islist(result))
-		result = list(result)
-
-	result += "в рот [target]"
-	var/message = span_love(result.Join(" "))
-	user.visible_message(message)
+/datum/sex_panel_action/other/penis/oral_sex/handle_climax_message(mob/living/carbon/human/user, mob/living/carbon/human/target, is_active = TRUE)
+	var/message = is_active ? "[user] кончает в рот [target]" : "[target] кончает под себя!"
+	user.visible_message(span_love(message))
 	return "into"
 
-/datum/sex_panel_action/other/penis/anal_sex/get_knot_count()
+/datum/sex_panel_action/other/penis/oral_sex/get_knot_count()
 	return 1

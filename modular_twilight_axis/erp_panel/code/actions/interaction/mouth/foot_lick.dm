@@ -23,3 +23,8 @@
 
 /datum/sex_panel_action/other/mouth/foot_lick/get_finish_message(mob/living/carbon/human/user, mob/living/carbon/human/target)
 	return "[user] убирает лицо с ножек [target]."
+
+/datum/sex_panel_action/other/mouth/foot_lick/handle_climax_message(mob/living/carbon/human/user, mob/living/carbon/human/target, is_active = TRUE)
+	var/message = is_active ? "[user] кончает под себя" : "[target] кончает под себя"
+	user.visible_message(span_love(message))
+	return "self"

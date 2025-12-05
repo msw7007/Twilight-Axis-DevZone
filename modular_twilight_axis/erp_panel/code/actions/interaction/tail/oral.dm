@@ -24,3 +24,8 @@
 
 /datum/sex_panel_action/other/tail/oral/get_finish_message(mob/living/carbon/human/user, mob/living/carbon/human/target)
 	return "[user] выводит хвост из рта [target]."
+
+/datum/sex_panel_action/other/tail/oral/handle_climax_message(mob/living/carbon/human/user, mob/living/carbon/human/target, is_active = TRUE)
+	var/message = is_active ? "[user] кончает под себя" : "[target] кончает, выпуская хвост [user]!"
+	user.visible_message(span_love(message))
+	return "onto"

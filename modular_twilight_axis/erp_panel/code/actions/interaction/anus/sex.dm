@@ -24,3 +24,7 @@
 /datum/sex_panel_action/other/anus/sex/get_finish_message(mob/living/carbon/human/user, mob/living/carbon/human/target)
 	return "[user] соскальзывает попкой с члена [target]."
 
+/datum/sex_panel_action/other/anus/rubbing/handle_climax_message(mob/living/carbon/human/user, mob/living/carbon/human/target, is_active = TRUE)
+	var/message = is_active ? "[user] кончает, сжимая попкой член [target]" : "[target] кончает в попку [user]"
+	user.visible_message(span_love(message))
+	return "self"

@@ -24,3 +24,8 @@
 
 /datum/sex_panel_action/other/mouth/blowjob/get_finish_message(mob/living/carbon/human/user, mob/living/carbon/human/target)
 	return "[user] вытаскивает из рта член [target]."
+
+/datum/sex_panel_action/other/mouth/blowjob/handle_climax_message(mob/living/carbon/human/user, mob/living/carbon/human/target, is_active = TRUE)
+	var/message = is_active ? "[user] кончает под себя" : "[target] кончает в рот [user]"
+	user.visible_message(span_love(message))
+	return "into"

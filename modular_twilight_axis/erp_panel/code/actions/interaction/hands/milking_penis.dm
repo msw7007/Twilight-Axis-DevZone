@@ -24,8 +24,7 @@
 /datum/sex_panel_action/other/hands/milking_penis/get_finish_message(mob/living/carbon/human/user, mob/living/carbon/human/target)
 	return "[user] убирает руки от члена [target]."
 
-/datum/sex_panel_action/other/hands/milking_penis/handle_climax_message(mob/living/carbon/human/user, mob/living/carbon/human/target)
-	. = ..()
+/datum/sex_panel_action/other/penis/vaginal_sex/handle_climax_message(mob/living/carbon/human/user, mob/living/carbon/human/target, is_active = TRUE)
 	var/datum/sex_session_tgui/SS = get_or_create_sex_session_tgui(user, target)
 	if(SS)
 		var/datum/sex_organ/O = SS.resolve_organ_datum(target, SEX_ORGAN_FILTER_PENIS)
