@@ -15,11 +15,11 @@
 	if(!.)
 		return FALSE
 
-	var/datum/sex_session_tgui/SS = get_or_create_sex_session_tgui(user, target)
-	if(SS)
-		var/datum/sex_organ/O = SS.resolve_organ_datum(user, SEX_ORGAN_FILTER_PENIS)
-		if(O)
-			var/obj/item/container = O.find_liquid_container()
+	var/datum/sex_session_tgui/session_object = get_or_create_sex_session_tgui(user, target)
+	if(session_object)
+		var/datum/sex_organ/organ_object = session_object.resolve_organ_datum(user, SEX_ORGAN_FILTER_PENIS)
+		if(organ_object)
+			var/obj/item/container = organ_object.find_liquid_container()
 			if(container)
 				return TRUE
 
@@ -41,11 +41,11 @@
 
 /datum/sex_panel_action/self/hands/penis_milking/handle_climax_message(mob/living/carbon/human/user, mob/living/carbon/human/target, is_active = TRUE)
 	. = ..()
-	var/datum/sex_session_tgui/SS = get_or_create_sex_session_tgui(user, target)
-	if(SS)
-		var/datum/sex_organ/O = SS.resolve_organ_datum(user, SEX_ORGAN_FILTER_PENIS)
-		if(O)
-			var/obj/item/container = find_best_container(user, target, O)
-			O.inject_liquid(container, user)
+	var/datum/sex_session_tgui/session_object = get_or_create_sex_session_tgui(user, target)
+	if(session_object)
+		var/datum/sex_organ/organ_object = session_object.resolve_organ_datum(user, SEX_ORGAN_FILTER_PENIS)
+		if(organ_object)
+			var/obj/item/container = find_best_container(user, target, organ_object)
+			organ_object.inject_liquid(container, user)
 			to_chat(user, "Я чувствую, как семя выплескивается наружу!")
 	return "self"

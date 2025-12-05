@@ -14,15 +14,15 @@
 	if(!.)
 		return FALSE
 
-	var/datum/sex_session_tgui/SS = get_or_create_sex_session_tgui(user, target)
-	if(!SS)
+	var/datum/sex_session_tgui/session_object = get_or_create_sex_session_tgui(user, target)
+	if(!session_object)
 		return FALSE
 
-	var/datum/sex_organ/O = SS.resolve_organ_datum(target, SEX_ORGAN_FILTER_BREASTS)
-	if(!O)
+	var/datum/sex_organ/organ_object = session_object.resolve_organ_datum(target, SEX_ORGAN_FILTER_BREASTS)
+	if(!organ_object)
 		return FALSE
 
-	var/obj/item/container = find_best_container(user, target, O)
+	var/obj/item/container = find_best_container(user, target, organ_object)
 	if(container)
 		return TRUE
 

@@ -10,8 +10,8 @@
 	var/manual_erection_override = FALSE
 
 /obj/item/organ/penis/proc/sync_knotting_component()
-	var/mob/living/carbon/human/H = owner
-	if(!H)
+	var/mob/living/carbon/human/human_object = owner
+	if(!human_object)
 		return
 
 	var/needs_knot = (penis_type in list(
@@ -20,14 +20,14 @@
 		PENIS_TYPE_BARBED_KNOTTED,
 	))
 
-	var/datum/component/knotting/K = H.GetComponent(/datum/component/knotting)
+	var/datum/component/knotting/knoting_object = human_object.GetComponent(/datum/component/knotting)
 
 	if(needs_knot)
-		if(!K)
-			H.AddComponent(/datum/component/knotting)
+		if(!knoting_object)
+			human_object.AddComponent(/datum/component/knotting)
 	else
-		if(K)
-			qdel(K)
+		if(knoting_object)
+			qdel(knoting_object)
 
 /obj/item/organ/penis/Insert(mob/living/carbon/M, special, drop_if_replaced)
 	. = ..()
@@ -38,9 +38,9 @@
 /obj/item/organ/penis/Remove(mob/living/carbon/M, special, drop_if_replaced)
 	. = ..()
 	UnregisterSignal(M, COMSIG_SEX_AROUSAL_CHANGED)
-	var/datum/component/knotting/K = M.GetComponent(/datum/component/knotting)
-	if(K)
-		qdel(K)
+	var/datum/component/knotting/knoting_object = M.GetComponent(/datum/component/knotting)
+	if(knoting_object)
+		qdel(knoting_object)
 
 /obj/item/organ/penis/on_arousal_changed()
 	if(manual_erection_override)
@@ -114,27 +114,27 @@
 	var/datum/sex_organ/legs/legs_organ
 
 /mob/living/carbon/human/proc/ensure_legs_organ()
-	var/obj/item/bodypart/l_leg/LL = get_bodypart(BODY_ZONE_L_LEG)
-	var/obj/item/bodypart/r_leg/RL = get_bodypart(BODY_ZONE_R_LEG)
-	var/obj/item/bodypart/BP = LL || RL
+	var/obj/item/bodypart/l_leg/lleg_object = get_bodypart(BODY_ZONE_L_LEG)
+	var/obj/item/bodypart/r_leg/rleg_object = get_bodypart(BODY_ZONE_R_LEG)
+	var/obj/item/bodypart/bodypart_object = lleg_object || rleg_object
 
-	if(!BP)
+	if(!bodypart_object)
 		if(legs_organ)
 			qdel(legs_organ)
 			legs_organ = null
 		return null
 
 	if(legs_organ)
-		if(legs_organ.organ_link == BP)
+		if(legs_organ.organ_link == bodypart_object)
 			return legs_organ
 
 		qdel(legs_organ)
 		legs_organ = null
 
-	var/datum/sex_organ/legs/L = new /datum/sex_organ/legs(BP)
-	legs_organ = L
-	BP.sex_organ = L
-	return L
+	var/datum/sex_organ/legs/legs_object = new /datum/sex_organ/legs(bodypart_object)
+	legs_organ = legs_object
+	bodypart_object.sex_organ = legs_object
+	return legs_object
 
 /obj/item/bodypart/chest/Initialize()
 	. = ..()

@@ -10,8 +10,8 @@
 	var/active_knot = FALSE
 
 /datum/sex_panel_action/other/penis/proc/get_knot_action()
-	var/datum/sex_session_tgui/S = session.session
-	return (!S.has_knotted_penis || !S.do_knot_action) ? "" : " по самый узел"
+	var/datum/sex_session_tgui/session_object = session.session
+	return (!session_object.has_knotted_penis || !session_object.do_knot_action) ? "" : " по самый узел"
 
 /datum/sex_panel_action/other/penis/get_pose_text(pose_state)
 	switch(pose_state)

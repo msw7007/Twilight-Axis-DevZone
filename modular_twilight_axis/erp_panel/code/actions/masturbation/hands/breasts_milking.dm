@@ -15,11 +15,11 @@
 	if(!.)
 		return FALSE
 
-	var/datum/sex_session_tgui/SS = get_or_create_sex_session_tgui(user, target)
-	if(SS)
-		var/datum/sex_organ/O = SS.resolve_organ_datum(user, SEX_ORGAN_FILTER_BREASTS)
-		if(O)
-			var/obj/item/container = O.find_liquid_container()
+	var/datum/sex_session_tgui/session_object = get_or_create_sex_session_tgui(user, target)
+	if(session_object)
+		var/datum/sex_organ/organ_object = session_object.resolve_organ_datum(user, SEX_ORGAN_FILTER_BREASTS)
+		if(organ_object)
+			var/obj/item/container = organ_object.find_liquid_container()
 			if(container)
 				active_container = container
 				return TRUE
@@ -51,22 +51,22 @@
 	if(!prob(MILKING_BREAST_PROBABILITY))
 		return
 
-	var/datum/sex_action_session/AS = session
-	if(!AS || QDELETED(AS))
+	var/datum/sex_action_session/action_session = session
+	if(!action_session || QDELETED(action_session))
 		return
 
-	var/datum/sex_session_tgui/SS = AS.session
-	if(!SS || QDELETED(SS))
+	var/datum/sex_session_tgui/session_object = action_session.session
+	if(!session_object || QDELETED(session_object))
 		return
 
-	var/datum/sex_organ/O = SS.resolve_organ_datum(user, SEX_ORGAN_FILTER_BREASTS)
-	if(!O)
-		SS.stop_instance(AS.instance_id)
+	var/datum/sex_organ/organ_object = session_object.resolve_organ_datum(user, SEX_ORGAN_FILTER_BREASTS)
+	if(!organ_object)
+		session_object.stop_instance(action_session.instance_id)
 		return
 
-	var/obj/item/container = O.find_liquid_container()
+	var/obj/item/container = organ_object.find_liquid_container()
 	if(!container)
-		SS.stop_instance(AS.instance_id)
+		session_object.stop_instance(action_session.instance_id)
 		return
 
 	do_liquid_injection(user, target)

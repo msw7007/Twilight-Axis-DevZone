@@ -68,10 +68,10 @@
 		return 0
 	return stored_liquid.total_volume
 
-/datum/sex_organ/proc/add_reagent(datum/reagent/R, amount)
-	if(!has_storage() || amount <= 0 || !R)
+/datum/sex_organ/proc/add_reagent(datum/reagent/reagent_object, amount)
+	if(!has_storage() || amount <= 0 || !reagent_object)
 		return 0
-	var/added = stored_liquid.add_reagent(R.type, amount)
+	var/added = stored_liquid.add_reagent(reagent_object.type, amount)
 	if(added > 0)
 		renew_timer(drain_interval)
 	return added
@@ -88,10 +88,10 @@
 	var/removed = 0
 	var/list/L = stored_liquid.reagent_list.Copy()
 
-	for(var/datum/reagent/rr in L)
-		var/take = rr.volume * factor
+	for(var/datum/reagent/reagent_object in L)
+		var/take = reagent_object.volume * factor
 		if(take > 0)
-			removed += stored_liquid.remove_reagent(rr.type, take)
+			removed += stored_liquid.remove_reagent(reagent_object.type, take)
 
 	return removed
 
@@ -145,11 +145,11 @@
 		produced = produce_liquid(null, producing_reagent_rate)
 
 	if(produced > 0)
-		var/mob/living/carbon/human/H = get_owner()
-		if(istype(H))
-			var/datum/component/arousal/A = H.GetComponent(/datum/component/arousal)
-			if(A)
-				A.on_sex_organ_produced(src, produced)
+		var/mob/living/carbon/human/human_object = get_owner()
+		if(istype(human_object))
+			var/datum/component/arousal/arousal_object = human_object.GetComponent(/datum/component/arousal)
+			if(arousal_object)
+				arousal_object.on_sex_organ_produced(src, produced)
 
 	if(has_storage() && producing_reagent_id && producing_reagent_rate > 0)
 		start_production_timer()
@@ -210,11 +210,11 @@
 
 /datum/sex_organ/proc/get_owner()
 	if(istype(organ_link, /obj/item/bodypart))
-		var/obj/item/bodypart/BP = organ_link
-		return BP.owner
+		var/obj/item/bodypart/bodypart_object = organ_link
+		return bodypart_object.owner
 	if(istype(organ_link, /obj/item/organ))
-		var/obj/item/organ/O = organ_link
-		return O.owner
+		var/obj/item/organ/organ_object = organ_link
+		return organ_object.owner
 	return null
 
 /datum/sex_organ/proc/on_timer_end()
@@ -232,22 +232,22 @@
 		return
 
 	if(organ_type == SEX_ORGAN_VAGINA || organ_type == SEX_ORGAN_ANUS)
-		var/mob/living/carbon/human/H = get_owner()
-		if(istype(H))
-			var/turf/T = get_turf(H)
-			if(T)
-				new /obj/effect/decal/cleanable/coom(T)
+		var/mob/living/carbon/human/human_object = get_owner()
+		if(istype(human_object))
+			var/turf/turf_object = get_turf(human_object)
+			if(turf_object)
+				new /obj/effect/decal/cleanable/coom(turf_object)
 
 	if(total_volume() > 0)
 		renew_timer(drain_interval)
 
-/datum/sex_organ/proc/produce_liquid(datum/reagent/R, amount)
+/datum/sex_organ/proc/produce_liquid(datum/reagent/reagent_object, amount)
 	if(!has_storage() || amount <= 0)
 		return 0
 
-	if(!R && producing_reagent_id)
-		R = GLOB.chemical_reagents_list[producing_reagent_id]
-	if(!R)
+	if(!reagent_object && producing_reagent_id)
+		reagent_object = GLOB.chemical_reagents_list[producing_reagent_id]
+	if(!reagent_object)
 		return 0
 
 	var/mult = get_production_multiplier()
@@ -261,7 +261,7 @@
 		return 0
 
 	var/to_add = pending_production
-	var/added = stored_liquid.add_reagent(R.type, to_add)
+	var/added = stored_liquid.add_reagent(reagent_object.type, to_add)
 
 	if(added > 0)
 		pending_production = max(0, pending_production - added)
@@ -269,54 +269,54 @@
 
 	return added
 
-/datum/sex_organ/proc/is_valid_liquid_container(obj/item/I)
-	if(!I)
+/datum/sex_organ/proc/is_valid_liquid_container(obj/item/item_object)
+	if(!item_object)
 		return FALSE
 
-	if(istype(I, /obj/item/reagent_containers))
+	if(istype(item_object, /obj/item/reagent_containers))
 		return TRUE
 
-	if(I.reagents)
+	if(item_object.reagents)
 		return TRUE
 
 	return FALSE
 
 /datum/sex_organ/proc/find_liquid_container(mob/living/carbon/human/preferred_holder = null, list/blocked_containers = list())
 	if(preferred_holder)
-		var/obj/item/I = preferred_holder.get_active_held_item()
-		if(I && is_valid_liquid_container(I) && !(I in blocked_containers))
-			return I
+		var/obj/item/item_object = preferred_holder.get_active_held_item()
+		if(item_object && is_valid_liquid_container(item_object) && !(item_object in blocked_containers))
+			return item_object
 
-		I = preferred_holder.get_inactive_held_item()
-		if(I && is_valid_liquid_container(I) && !(I in blocked_containers))
-			return I
+		item_object = preferred_holder.get_inactive_held_item()
+		if(item_object && is_valid_liquid_container(item_object) && !(item_object in blocked_containers))
+			return item_object
 
-		for(var/obj/item/J in preferred_holder.contents)
-			if(is_valid_liquid_container(J) && !(J in blocked_containers))
-				return J
+		for(var/obj/item/item_object_holder in preferred_holder.contents)
+			if(is_valid_liquid_container(item_object_holder) && !(item_object_holder in blocked_containers))
+				return item_object_holder
 
-	var/mob/living/carbon/human/H = get_owner()
-	if(!H)
+	var/mob/living/carbon/human/human_object = get_owner()
+	if(!human_object)
 		return null
 
-	if(H.held_items)
-		for(var/obj/item/K in H.held_items)
-			if(is_valid_liquid_container(K) && !(K in blocked_containers))
-				return K
+	if(human_object.held_items)
+		for(var/obj/item/container_object in human_object.held_items)
+			if(is_valid_liquid_container(container_object) && !(container_object in blocked_containers))
+				return container_object
 
-	var/turf/T = get_turf(H)
-	if(T)
-		for(var/obj/item/L in T)
-			if(is_valid_liquid_container(L) && !(L in blocked_containers))
-				return L
+	var/turf/turf_object = get_turf(human_object)
+	if(turf_object)
+		for(var/obj/item/liquid_container in turf_object)
+			if(is_valid_liquid_container(liquid_container) && !(liquid_container in blocked_containers))
+				return liquid_container
 
-	if(T)
+	if(turf_object)
 		for(var/dir in list(NORTH, SOUTH, EAST, WEST))
-			var/turf/NT = get_step(T, dir)
-			if(!NT) continue
-			for(var/obj/item/M in NT)
-				if(is_valid_liquid_container(M) && !(M in blocked_containers))
-					return M
+			var/turf/check_turf = get_step(turf_object, dir)
+			if(!check_turf) continue
+			for(var/obj/item/result_item in check_turf)
+				if(is_valid_liquid_container(result_item) && !(result_item in blocked_containers))
+					return result_item
 
 	return null
 
@@ -355,19 +355,19 @@
 			on_after_inject(mode, moved, get_owner(), active_target, user_cont, null)
 			return moved
 
-	var/mob/living/carbon/human/H = get_owner()
-	var/turf/T = H ? get_turf(H) : (organ_link ? get_turf(organ_link) : null)
-	if(T)
-		new /obj/effect/decal/cleanable/coom(T)
+	var/mob/living/carbon/human/human_object = get_owner()
+	var/turf/turf_object = human_object ? get_turf(human_object) : (organ_link ? get_turf(organ_link) : null)
+	if(turf_object)
+		new /obj/effect/decal/cleanable/coom(turf_object)
 		moved = drain_uniform(amount)
 		if(moved > 0)
 			mode = INJECT_MODE_GROUND
-			on_after_inject(mode, moved, H, active_target, null, T)
+			on_after_inject(mode, moved, human_object, active_target, null, turf_object)
 			return moved
 
 	moved = drain_uniform(amount)
 	if(moved > 0)
-		on_after_inject(mode, moved, H, active_target, null, T)
+		on_after_inject(mode, moved, human_object, active_target, null, turf_object)
 	return moved
 
 /datum/sex_organ/proc/on_after_inject(mode, moved, mob/living/carbon/human/owner, datum/sex_organ/target_org, obj/item/container, turf/T, context)
@@ -378,8 +378,8 @@
 		var/mob/living/carbon/human/target = target_org.get_owner()
 
 		if(target && target_org.organ_type == SEX_ORGAN_MOUTH)
-			var/datum/reagents/R = stored_liquid
-			if(R && R.total_volume)
+			var/datum/reagents/reagent_object = stored_liquid
+			if(reagent_object && reagent_object.total_volume)
 				target.reagents.add_reagent(producing_reagent_id, moved)
 
 	return

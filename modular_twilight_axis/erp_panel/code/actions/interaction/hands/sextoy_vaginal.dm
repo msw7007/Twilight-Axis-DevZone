@@ -16,8 +16,8 @@
 	if(!.)
 		return FALSE
 
-	var/obj/item/I = user.get_active_held_item()
-	if(!is_sex_toy(I))
+	var/obj/item/item_object = user.get_active_held_item()
+	if(!is_sex_toy(item_object))
 		return FALSE
 
 	return TRUE

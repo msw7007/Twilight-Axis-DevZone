@@ -22,6 +22,3 @@
 
 /datum/sex_panel_action/other/legs/teasing/get_finish_message(mob/living/carbon/human/user, mob/living/carbon/human/target)
 	return "[user] убирает ногу от [target]."
-
-/datum/sex_panel_action/other/legs/teasing/on_perform(mob/living/carbon/human/user, mob/living/carbon/human/target)
-	. = ..()

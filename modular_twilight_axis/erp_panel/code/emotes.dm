@@ -75,33 +75,33 @@
 		return
 
 	if(ishuman(user) && ishuman(target))
-		var/mob/living/carbon/human/J = user
-		var/mob/living/carbon/human/T = target
+		var/mob/living/carbon/human/user_mob = user
+		var/mob/living/carbon/human/target_mob = target
 		var/do_change
 
-		if(target.loc == user.loc)
+		if(target_mob.loc == user.loc)
 			do_change = TRUE
-		if(!do_change && J.pulling == target)
+		if(!do_change && user_mob.pulling == target_mob)
 			do_change = TRUE
 
 		if(do_change)
-			if(J.zone_selected == BODY_ZONE_PRECISE_MOUTH)
+			if(user_mob.zone_selected == BODY_ZONE_PRECISE_MOUTH)
 				message_param = "licks %t lips."
-			else if(J.zone_selected == BODY_ZONE_PRECISE_EARS)
+			else if(user_mob.zone_selected == BODY_ZONE_PRECISE_EARS)
 				message_param = "licks the ear of %t."
-				var/mob/living/carbon/human/O = T
-				if(iself(O) || ishalfelf(O) || isdarkelf(O) || iswoodelf(O))
-					if(!O.cmode)
-						to_chat(O, span_love("It tickles..."))
-						O.apply_soft_arousal(0.5)
-			else if(J.zone_selected == BODY_ZONE_PRECISE_GROIN)
+				var/mob/living/carbon/human/applied_mob = target
+				if(iself(applied_mob) || ishalfelf(applied_mob) || isdarkelf(applied_mob) || iswoodelf(applied_mob))
+					if(!applied_mob.cmode)
+						to_chat(applied_mob, span_love("It tickles..."))
+						applied_mob.apply_soft_arousal(0.5)
+			else if(user_mob.zone_selected == BODY_ZONE_PRECISE_GROIN)
 				message_param = "licks %t between the legs."
-				if(!T.cmode)
-					to_chat(T, span_love("It somewhat stimulating..."))
-					T.apply_soft_arousal(1.5)
-			else if(J.zone_selected == BODY_ZONE_HEAD)
+				if(!target.cmode)
+					to_chat(target_mob, span_love("It somewhat stimulating..."))
+					target_mob.apply_soft_arousal(1.5)
+			else if(user_mob.zone_selected == BODY_ZONE_HEAD)
 				message_param = "licks %t cheek"
 			else
-				message_param = "licks %t [parse_zone(J.zone_selected)]."
+				message_param = "licks %t [parse_zone(user_mob.zone_selected)]."
 
 	playsound(target.loc, "sound/vo/lick.ogg", 100, FALSE, -1)

@@ -42,10 +42,10 @@
 	if(!ishuman(target))
 		return FALSE
 
-	var/mob/living/carbon/human/T = target
-	if(!T.get_sex_organ_by_type(SEX_ORGAN_VAGINA, FALSE))
+	var/mob/living/carbon/human/target_object = target
+	if(!target_object.get_sex_organ_by_type(SEX_ORGAN_VAGINA, FALSE))
 		return FALSE
-	if(!T.get_sex_organ_by_type(SEX_ORGAN_ANUS, FALSE))
+	if(!target_object.get_sex_organ_by_type(SEX_ORGAN_ANUS, FALSE))
 		return FALSE
 
 	return TRUE
@@ -71,22 +71,22 @@
 	if(anus)
 		to_check += anus
 
-	for(var/datum/sex_organ/O in to_check)
-		if(!O)
+	for(var/datum/sex_organ/organ_object in to_check)
+		if(!organ_object)
 			continue
 
-		var/node_id = O.organ_type
+		var/node_id = organ_object.organ_type
 		if(!node_id)
 			continue
 
 		var/mob/living/carbon/human/owner
 
-		if(istype(O.organ_link, /obj/item/bodypart))
-			var/obj/item/bodypart/BP = O.organ_link
-			owner = BP.owner
-		else if(istype(O.organ_link, /obj/item/organ))
-			var/obj/item/organ/ORG = O.organ_link
-			owner = ORG.owner
+		if(istype(organ_object.organ_link, /obj/item/bodypart))
+			var/obj/item/bodypart/bodypart_object = organ_object.organ_link
+			owner = bodypart_object.owner
+		else if(istype(organ_object.organ_link, /obj/item/organ))
+			var/obj/item/organ/organ_item = organ_object.organ_link
+			owner = organ_item.owner
 
 		if(!owner)
 			continue

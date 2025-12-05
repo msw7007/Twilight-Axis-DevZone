@@ -14,38 +14,38 @@
 
 	var/list/affected = list()
 
-	for(var/datum/sex_session_tgui/S in sessions)
-		if(QDELETED(S))
+	for(var/datum/sex_session_tgui/session_object in sessions)
+		if(QDELETED(session_object))
 			continue
-		if(!length(S.current_actions))
+		if(!length(session_object.current_actions))
 			continue
 
-		for(var/id in S.current_actions)
-			var/datum/sex_action_session/I = S.current_actions[id]
-			if(!I || QDELETED(I) || !I.action)
+		for(var/id in session_object.current_actions)
+			var/datum/sex_action_session/action_object = session_object.current_actions[id]
+			if(!action_object || QDELETED(action_object) || !action_object.action)
 				continue
 
-			var/mob/living/carbon/human/A = I.actor
-			var/mob/living/carbon/human/P = I.partner
+			var/mob/living/carbon/human/actor_object = action_object.actor
+			var/mob/living/carbon/human/partner_object = action_object.partner
 
-			if(A == source && P && P != source)
-				affected |= P
-			else if(P == source && A && A != source)
-				affected |= A
+			if(actor_object == source && partner_object && partner_object != source)
+				affected |= partner_object
+			else if(partner_object == source && actor_object && actor_object != source)
+				affected |= actor_object
 
-	for(var/mob/living/carbon/human/M in affected)
-		if(QDELETED(M) || M.stat == DEAD)
+	for(var/mob/living/carbon/human/mob_object in affected)
+		if(QDELETED(mob_object) || mob_object.stat == DEAD)
 			continue
 
-		var/is_nympho = M.has_flaw(/datum/charflaw/addiction/lovefiend)
-		var/bonus = is_nympho ? 20 : 40
+		var/is_nympho = mob_object.has_flaw(/datum/charflaw/addiction/lovefiend)
+		var/bonus = is_nympho ? 20 : 10
 
-		var/datum/component/arousal/A = M.GetComponent(/datum/component/arousal)
-		if(!A)
+		var/datum/component/arousal/arousal_object = mob_object.GetComponent(/datum/component/arousal)
+		if(!arousal_object)
 			continue
 
-		A.chain_orgasm_lock = TRUE
-		SEND_SIGNAL(M, COMSIG_SEX_ADJUST_AROUSAL, bonus)
+		arousal_object.chain_orgasm_lock = TRUE
+		SEND_SIGNAL(mob_object, COMSIG_SEX_SET_AROUSAL, bonus)
 
 /datum/component/arousal/after_ejaculation(intimate = FALSE, mob/living/carbon/human/user, mob/living/carbon/human/target)
 	var/do_spread = !chain_orgasm_lock
@@ -91,18 +91,18 @@
 	var/datum/sex_action_session/highest_priority = null
 	var/best_score = -1
 
-	for(var/datum/sex_session_tgui/S in parent_sessions)
-		if(QDELETED(S))
+	for(var/datum/sex_session_tgui/session_element in parent_sessions)
+		if(QDELETED(session_element))
 			continue
 
-		var/datum/sex_action_session/I = S.get_best_action_session_for(mob)
-		if(!I)
+		var/datum/sex_action_session/action_object = session_element.get_best_action_session_for(mob)
+		if(!action_object)
 			continue
 
-		var/score = I.get_priority_for(mob)
+		var/score = action_object.get_priority_for(mob)
 		if(score > best_score)
 			best_score = score
-			highest_priority = I
+			highest_priority = action_object
 
 	playsound(mob, 'sound/misc/mat/endout.ogg', 50, TRUE, ignore_walls = FALSE)
 
@@ -118,27 +118,27 @@
 		after_ejaculation(FALSE, mob, null)
 		return
 
-	var/datum/sex_action_session/S = highest_priority
-	var/datum/sex_session_tgui/SS = S.session
+	var/datum/sex_action_session/session_object = highest_priority
+	var/datum/sex_session_tgui/session_tgui_object = session_object.session
 
 	var/mob/living/carbon/human/source = mob
 	var/mob/living/carbon/human/partner = null
 	var/is_active = TRUE
 
-	if(S.actor == source)
+	if(session_object.actor == source)
 		is_active = TRUE
-		if(istype(S.partner, /mob/living/carbon/human))
-			partner = S.partner
-	else if(S.partner == source)
+		if(istype(session_object.partner, /mob/living/carbon/human))
+			partner = session_object.partner
+	else if(session_object.partner == source)
 		is_active = FALSE
-		if(istype(S.actor, /mob/living/carbon/human))
-			partner = S.actor
+		if(istype(session_object.actor, /mob/living/carbon/human))
+			partner = session_object.actor
 	else
 		is_active = TRUE
 		partner = null
 
-	if(istype(S.partner, /mob/living/carbon/human))
-		partner = S.partner
+	if(istype(session_object.partner, /mob/living/carbon/human))
+		partner = session_object.partner
 
 	if(partner == source)
 		partner = null
@@ -146,9 +146,9 @@
 	if(partner == source)
 		partner = null
 
-	do_ejac_inject_from_session(source, S)
-	var/datum/sex_panel_action/A = S.action
-	var/return_type = A.handle_climax_message(source, partner, is_active)
+	do_ejac_inject_from_session(source, session_object)
+	var/datum/sex_panel_action/action_object = session_object.action
+	var/return_type = action_object.handle_climax_message(source, partner, is_active)
 	if(!return_type)
 		var/turf/turf2 = get_turf(mob)
 		new /obj/effect/decal/cleanable/coom(turf2)
@@ -157,11 +157,11 @@
 		handle_climax(return_type, source, partner)
 		after_ejaculation(return_type == "into" || return_type == "onto", source, partner)
 
-	if(SS.do_knot_action && A.can_knot && source)
-		var/obj/item/organ/penis/P = source.getorganslot(ORGAN_SLOT_PENIS)
-		var/datum/sex_organ/penis/PO = P ? P.sex_organ : null
-		if(PO && PO.have_knot)
-			A.try_knot_on_climax(source, partner)
+	if(session_tgui_object.do_knot_action && action_object.can_knot && source)
+		var/obj/item/organ/penis/penis_item = source.getorganslot(ORGAN_SLOT_PENIS)
+		var/datum/sex_organ/penis/penis_object = penis_item ? penis_item.sex_organ : null
+		if(penis_object && penis_object.have_knot)
+			action_object.try_knot_on_climax(source, partner)
 
 /datum/component/arousal/receive_sex_action(datum/source, arousal_amt, pain_amt, giving, applied_force, applied_speed, organ_id)
 	var/mob/user = parent
@@ -272,39 +272,40 @@
 	if(amount <= 0)
 		return
 
-	var/mob/living/carbon/human/H = parent
-	if(!istype(H))
+	var/mob/living/carbon/human/human_object = parent
+	if(!istype(human_object))
 		return
 
+	var/add_value = SEX_AROUSAL_BASIC_CHARGE
 	switch(org.organ_type)
 		if(SEX_ORGAN_PENIS)
-			adjust_charge(amount * PENIS_CHARGE_PER_UNIT)
-		if(SEX_ORGAN_VAGINA)
-			adjust_charge(amount * VAGINA_CHARGE_PER_UNIT)
+			add_value =  amount * PENIS_CHARGE_PER_UNIT
+		
+	adjust_charge(add_value)
 
 #define PENIS_VOLUME_CHARGE_RATE 0.5
 
 /datum/component/arousal/handle_charge(dt)
-	var/mob/living/carbon/human/H = parent
+	var/mob/living/carbon/human/human_object = parent
 	var/has_testicles = FALSE
 
-	if(istype(H))
-		var/obj/item/organ/testicles/T = H.getorganslot(ORGAN_SLOT_TESTICLES)
-		if(T)
+	if(istype(human_object))
+		var/obj/item/organ/testicles/testicles_object = human_object.getorganslot(ORGAN_SLOT_TESTICLES)
+		if(testicles_object)
 			has_testicles = TRUE
 
 	if(!has_testicles)
 		adjust_charge(dt * CHARGE_RECHARGE_RATE)
 
-	if(istype(H))
-		var/obj/item/organ/penis/P = H.getorganslot(ORGAN_SLOT_PENIS)
-		if(P && P.sex_organ)
-			var/datum/sex_organ/penis/PO = P.sex_organ
-			if(PO.has_storage())
-				var/min_needed = max(PO.stored_liquid_max * PENIS_MIN_EJAC_FRACTION, PENIS_MIN_EJAC_ABSOLUTE)
-				var/vol = PO.total_volume()
+	if(istype(human_object))
+		var/obj/item/organ/penis/penis_item = human_object.getorganslot(ORGAN_SLOT_PENIS)
+		if(penis_item && penis_item.sex_organ)
+			var/datum/sex_organ/penis/penis_object = penis_item.sex_organ
+			if(penis_object.has_storage())
+				var/min_needed = max(penis_object.stored_liquid_max * PENIS_MIN_EJAC_FRACTION, PENIS_MIN_EJAC_ABSOLUTE)
+				var/vol = penis_object.total_volume()
 				if(vol >= min_needed && charge < CHARGE_FOR_CLIMAX)
-					var/fullness = vol / max(1, PO.stored_liquid_max) // 0..1
+					var/fullness = vol / max(1, penis_object.stored_liquid_max) // 0..1
 					var/gain = dt * PENIS_VOLUME_CHARGE_RATE * fullness
 					adjust_charge(gain)
 
@@ -318,17 +319,17 @@
 #undef PENIS_VOLUME_CHARGE_RATE
 
 /datum/component/arousal/is_spent()
-	var/mob/living/carbon/human/H = parent
+	var/mob/living/carbon/human/human_object = parent
 
-	if(istype(H))
-		var/obj/item/organ/penis/P = H.getorganslot(ORGAN_SLOT_PENIS)
-		var/obj/item/organ/testicles/T = H.getorganslot(ORGAN_SLOT_TESTICLES)
+	if(istype(human_object))
+		var/obj/item/organ/penis/penis_item = human_object.getorganslot(ORGAN_SLOT_PENIS)
+		var/obj/item/organ/testicles/testicles_item = human_object.getorganslot(ORGAN_SLOT_TESTICLES)
 
-		if(P && T && P.sex_organ)
-			var/datum/sex_organ/penis/PO = P.sex_organ
-			if(PO.has_storage())
-				var/min_needed = max(PO.stored_liquid_max * PENIS_MIN_EJAC_FRACTION, PENIS_MIN_EJAC_ABSOLUTE)
-				var/current = PO.total_volume()
+		if(penis_item && testicles_item && penis_item.sex_organ)
+			var/datum/sex_organ/penis/penis_object = penis_item.sex_organ
+			if(penis_object.has_storage())
+				var/min_needed = max(penis_object.stored_liquid_max * PENIS_MIN_EJAC_FRACTION, PENIS_MIN_EJAC_ABSOLUTE)
+				var/current = penis_object.total_volume()
 				if(current >= min_needed)
 					return FALSE
 
@@ -345,12 +346,13 @@
 /datum/component/arousal/process(dt)
 	handle_charge(dt * 1)
 
-	var/mob/living/carbon/human/H = parent
-	if(istype(H))
-		if(H.has_flaw(/datum/charflaw/addiction/lovefiend))
+	var/mob/living/carbon/human/human_object = parent
+	if(istype(human_object))
+		if(human_object.has_flaw(/datum/charflaw/addiction/lovefiend))
 			if(charge >= SEX_MAX_CHARGE && arousal < NYMPHO_AROUSAL_SOFT_CAP)
 				if(is_in_sex_scene())
-					adjust_arousal(parent, dt * NYMPHO_PASSIVE_AROUSAL_GAIN)
+					var/gain = dt * NYMPHO_PASSIVE_AROUSAL_GAIN
+					set_arousal(parent, arousal + gain)
 
 	if(!can_lose_arousal())
 		return
@@ -365,77 +367,76 @@
 		arousal_multiplier = 1
 		last_nympho_boost_time = 0
 
-/datum/component/arousal/proc/do_ejac_inject_from_session(mob/living/carbon/human/source, datum/sex_action_session/S)
+/datum/component/arousal/proc/do_ejac_inject_from_session(mob/living/carbon/human/source, datum/sex_action_session/session_object)
 	if(!source)
 		return
 
 	var/list/blocked = get_blocked_containers_for_mob(source)
-	if(!S || !S.session)
-		var/obj/item/organ/penis/P0 = source.getorganslot(ORGAN_SLOT_PENIS)
-		if(!P0 || !P0.sex_organ)
+	if(!session_object || !session_object.session)
+		var/obj/item/organ/penis/penis_item = source.getorganslot(ORGAN_SLOT_PENIS)
+		if(!penis_item || !penis_item.sex_organ)
 			return
 
-		var/datum/sex_organ/penis/PO0 = P0.sex_organ
-		PO0.inject_liquid(null, source, blocked)
+		var/datum/sex_organ/penis/penis_organ = penis_item.sex_organ
+		penis_organ.inject_liquid(null, source, blocked)
 		return
 
-	var/datum/sex_session_tgui/SS = S.session
-	var/actor_type = SS.node_organ_type(S.actor_node_id)
-	var/partner_type = SS.node_organ_type(S.partner_node_id)
+	var/datum/sex_session_tgui/session_element = session_object.session
+	var/actor_type = session_element.node_organ_type(session_object.actor_node_id)
+	var/partner_type = session_element.node_organ_type(session_object.partner_node_id)
 	var/mob/living/carbon/human/owner = source
 	var/organ_node_id = null
 
 	if(actor_type == SEX_ORGAN_PENIS)
-		organ_node_id = S.actor_node_id
+		organ_node_id = session_object.actor_node_id
 	else if(partner_type == SEX_ORGAN_PENIS)
-		organ_node_id = S.partner_node_id
+		organ_node_id = session_object.partner_node_id
 
 	if(!organ_node_id)
-		var/obj/item/organ/penis/P = source.getorganslot(ORGAN_SLOT_PENIS)
-		if(!P || !P.sex_organ)
+		var/obj/item/organ/penis/penis_item = source.getorganslot(ORGAN_SLOT_PENIS)
+		if(!penis_item || !penis_item.sex_organ)
 			return
 
-		var/datum/sex_organ/penis/PO = P.sex_organ
-		PO.inject_liquid(null, source, blocked)
+		var/datum/sex_organ/penis/penis_organ = penis_item.sex_organ
+		penis_organ.inject_liquid(null, source, blocked)
 		return
 
-	var/datum/sex_organ/src_org = SS.resolve_organ_datum(owner, organ_node_id)
+	var/datum/sex_organ/src_org = session_element.resolve_organ_datum(owner, organ_node_id)
 	if(!src_org)
 		return
 
 	src_org.inject_liquid(null, source, blocked)
 
-/datum/component/arousal/proc/get_blocked_containers_for_mob(mob/living/carbon/human/M)
-	if(!M)
+/datum/component/arousal/proc/get_blocked_containers_for_mob(mob/living/carbon/human/human_object)
+	if(!human_object)
 		return list()
 
 	var/list/blocked = list()
-	var/list/sessions = return_sessions_with_user_tgui(M)
+	var/list/sessions = return_sessions_with_user_tgui(human_object)
 	if(!length(sessions))
 		return blocked
 
-	for(var/datum/sex_session_tgui/S in sessions)
-		if(QDELETED(S))
+	for(var/datum/sex_session_tgui/session_object in sessions)
+		if(QDELETED(session_object))
 			continue
-		if(!length(S.current_actions))
+		if(!length(session_object.current_actions))
 			continue
 
-		for(var/id in S.current_actions)
-			var/datum/sex_action_session/I = S.current_actions[id]
-			if(!I || QDELETED(I) || !I.action)
+		for(var/id in session_object.current_actions)
+			var/datum/sex_action_session/action_session = session_object.current_actions[id]
+			if(!action_session || QDELETED(action_session) || !action_session.action)
 				continue
 
-			// нас интересуют только действия, в которых этот моб участвует
-			if(I.actor != M && I.partner != M)
+			if(action_session.actor != human_object && action_session.partner != human_object)
 				continue
 
-			var/datum/sex_panel_action/A = I.action
-			if(!A)
+			var/datum/sex_panel_action/action_element = action_session.action
+			if(!action_element)
 				continue
 
-			var/obj/item/C = A.active_container
-			if(C && !(C in blocked))
-				blocked += C
+			var/obj/item/container = action_element.active_container
+			if(container && !(container in blocked))
+				blocked += container
 
 	return blocked
 
@@ -451,26 +452,26 @@
 	return set_arousal(source, arousal + final_amount)
 
 /datum/component/arousal/proc/is_in_sex_scene()
-	var/mob/living/carbon/human/H = parent
-	if(!istype(H))
+	var/mob/living/carbon/human/human_object = parent
+	if(!istype(human_object))
 		return FALSE
 
-	var/list/sessions = return_sessions_with_user_tgui(H)
+	var/list/sessions = return_sessions_with_user_tgui(human_object)
 	if(!length(sessions))
 		return FALSE
 
-	for(var/datum/sex_session_tgui/S in sessions)
-		if(QDELETED(S))
+	for(var/datum/sex_session_tgui/session_object in sessions)
+		if(QDELETED(session_object))
 			continue
-		if(!length(S.current_actions))
+		if(!length(session_object.current_actions))
 			continue
 
-		for(var/id in S.current_actions)
-			var/datum/sex_action_session/I = S.current_actions[id]
-			if(!I || QDELETED(I))
+		for(var/id in session_object.current_actions)
+			var/datum/sex_action_session/session_element = session_object.current_actions[id]
+			if(!session_element || QDELETED(session_element))
 				continue
 
-			if(I.actor == H || I.partner == H)
+			if(session_element.actor == human_object || session_element.partner == human_object)
 				return TRUE
 
 	return FALSE

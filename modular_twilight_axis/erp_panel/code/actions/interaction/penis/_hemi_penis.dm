@@ -2,19 +2,19 @@
 	abstract_type = TRUE
 	name = "Корневое действие гемипенисом"
 
-/datum/sex_panel_action/other/penis/hemi/proc/has_hemi_penis(mob/living/carbon/human/H)
-	if(!H)
+/datum/sex_panel_action/other/penis/hemi/proc/has_hemi_penis(mob/living/carbon/human/human_object)
+	if(!human_object)
 		return FALSE
 
-	var/obj/item/organ/penis/P = H.getorganslot(ORGAN_SLOT_PENIS)
-	if(!P)
+	var/obj/item/organ/penis/penis_organ = human_object.getorganslot(ORGAN_SLOT_PENIS)
+	if(!penis_organ)
 		return FALSE
 
-	var/datum/sex_organ/penis/PO = P.sex_organ
-	if(!PO)
+	var/datum/sex_organ/penis/penis_object = penis_organ.sex_organ
+	if(!penis_object)
 		return FALSE
 		
-	return (P.penis_type == PENIS_TYPE_TAPERED_DOUBLE || P.penis_type == PENIS_TYPE_TAPERED_DOUBLE_KNOTTED)
+	return (penis_organ.penis_type == PENIS_TYPE_TAPERED_DOUBLE || penis_organ.penis_type == PENIS_TYPE_TAPERED_DOUBLE_KNOTTED)
 
 /datum/sex_panel_action/other/penis/hemi/shows_on_menu(mob/living/carbon/human/user, mob/living/carbon/human/target)
 	if(!..())
@@ -23,8 +23,8 @@
 	if(!ishuman(user))
 		return FALSE
 
-	var/mob/living/carbon/human/H = user
-	if(!has_hemi_penis(H))
+	var/mob/living/carbon/human/human_object = user
+	if(!has_hemi_penis(human_object))
 		return FALSE
 
 	return TRUE

@@ -275,6 +275,9 @@
 	var/mob/living/carbon/human/U = user
 	var/mob/living/carbon/human/T = get_current_partner()
 
+	var/a_sel = selected_actor_organ_id
+	var/p_sel = selected_partner_organ_id
+
 	for(var/key in GLOB.sex_panel_actions)
 		var/datum/sex_panel_action/A = GLOB.sex_panel_actions[key]
 		if(!A)
@@ -290,6 +293,29 @@
 				var/list/orgs = A.get_action_organs(U, T, FALSE, FALSE)
 				if(!orgs)
 					continue
+
+			if(a_sel && a_sel != SEX_ORGAN_FILTER_ALL)
+				if(a_sel == SEX_ORGAN_FILTER_BODY)
+					if(A.required_init)
+						continue
+				else
+					var/a_type = node_organ_type(a_sel)
+					if(A.required_init && a_type && A.required_init != a_type)
+						continue
+
+			if(p_sel && p_sel != SEX_ORGAN_FILTER_ALL)
+				var/list/targets = A.get_filter_target_organ_types()
+
+				if(p_sel == SEX_ORGAN_FILTER_BODY)
+					if(targets && targets.len)
+						continue
+				else
+					var/p_type = node_organ_type(p_sel)
+					if(targets && targets.len)
+						if(!p_type || !(p_type in targets))
+							continue
+					else if(A.required_target && p_type && A.required_target != p_type)
+						continue
 
 		actions += list(list(
 			"name" = A.name,
@@ -989,7 +1015,7 @@
 /datum/sex_session_tgui/proc/start_broadcast_loop()
 	if(broadcast_timer_id)
 		return
-	broadcast_timer_id = addtimer(CALLBACK(src, PROC_REF(broadcast_tick)), 5 SECONDS, TIMER_STOPPABLE)
+	broadcast_timer_id = addtimer(CALLBACK(src, PROC_REF(broadcast_tick)), 1 SECONDS, TIMER_STOPPABLE)
 
 /datum/sex_session_tgui/proc/stop_broadcast_loop()
 	if(!broadcast_timer_id)
@@ -1026,7 +1052,25 @@
 	if(choice && choice.action)
 		choice.action.on_perform(choice.actor, choice.partner)
 
-	broadcast_timer_id = addtimer(CALLBACK(src, PROC_REF(broadcast_tick)), 5 SECONDS, TIMER_STOPPABLE)
+	var/total_mult = 0.0
+	var/count = 0
+
+	for(var/datum/sex_action_session/S in candidates)
+		total_mult += get_speed_multiplier(S.speed)
+		count++
+
+	var/avg_mult = (count > 0) ? (total_mult / count) : 1.0
+
+	var/base_delay = 5 SECONDS
+	var/next_delay = base_delay
+
+	if(avg_mult > 0)
+		next_delay = round(base_delay / avg_mult)
+
+	if(next_delay < 1 SECONDS)
+		next_delay = 1 SECONDS
+
+	broadcast_timer_id = addtimer(CALLBACK(src, PROC_REF(broadcast_tick)), next_delay, TIMER_STOPPABLE)
 
 /datum/sex_session_tgui/proc/can_continue_action_session(datum/sex_action_session/I)
 	if(!I || !I.action)

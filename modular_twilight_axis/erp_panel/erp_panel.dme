@@ -105,6 +105,7 @@
 #include "code\actions\interaction\penis\tea_bag.dm"
 #include "code\actions\interaction\penis\masturbation.dm"
 #include "code\actions\interaction\penis\rubbing.dm"
+#include "code\actions\interaction\penis\sword_fight.dm"
 #include "code\actions\interaction\penis\_hemi_penis.dm"
 #include "code\actions\interaction\penis\anal_sex_hemi.dm"
 #include "code\actions\interaction\penis\oral_sex_hemi.dm"

@@ -65,22 +65,22 @@
 	if(target_organ)
 		to_check += target_organ
 
-	for(var/datum/sex_organ/O in to_check)
-		if(!O)
+	for(var/datum/sex_organ/organ_object in to_check)
+		if(!organ_object)
 			continue
 
-		var/node_id = O.organ_type
+		var/node_id = organ_object.organ_type
 		if(!node_id)
 			continue
 
 		var/mob/living/carbon/human/owner = null
 
-		if(istype(O.organ_link, /obj/item/bodypart))
-			var/obj/item/bodypart/BP = O.organ_link
-			owner = BP.owner
-		else if(istype(O.organ_link, /obj/item/organ))
-			var/obj/item/organ/ORG = O.organ_link
-			owner = ORG.owner
+		if(istype(organ_object.organ_link, /obj/item/bodypart))
+			var/obj/item/bodypart/bodypart_object = organ_object.organ_link
+			owner = bodypart_object.owner
+		else if(istype(organ_object.organ_link, /obj/item/organ))
+			var/obj/item/organ/organ_item = organ_object.organ_link
+			owner = organ_item.owner
 
 		if(!owner)
 			continue
@@ -294,15 +294,15 @@
 		return "тело"
 
 	if(target && ishuman(target))
-		var/mob/living/carbon/human/H = target
+		var/mob/living/carbon/human/human_object = target
 
 		if(zone in list(BODY_ZONE_R_LEG, BODY_ZONE_L_LEG, BODY_ZONE_PRECISE_R_FOOT, BODY_ZONE_PRECISE_L_FOOT))
-			var/has_legs = H.get_bodypart(BODY_ZONE_R_LEG) || H.get_bodypart(BODY_ZONE_L_LEG)
+			var/has_legs = human_object.get_bodypart(BODY_ZONE_R_LEG) || human_object.get_bodypart(BODY_ZONE_L_LEG)
 			if(!has_legs)
 				return "туловище"
 
 		if(zone in list(BODY_ZONE_R_ARM, BODY_ZONE_L_ARM, BODY_ZONE_PRECISE_R_INHAND, BODY_ZONE_PRECISE_L_INHAND))
-			var/has_arms = H.get_bodypart(BODY_ZONE_R_ARM) || H.get_bodypart(BODY_ZONE_L_ARM)
+			var/has_arms = human_object.get_bodypart(BODY_ZONE_R_ARM) || human_object.get_bodypart(BODY_ZONE_L_ARM)
 			if(!has_arms)
 				return "туловище"
 
@@ -316,7 +316,7 @@
 			BODY_ZONE_PRECISE_MOUTH,
 			BODY_ZONE_PRECISE_NECK,
 		))
-			var/has_head = H.get_bodypart(BODY_ZONE_HEAD)
+			var/has_head = human_object.get_bodypart(BODY_ZONE_HEAD)
 			if(!has_head)
 				return "туловище"
 
@@ -376,10 +376,15 @@
 			return I_right
 
 	if(organ)
-		var/obj/item/C = organ.find_liquid_container()
-		if(C)
-			return C
+		var/obj/item/final_container = organ.find_liquid_container()
+		if(final_container)
+			return final_container
 
+	return null
+
+/datum/sex_panel_action/proc/get_filter_init_organ_types()
+	if(required_init)
+		return list(required_init)
 	return null
 
 /datum/sex_panel_action/proc/get_filter_target_organ_types()

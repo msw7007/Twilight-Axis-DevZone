@@ -31,11 +31,11 @@
 	if(!target)
 		return FALSE
 
-	var/obj/item/organ/breasts/B = target.getorganslot(ORGAN_SLOT_BREASTS)
-	if(!B)
+	var/obj/item/organ/breasts/breast_item = target.getorganslot(ORGAN_SLOT_BREASTS)
+	if(!breast_item)
 		return FALSE
 
-	var/size = B.breast_size
+	var/size = breast_item.breast_size
 
 	if(isnull(size))
 		return FALSE

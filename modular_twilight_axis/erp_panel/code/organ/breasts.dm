@@ -14,8 +14,8 @@
 	if(!organ || !organ.lactating)
 		return
 	
-	var/datum/reagent/R = GLOB.chemical_reagents_list[producing_reagent_id]
-	if(!R)
+	var/datum/reagent/reagent_object = GLOB.chemical_reagents_list[producing_reagent_id]
+	if(!reagent_object)
 		return 
 
 	var/size = clamp(organ.breast_size, 1, 5)
@@ -31,7 +31,7 @@
 
 	if(producing_reagent_id && producing_reagent_rate > 0 && has_storage())
 		start_production_timer()
-		stored_liquid.add_reagent(R.type, (stored_liquid_max/10))
+		stored_liquid.add_reagent(reagent_object.type, (stored_liquid_max/10))
 
 /datum/sex_organ/breasts/proc/get_hunger_mult()
 	var/mob/living/carbon/human/H = get_owner()
@@ -49,16 +49,16 @@
 
 	return 1.0
 
-/datum/sex_organ/breasts/produce_liquid(datum/reagent/R, amount)
+/datum/sex_organ/breasts/produce_liquid(datum/reagent/reagent_object, amount)
 	if(!has_storage() || amount <= 0)
 		return 0
 
-	if(!R && producing_reagent_id)
-		R = GLOB.chemical_reagents_list[producing_reagent_id]
-	if(!R)
+	if(!reagent_object && producing_reagent_id)
+		reagent_object = GLOB.chemical_reagents_list[producing_reagent_id]
+	if(!reagent_object)
 		return 0
 
-	var/mob/living/carbon/human/H = get_owner()
+	var/mob/living/carbon/human/human_object = get_owner()
 	var/mult = get_production_multiplier()
 	if(mult <= 0)
 		return 0
@@ -68,8 +68,8 @@
 		return 0
 
 	amount *= mult * h_mult
-	if(istype(H))
-		var/max_from_nutrition = max(0, H.nutrition - NUTRITION_LEVEL_STARVING)
+	if(istype(human_object))
+		var/max_from_nutrition = max(0, human_object.nutrition - NUTRITION_LEVEL_STARVING)
 		if(max_from_nutrition <= 0)
 			return 0
 		if(amount > max_from_nutrition)
@@ -80,11 +80,11 @@
 		return 0
 
 	var/to_add = pending_production
-	var/added = stored_liquid.add_reagent(R.type, to_add)
+	var/added = stored_liquid.add_reagent(reagent_object.type, to_add)
 	if(added > 0)
 		pending_production = max(0, pending_production - added)
 		renew_timer(drain_interval)
-		if(istype(H))
-			H.adjust_nutrition(-added * BREAST_NUTRITION_COST_PER_UNIT)
+		if(istype(human_object))
+			human_object.adjust_nutrition(-added * BREAST_NUTRITION_COST_PER_UNIT)
 
 	return added

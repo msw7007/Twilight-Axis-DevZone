@@ -1,78 +1,78 @@
-/mob/living/proc/start_sex_session_tgui(mob/living/T)
-	if(!T)
+/mob/living/proc/start_sex_session_tgui(mob/living/target_mob)
+	if(!target_mob)
 		return
 
-//	if(!ishuman(src) || !ishuman(T))
-//		return
+	if(!ishuman(src) || !ishuman(target_mob))
+		return
 
-	var/datum/sex_session_tgui/S = get_sex_session_tgui(src, T)
+	var/datum/sex_session_tgui/session_object = get_sex_session_tgui(src, target_mob)
 
-	if(S)
-		if(istype(T, /mob/living/carbon/human))
-			var/mob/living/carbon/human/H = T
-			S.add_partner(H)
-			S.target = H
-			S.current_partner_ref = REF(H)
+	if(session_object)
+		if(istype(target_mob, /mob/living/carbon/human))
+			var/mob/living/carbon/human/human_object = target_mob
+			session_object.add_partner(human_object)
+			session_object.target = human_object
+			session_object.current_partner_ref = REF(human_object)
 
-		S.ui_interact(src)
-		return S
+		session_object.ui_interact(src)
+		return session_object
 
-	S = get_any_sex_session_tgui_for(src)
+	session_object = get_any_sex_session_tgui_for(src)
 
-	if(S)
-		if(istype(T, /mob/living/carbon/human))
-			var/mob/living/carbon/human/H2 = T
-			S.add_partner(H2)
-			S.current_partner_ref = REF(H2)
-		S.ui_interact(src)
-		return S
+	if(session_object)
+		if(istype(target_mob, /mob/living/carbon/human))
+			var/mob/living/carbon/human/human_object2 = target_mob
+			session_object.add_partner(human_object2)
+			session_object.current_partner_ref = REF(human_object2)
+		session_object.ui_interact(src)
+		return session_object
 
-	S = new(src, T)
-	LAZYADD(GLOB.sex_sessions, S)
+	session_object = new(src, target_mob)
+	LAZYADD(GLOB.sex_sessions, session_object)
 
-	if(istype(T, /mob/living/carbon/human))
-		S.add_partner(T)
+	if(istype(target_mob, /mob/living/carbon/human))
+		session_object.add_partner(target_mob)
 
-	S.ui_interact(src)
-	return S
+	session_object.ui_interact(src)
+	return session_object
 
 /proc/get_sex_session_tgui(mob/giver, mob/taker)
-	for (var/datum/D in GLOB.sex_sessions)
-		if (istype(D, /datum/sex_session_tgui))
-			var/datum/sex_session_tgui/S = D
-			if(QDELETED(S))
+	for (var/datum/datum_candidate in GLOB.sex_sessions)
+		if (istype(datum_candidate, /datum/sex_session_tgui))
+			var/datum/sex_session_tgui/session_object = datum_candidate
+			if(QDELETED(session_object))
 				continue
 
-			if (S.user == giver && S.target == taker)
-				return S
+			if (session_object.user == giver && session_object.target == taker)
+				return session_object
 	return null
 
 /proc/get_any_sex_session_tgui_for(mob/living/carbon/human/user)
 	if(!user)
 		return null
 
-	for(var/datum/sex_session_tgui/S in GLOB.sex_sessions)
-		if(QDELETED(S))
+	for(var/datum/sex_session_tgui/session_object in GLOB.sex_sessions)
+		if(QDELETED(session_object))
 			continue
-		if(S.user == user)
-			return S
+		if(session_object.user == user)
+			return session_object
 
 	return null
 
-/proc/return_sessions_with_user_tgui(mob/living/carbon/human/U)
+/proc/return_sessions_with_user_tgui(mob/living/carbon/human/user)
 	var/list/sessions = list()
-	for (var/datum/D in GLOB.sex_sessions)
-		if (istype(D, /datum/sex_session_tgui))
-			var/datum/sex_session_tgui/S = D
-			if (U == S.user || U == S.target)
-				sessions |= S
+	for (var/datum/datum_candidate in GLOB.sex_sessions)
+		if (istype(datum_candidate, /datum/sex_session_tgui))
+			var/datum/sex_session_tgui/session_object = datum_candidate
+			if (user == session_object.user || user == session_object.target)
+				sessions |= session_object
 	return sessions
 
-/proc/create_dullahan_head_partner(obj/item/bodypart/head/dullahan/H)
-    var/mob/living/carbon/human/erp_proxy/P = new()
-    P.source_part = H
-    P.name = "Голова [H.original_owner.name]"
-    return P
+/proc/create_dullahan_head_partner(obj/item/bodypart/head/dullahan/head_dullahan)
+    var/mob/living/carbon/human/erp_proxy/proxy_object = new()
+    proxy_object.source_part = head_dullahan
+    proxy_object.name = "Голова [head_dullahan.original_owner.name]"
+    return proxy_object
 
 /proc/sex_organ_to_zone(organ_type)
 	switch(organ_type)
@@ -92,8 +92,8 @@
 	var/grabstate = 0
 
 	if(user)
-		for(var/obj/item/grabbing/G in target.grabbedby)
-			if(G.sublimb_grabbed == zone)
+		for(var/obj/item/grabbing/grab_object in target.grabbedby)
+			if(grab_object.sublimb_grabbed == zone)
 				has_zone_grab = TRUE
 				break
 

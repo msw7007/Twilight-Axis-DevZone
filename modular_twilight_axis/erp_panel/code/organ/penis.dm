@@ -15,8 +15,8 @@
 	if(!owner)
 		return
 
-	var/datum/reagent/R = GLOB.chemical_reagents_list[producing_reagent_id]
-	if(!R)
+	var/datum/reagent/reagent_object = GLOB.chemical_reagents_list[producing_reagent_id]
+	if(!reagent_object)
 		return 
 
 	var/obj/item/organ/testicles/testicles = owner.getorganslot(ORGAN_SLOT_TESTICLES)
@@ -44,19 +44,19 @@
 
 	if(producing_reagent_id && producing_reagent_rate > 0 && stored_liquid)
 		start_production_timer()
-		stored_liquid.add_reagent(R.type, (stored_liquid_max/5))
+		stored_liquid.add_reagent(reagent_object.type, (stored_liquid_max/5))
 
 /datum/sex_organ/penis/inject_liquid(obj/item/container = null, mob/living/carbon/human/preferred_holder = null, list/blocked_containers = list())
 	if(!has_storage() || total_volume() <= 0)
 		return ..(container, preferred_holder)
 
-	var/mob/living/carbon/human/H = get_owner()
+	var/mob/living/carbon/human/human_object = get_owner()
 
 	var/ratio = PENIS_MIN_EJAC_FRACTION
-	if(istype(H))
-		if(H.has_flaw(/datum/charflaw/addiction/lovefiend))
+	if(istype(human_object))
+		if(human_object.has_flaw(/datum/charflaw/addiction/lovefiend))
 			ratio -= 0.05
-		if(istype(H.patron, /datum/patron/inhumen/baotha))
+		if(istype(human_object.patron, /datum/patron/inhumen/baotha))
 			ratio += 0.10
 
 	ratio = clamp(ratio, 0.05, 0.75)

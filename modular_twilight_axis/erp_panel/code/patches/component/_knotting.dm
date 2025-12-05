@@ -30,8 +30,8 @@
 
 /datum/component/knotting/handle_special_movement_cases(mob/living/carbon/human/top, mob/living/carbon/human/btm)
 	if(top.m_intent == MOVE_INTENT_WALK && (btm in top.buckled_mobs))
-		var/obj/item/organ/penis/P = top.getorganslot(ORGAN_SLOT_PENIS)
-		var/strength = (P && P.penis_size > DEFAULT_PENIS_SIZE) ? 6.0 : 3.0
+		var/obj/item/organ/penis/penis_item = top.getorganslot(ORGAN_SLOT_PENIS)
+		var/strength = (penis_item && penis_item.penis_size > DEFAULT_PENIS_SIZE) ? 6.0 : 3.0
 
 		SEND_SIGNAL(btm, COMSIG_SEX_RECEIVE_ACTION, strength, 0, FALSE, SEX_FORCE_MID, SEX_SPEED_HIGH, SEX_ORGAN_FILTER_VAGINA)
 
@@ -91,3 +91,34 @@
 
 	return TRUE
 
+/datum/component/knotting/handle_bottom_movement(mob/living/carbon/human/top, mob/living/carbon/human/btm)
+	if(top.stat >= SOFT_CRIT)
+		knot_remove()
+		return
+
+	var/dist = get_dist(top, btm)
+	if(dist > 2)
+		knot_remove(forceful_removal = TRUE)
+		return
+
+	for(var/i in 2 to dist)
+		step_towards(btm, top)
+
+	top.set_pull_offsets(btm, GRAB_AGGRESSIVE)
+
+	if(btm.mobility_flags & MOBILITY_STAND && btm.m_intent == MOVE_INTENT_RUN)
+		btm.Knockdown(10)
+		btm.Stun(30)
+		btm.emote("groan", forced = TRUE)
+		return
+
+	if(!btm.IsStun())
+		if(prob(10))
+			btm.emote("groan")
+			var/datum/component/arousal/btm_arousal = btm.GetComponent(/datum/component/arousal)
+			btm_arousal?.try_do_pain_effect(PAIN_MED_EFFECT, FALSE)
+			btm.Stun(15)
+		else if(prob(4))
+			btm.emote("painmoan")
+
+	addtimer(CALLBACK(src, PROC_REF(knot_movement_btm_after)), 0.1 SECONDS)

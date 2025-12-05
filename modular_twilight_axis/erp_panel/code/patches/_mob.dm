@@ -5,14 +5,14 @@
 /mob/living/carbon/human
 	var/datum/weakref/sex_surrender_ref
 
-/mob/living/carbon/human/proc/set_sex_surrender_to(mob/living/carbon/human/M)
-	if(M)
-		sex_surrender_ref = WEAKREF(M)
+/mob/living/carbon/human/proc/set_sex_surrender_to(mob/living/carbon/human/mob_object)
+	if(mob_object)
+		sex_surrender_ref = WEAKREF(mob_object)
 	else
 		sex_surrender_ref = null
 
-/mob/living/carbon/human/proc/is_surrendering_to(mob/living/carbon/human/M)
-	if(!M || !sex_surrender_ref)
+/mob/living/carbon/human/proc/is_surrendering_to(mob/living/carbon/human/mob_object)
+	if(!mob_object || !sex_surrender_ref)
 		return FALSE
 
 	var/mob/living/carbon/human/target = sex_surrender_ref.resolve()
@@ -20,7 +20,7 @@
 		sex_surrender_ref = null
 		return FALSE
 
-	return target == M
+	return target == mob_object
 
 /mob/living/carbon/human/examine(mob/user)
 	. = ..()
@@ -36,24 +36,24 @@
 	var/list/parts = list()
 	var/list/active_names = list()
 
-	for(var/datum/sex_session_tgui/S in sessions)
-		if(!length(S.current_actions))
+	for(var/datum/sex_session_tgui/session_element in sessions)
+		if(!length(session_element.current_actions))
 			continue
 
 		var/list/participants = list()
 
-		if(S.user && S.user != src)
-			participants |= S.user
-		if(S.target && S.target != src)
-			participants |= S.target
+		if(session_element.user && session_element.user != src)
+			participants |= session_element.user
+		if(session_element.target && session_element.target != src)
+			participants |= session_element.target
 
-		for(var/mob/living/carbon/human/M in S.partners)
-			if(M != src)
-				participants |= M
+		for(var/mob/living/carbon/human/mob_object in session_element.partners)
+			if(mob_object != src)
+				participants |= mob_object
 
-		for(var/mob/living/carbon/human/M2 in participants)
-			if(!(M2.name in active_names))
-				active_names += M2.name
+		for(var/mob/living/carbon/human/mob_object in participants)
+			if(!(mob_object.name in active_names))
+				active_names += mob_object.name
 
 	if(active_names.len)
 		parts += "[src] тесно сплетается с [english_list(active_names)]."
@@ -70,46 +70,46 @@
 	var/list/result = list()
 	var/list/seen = list()
 
-	for(var/obj/item/organ/O in internal_organs)
-		if(O.sex_organ && !(O.sex_organ in seen))
-			seen += O.sex_organ
-			result += O.sex_organ
+	for(var/obj/item/organ/organ_candidate in internal_organs)
+		if(organ_candidate.sex_organ && !(organ_candidate.sex_organ in seen))
+			seen += organ_candidate.sex_organ
+			result += organ_candidate.sex_organ
 
-	for(var/obj/item/bodypart/B in bodyparts)
-		if(!B.sex_organ)
+	for(var/obj/item/bodypart/bodypart_candidate in bodyparts)
+		if(!bodypart_candidate.sex_organ)
 			continue
-		if(B.sex_organ in seen)
+		if(bodypart_candidate.sex_organ in seen)
 			continue
 
 		if(istype(src, /mob/living/carbon/human/erp_proxy))
-			if(!istype(B, /obj/item/bodypart/head) && !istype(B, /obj/item/bodypart/head/dullahan))
+			if(!istype(bodypart_candidate, /obj/item/bodypart/head) && !istype(bodypart_candidate, /obj/item/bodypart/head/dullahan))
 				continue
 
-			seen += B.sex_organ
-			result += B.sex_organ
+			seen += bodypart_candidate.sex_organ
+			result += bodypart_candidate.sex_organ
 			continue
 
-		seen += B.sex_organ
-		result += B.sex_organ
+		seen += bodypart_candidate.sex_organ
+		result += bodypart_candidate.sex_organ
 
 	result += legs_organ
 	return result
 
 
 /mob/living/carbon/human/proc/get_sex_organ_by_type(organ_type, only_free = FALSE)
-	for(var/datum/sex_organ/O in get_sex_organs())
-		if(O.organ_type != organ_type)
+	for(var/datum/sex_organ/organ_candidate in get_sex_organs())
+		if(organ_candidate.organ_type != organ_type)
 			continue
-		if(only_free && (O.is_active()))
+		if(only_free && (organ_candidate.is_active()))
 			continue
-		return O
+		return organ_candidate
 	return null
 
 /mob/living/carbon/human/proc/reset_sex_organs_after_sleep()
-	for(var/datum/sex_organ/O in get_sex_organs())
-		if(!O)
+	for(var/datum/sex_organ/organ_candidate in get_sex_organs())
+		if(!organ_candidate)
 			continue
-		O.reset_after_sleep()
+		organ_candidate.reset_after_sleep()
 
 /mob/living/carbon/human/handle_sleep()
 	. = ..()
@@ -136,8 +136,8 @@
 			if(HAS_TRAIT(src, TRAIT_HANDS_BLOCKED))
 				return TRUE
 
-			var/obj/item/I = get_item_for_held_index(LEFT_HANDS)
-			if(I && !is_sex_toy(I))
+			var/obj/item/item_object = get_item_for_held_index(LEFT_HANDS)
+			if(item_object && !is_sex_toy(item_object))
 				return TRUE
 
 			return FALSE
@@ -149,8 +149,8 @@
 			if(HAS_TRAIT(src, TRAIT_HANDS_BLOCKED))
 				return TRUE
 
-			var/obj/item/I = get_item_for_held_index(RIGHT_HANDS)
-			if(I && !is_sex_toy(I))
+			var/obj/item/item_object = get_item_for_held_index(RIGHT_HANDS)
+			if(item_object && !is_sex_toy(item_object))
 				return TRUE
 
 			return FALSE
@@ -193,8 +193,8 @@
 		lying_prev = lying
 
 /mob/living/carbon/human/proc/get_mouth_sex_organ()
-	var/obj/item/bodypart/head/HD = get_bodypart(BODY_ZONE_HEAD)
-	return HD?.sex_organ
+	var/obj/item/bodypart/head/head_object = get_bodypart(BODY_ZONE_HEAD)
+	return head_object?.sex_organ
 
 /mob/living/carbon/human/proc/swallow_from_mouth(amount = 5)
 	if(amount <= 0 || !reagents)
@@ -236,21 +236,21 @@
 
 /obj/item/bodypart/head/dullahan/Destroy()
 	. = ..()
-	for(var/mob/living/carbon/human/erp_proxy/P in world)
-		if(P.source_part == src)
-			qdel(P)
+	for(var/mob/living/carbon/human/erp_proxy/proxy_object in world)
+		if(proxy_object.source_part == src)
+			qdel(proxy_object)
 
-/mob/living/proc/start_sex_session_with_dullahan_head(obj/item/bodypart/head/dullahan/H)
-	var/mob/living/carbon/human/erp_proxy/P = create_dullahan_head_partner(H)
+/mob/living/proc/start_sex_session_with_dullahan_head(obj/item/bodypart/head/dullahan/head_dullahan)
+	var/mob/living/carbon/human/erp_proxy/proxy_object = create_dullahan_head_partner(head_dullahan)
 
-	var/datum/sex_session_tgui/S = new(src, P)
-	S.set_partner_bodypart_override(H)
+	var/datum/sex_session_tgui/session_object = new(src, proxy_object)
+	session_object.set_partner_bodypart_override(head_dullahan)
 
-	S.current_partner_ref = REF(P)
-	S.partners = list(P)
+	session_object.current_partner_ref = REF(proxy_object)
+	session_object.partners = list(proxy_object)
 
-	S.ui_interact(src)
-	return S
+	session_object.ui_interact(src)
+	return session_object
 
 /mob/living/carbon/human/proc/apply_soft_arousal(delta = 0.25)
 	if(delta <= 0)
@@ -271,19 +271,19 @@
 
 	var/total_removed = 0
 
-	for(var/t in org_types)
-		if(t == SEX_ORGAN_PENIS || t == SEX_ORGAN_BREASTS)
+	for(var/candidate in org_types)
+		if(candidate == SEX_ORGAN_PENIS || candidate == SEX_ORGAN_BREASTS)
 			continue
 
-		var/zone_for_type = sex_organ_to_zone(t)
+		var/zone_for_type = sex_organ_to_zone(candidate)
 		if(zone_for_type && !can_access_erp_zone(src, src, zone_for_type, FALSE, GRAB_PASSIVE))
 			continue
 
-		var/datum/sex_organ/O = get_sex_organ_by_type(t, FALSE)
-		if(!O || !O.has_storage() || O.total_volume() <= 0)
+		var/datum/sex_organ/organ_object = get_sex_organ_by_type(candidate, FALSE)
+		if(!organ_object || !organ_object.has_storage() || organ_object.total_volume() <= 0)
 			continue
 
-		var/removed = O.wash_out()
+		var/removed = organ_object.wash_out()
 		if(removed > 0)
 			total_removed += removed
 

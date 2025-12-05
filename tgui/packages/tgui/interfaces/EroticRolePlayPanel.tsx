@@ -484,10 +484,7 @@ const StatusPanel: React.FC<{
             {affecting.length ? (
               <Stack vertical mt={0.5}>
                 {affecting.map((l) => {
-                  const whoLabel =
-                    viewAs === 'actor'
-                      ? (actorName || 'Вы')
-                      : (partnerLabel || 'Партнёр');
+                  const whoLabel = partnerLabel || 'Партнёр';
 
                   return (
                     <Box key={l.id} ml={1}>
@@ -792,7 +789,11 @@ const ActionsList: React.FC<{
 
     const style: CSSProperties = {
       justifyContent: 'center',
+      minWidth: 100,
       width: '100%',
+      whiteSpace: 'normal',
+      wordBreak: 'break-word',
+      lineHeight: 1.2,
       background: isCurrent
         ? 'rgba(255, 140, 255, 0.23)'
         : isAvailable
@@ -812,7 +813,7 @@ const ActionsList: React.FC<{
     return (
       <Button
         key={action.type}
-        inline
+        fluid
         color="transparent"
         selected={isCurrent}
         disabled={!isAvailable}
