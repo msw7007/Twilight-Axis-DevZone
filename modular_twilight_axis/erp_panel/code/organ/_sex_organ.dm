@@ -76,11 +76,6 @@
 		renew_timer(drain_interval)
 	return added
 
-/datum/sex_organ/proc/remove_reagent(datum/reagent/R, amount)
-	if(!has_storage() || amount <= 0 || !R)
-		return 0
-	return stored_liquid.remove_reagent(R.type, amount)
-
 /datum/sex_organ/proc/drain_uniform(amount)
 	if(!has_storage() || amount <= 0)
 		return 0
@@ -286,18 +281,18 @@
 
 	return FALSE
 
-/datum/sex_organ/proc/find_liquid_container(mob/living/carbon/human/preferred_holder = null)
+/datum/sex_organ/proc/find_liquid_container(mob/living/carbon/human/preferred_holder = null, list/blocked_containers = list())
 	if(preferred_holder)
 		var/obj/item/I = preferred_holder.get_active_held_item()
-		if(I && is_valid_liquid_container(I))
+		if(I && is_valid_liquid_container(I) && !(I in blocked_containers))
 			return I
 
 		I = preferred_holder.get_inactive_held_item()
-		if(I && is_valid_liquid_container(I))
+		if(I && is_valid_liquid_container(I) && !(I in blocked_containers))
 			return I
 
 		for(var/obj/item/J in preferred_holder.contents)
-			if(is_valid_liquid_container(J))
+			if(is_valid_liquid_container(J) && !(J in blocked_containers))
 				return J
 
 	var/mob/living/carbon/human/H = get_owner()
@@ -306,13 +301,13 @@
 
 	if(H.held_items)
 		for(var/obj/item/K in H.held_items)
-			if(is_valid_liquid_container(K))
+			if(is_valid_liquid_container(K) && !(K in blocked_containers))
 				return K
 
 	var/turf/T = get_turf(H)
 	if(T)
 		for(var/obj/item/L in T)
-			if(is_valid_liquid_container(L))
+			if(is_valid_liquid_container(L) && !(L in blocked_containers))
 				return L
 
 	if(T)
@@ -320,12 +315,12 @@
 			var/turf/NT = get_step(T, dir)
 			if(!NT) continue
 			for(var/obj/item/M in NT)
-				if(is_valid_liquid_container(M))
+				if(is_valid_liquid_container(M) && !(M in blocked_containers))
 					return M
 
 	return null
 
-/datum/sex_organ/proc/inject_liquid(obj/item/container = null, mob/living/carbon/human/preferred_holder = null)
+/datum/sex_organ/proc/inject_liquid(obj/item/container = null, mob/living/carbon/human/preferred_holder = null, list/blocked_containers = list())
 	if(!has_storage() || total_volume() <= 0)
 		return 0
 
@@ -345,15 +340,15 @@
 				on_after_inject(mode, moved, get_owner(), active_target, null, null)
 				return moved
 
-	if(container && is_valid_liquid_container(container))
+	if(container && is_valid_liquid_container(container) && !(container in blocked_containers))
 		moved = stored_liquid.trans_to(container.reagents, amount)
 		if(moved > 0)
 			mode = INJECT_MODE_CONTAINER
 			on_after_inject(mode, moved, get_owner(), active_target, container, null)
 			return moved
 
-	var/obj/item/user_cont = find_liquid_container(preferred_holder)
-	if(user_cont && is_valid_liquid_container(user_cont))
+	var/obj/item/user_cont = find_liquid_container(preferred_holder, blocked_containers)
+	if(user_cont && is_valid_liquid_container(user_cont) && !(user_cont in blocked_containers))
 		moved = stored_liquid.trans_to(user_cont.reagents, amount)
 		if(moved > 0)
 			mode = INJECT_MODE_CONTAINER
@@ -422,4 +417,18 @@
 
 	return mult
 
+/datum/sex_organ/proc/wash_out(max_amount = 0)
+	if(!has_storage())
+		return 0
 
+	var/current = total_volume()
+	if(current <= 0)
+		return 0
+
+	var/amount = max_amount > 0 ? min(max_amount, current) : current
+
+	var/removed = drain_uniform(amount)
+	if(removed <= 0)
+		return 0
+
+	return removed

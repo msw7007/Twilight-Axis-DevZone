@@ -6,7 +6,7 @@
 	stamina_cost = 0.06
 	affects_self_arousal = 0.08
 	affects_arousal      = 0.12
-	affects_self_pain    = 0.01
+	affects_self_pain    = 0
 	affects_pain         = 0.01
 
 /datum/sex_panel_action/other/tail/vaginal/get_start_message(mob/living/carbon/human/user, mob/living/carbon/human/target)
@@ -15,7 +15,7 @@
 
 /datum/sex_panel_action/other/tail/vaginal/get_perform_message(mob/living/carbon/human/user, mob/living/carbon/human/target)
 	var/pose_state = get_pose_key(user, target)
-	var/message = "[user] [get_pose_text(pose_state)], [get_force_text()] и [get_speed_text()] играется хвостом в киске [target]."
+	var/message = "[user] [get_pose_text(pose_state)], [get_force_text()] и [get_speed_text()] [is_agressive_tier() ? "сношает хвостом киску" : "играется хвостом в киске"] [target]."
 	show_sex_effects(user)
 	do_thrust_animate(user, target)
 	do_sound_effect(user)

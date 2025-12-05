@@ -21,6 +21,7 @@
 		if(O)
 			var/obj/item/container = O.find_liquid_container()
 			if(container)
+				active_container = container
 				return TRUE
 
 	return FALSE

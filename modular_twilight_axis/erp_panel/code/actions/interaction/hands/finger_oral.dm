@@ -4,8 +4,8 @@
 	required_target = SEX_ORGAN_MOUTH
 	armor_slot_target = BODY_ZONE_PRECISE_MOUTH
 	stamina_cost = 0.05
-	affects_self_arousal = 0.06
-	affects_arousal      = 0.04
+	affects_self_arousal = 0
+	affects_arousal      = 0
 	affects_self_pain    = 0.01
 	affects_pain         = 0.01
 

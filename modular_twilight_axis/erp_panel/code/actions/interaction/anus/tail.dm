@@ -3,8 +3,8 @@
 	name = "Использовать хвост попкой"
 	required_target = SEX_ORGAN_TAIL
 	stamina_cost = 0.06
-	affects_self_arousal = 0.12
-	affects_arousal      = 0.04
+	affects_self_arousal = 0.04
+	affects_arousal      = 0.12
 	affects_self_pain    = 0.01
 	affects_pain         = 0.01
 
@@ -14,7 +14,7 @@
 
 /datum/sex_panel_action/other/anus/tail/get_perform_message(mob/living/carbon/human/user, mob/living/carbon/human/target)
 	var/pose_state = get_pose_key(user, target)
-	var/message = "[user] [get_pose_text(pose_state)], [get_force_text()] и [get_speed_text()] удерживая хвост [target] скачет на нём."
+	var/message = "[user] [get_pose_text(pose_state)], [get_force_text()] и [get_speed_text()] удерживая хвост [target] в своем анусе скачет на нём."
 	do_onomatopoeia(user)
 	show_sex_effects(user)
 	playsound(user, 'sound/misc/mat/fingering.ogg', 30, TRUE, -2, ignore_walls = FALSE)

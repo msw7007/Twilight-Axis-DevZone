@@ -4,10 +4,10 @@
 	required_target = SEX_ORGAN_PENIS
 	armor_slot_target = BODY_ZONE_PRECISE_GROIN
 	stamina_cost = 0.05
-	affects_self_arousal = 0.06
-	affects_arousal      = 0.04
-	affects_self_pain    = 0.01
-	affects_pain         = 0.01
+	affects_self_arousal = 0
+	affects_arousal      = 0.2
+	affects_self_pain    = 0
+	affects_pain         = 0.05
 
 /datum/sex_panel_action/other/hands/milking_penis/get_start_message(mob/living/carbon/human/user, mob/living/carbon/human/target)
 	var/pose_state = get_pose_key(user, target)
@@ -28,9 +28,10 @@
 	. = ..()
 	var/datum/sex_session_tgui/SS = get_or_create_sex_session_tgui(user, target)
 	if(SS)
-		var/datum/sex_organ/O = SS.resolve_organ_datum(user, SEX_ORGAN_FILTER_PENIS)
+		var/datum/sex_organ/O = SS.resolve_organ_datum(target, SEX_ORGAN_FILTER_PENIS)
 		if(O)
-			O.inject_liquid()
+			var/obj/item/container = find_best_container(target, target, O)
+			O.inject_liquid(container, target)
 			to_chat(user, "Я чувствую, как семя [target] выплескивается наружу!")
 			to_chat(target, "Я чувствую, как семя выплескивается наружу!")
 

@@ -4,10 +4,10 @@
 	required_target = SEX_ORGAN_MOUTH
 	armor_slot_target = BODY_ZONE_PRECISE_MOUTH
 	stamina_cost = 0.05
-	affects_self_arousal = 0.06
+	affects_self_arousal = 0.02
 	affects_arousal      = 0.04
 	affects_self_pain    = 0.01
-	affects_pain         = 0.01
+	affects_pain         = 0.02
 	require_grab = TRUE
 
 /datum/sex_panel_action/other/legs/footfetish/get_start_message(mob/living/carbon/human/user, mob/living/carbon/human/target)

@@ -4,7 +4,6 @@
 	name = "Корневое действие на другого"
 
 	can_knot = FALSE
-	continous = TRUE
 	interaction_timer = 2 SECONDS
 	stamina_cost = 0.2
 
@@ -27,3 +26,22 @@
 	. = ..()
 	SEND_SIGNAL(user, COMSIG_SEX_RECEIVE_ACTION, affects_self_arousal, affects_self_pain)
 	SEND_SIGNAL(target, COMSIG_SEX_RECEIVE_ACTION, affects_arousal, affects_pain)
+
+/datum/sex_panel_action/other/proc/is_big_boobs(mob/living/carbon/human/target)
+	if(!target)
+		return FALSE
+
+	var/obj/item/organ/breasts/B = target.getorganslot(ORGAN_SLOT_BREASTS)
+	if(!B)
+		return FALSE
+
+	var/size = B.breast_size
+
+	if(isnull(size))
+		return FALSE
+
+	if(size >= BREAST_SIZE_LARGE)
+		return TRUE
+
+	return FALSE
+	

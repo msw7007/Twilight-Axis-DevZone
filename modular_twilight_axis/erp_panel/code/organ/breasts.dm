@@ -9,12 +9,6 @@
 	stored_liquid_max = 75
 	producing_reagent_rate = 0
 
-/datum/sex_organ/breasts
-	organ_type = SEX_ORGAN_BREASTS
-	producing_reagent_id = /datum/reagent/consumable/milk/erp
-	stored_liquid_max = 75
-	producing_reagent_rate = 0
-
 /datum/sex_organ/breasts/New(obj/item/organ/breasts/organ)
 	. = ..()
 	if(!organ || !organ.lactating)

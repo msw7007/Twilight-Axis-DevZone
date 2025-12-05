@@ -13,6 +13,9 @@
 	affects_pain         = 0.03
 	can_knot = TRUE
 
+/datum/sex_panel_action/other/penis/hemi/dp_vag_anal/get_filter_target_organ_types()
+	return list(required_target, required_target_second)
+
 /datum/sex_panel_action/other/penis/hemi/dp_vag_anal/proc/get_action_organs_dp(mob/living/carbon/human/user, mob/living/carbon/human/target, only_free_init = TRUE,	only_free_target = FALSE, only_free_second = FALSE)
 	var/datum/sex_organ/init_organ = user.get_sex_organ_by_type(SEX_ORGAN_PENIS, only_free_init)
 	if(!init_organ)
@@ -136,7 +139,7 @@
 	return spanify_force(msg)
 
 /datum/sex_panel_action/other/penis/hemi/dp_vag_anal/get_finish_message(mob/living/carbon/human/user, mob/living/carbon/human/target)
-	return "[user] вытаскивает члены из дырок[target]."
+	return "[user] вытаскивает члены из дырок [target]."
 
 /datum/sex_panel_action/other/penis/hemi/dp_vag_anal/handle_climax_message(mob/living/carbon/human/user, mob/living/carbon/human/target)
 	var/list/result = ..()
@@ -147,3 +150,9 @@
 	var/message = span_love(result.Join(" "))
 	user.visible_message(message)
 	return "into"
+
+/datum/sex_panel_action/other/penis/hemi/dp_vag_anal/get_reserved_target_organ_types()
+	if(!reserve_target_for_session)
+		return null
+
+	return list(SEX_ORGAN_VAGINA, SEX_ORGAN_ANUS)

@@ -6,9 +6,9 @@
 	armor_slot_init = BODY_ZONE_PRECISE_GROIN
 
 	affects_self_arousal = 0.22
-	affects_arousal      = 0
-	affects_self_pain    = 0.01
-	affects_pain         = 0
+	affects_arousal = 0
+	affects_self_pain = 0.01
+	affects_pain = 0
 
 /datum/sex_panel_action/self/hands/penis_milking/can_perform(mob/living/carbon/human/user, mob/living/carbon/human/target)
 	. = ..()
@@ -45,6 +45,7 @@
 	if(SS)
 		var/datum/sex_organ/O = SS.resolve_organ_datum(user, SEX_ORGAN_FILTER_PENIS)
 		if(O)
-			O.inject_liquid()
+			var/obj/item/container = find_best_container(user, target, O)
+			O.inject_liquid(container, user)
 			to_chat(user, "Я чувствую, как семя выплескивается наружу!")
 	return "self"

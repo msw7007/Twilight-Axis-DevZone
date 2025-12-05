@@ -4,7 +4,6 @@
 	name = "Корневое действие на себя"
 
 	can_knot = FALSE
-	continous = TRUE
 	interaction_timer = 2 SECONDS
 	stamina_cost = 0.2
 

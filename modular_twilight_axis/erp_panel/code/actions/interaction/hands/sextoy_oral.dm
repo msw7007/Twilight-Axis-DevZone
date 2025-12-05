@@ -5,10 +5,10 @@
 	required_target = SEX_ORGAN_MOUTH
 	check_same_tile = FALSE
 
-	affects_self_arousal = 0.15
-	affects_arousal      = 0
+	affects_self_arousal = 0
+	affects_arousal      = 0.12
 	affects_self_pain    = 0
-	affects_pain         = 0
+	affects_pain         = 0.01
 
 /datum/sex_panel_action/other/hands/toy_oral/can_perform(mob/living/carbon/human/user, mob/living/carbon/human/target)
 	. = ..()
@@ -23,11 +23,11 @@
 
 /datum/sex_panel_action/other/hands/toy_oral/get_start_message(mob/living/carbon/human/user, mob/living/carbon/human/target)
 	var/pose_state = get_pose_key(user, target)
-	return "[user] [get_pose_text(pose_state)] подносит игрушку ближе к лицу [target]."
+	return "[user] [get_pose_text(pose_state)] подносит игрушку к губам [target]."
 
 /datum/sex_panel_action/other/hands/toy_oral/get_perform_message(mob/living/carbon/human/user, mob/living/carbon/human/target)
 	var/pose_state = get_pose_key(user, target)
-	var/message = "[user] [get_pose_text(pose_state)], [get_force_text()] и [get_speed_text()] играет с игрушкой во рту [target]."
+	var/message = "[user] [get_pose_text(pose_state)], [get_force_text()] и [get_speed_text()] водит игрушкой во рту [target]."
 	do_onomatopoeia(user)
 	show_sex_effects(user)
 	do_thrust_animate(user, target)

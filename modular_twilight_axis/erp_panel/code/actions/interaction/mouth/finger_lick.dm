@@ -4,7 +4,7 @@
 	required_target = SEX_ORGAN_HANDS
 	stamina_cost = 0.01
 	affects_self_arousal = 0.01
-	affects_arousal      = 0.02
+	affects_arousal      = 0.01
 	affects_self_pain    = 0.01
 	affects_pain         = 0.01
 	check_same_tile = FALSE

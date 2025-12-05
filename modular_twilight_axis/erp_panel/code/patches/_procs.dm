@@ -40,6 +40,9 @@
 	for (var/datum/D in GLOB.sex_sessions)
 		if (istype(D, /datum/sex_session_tgui))
 			var/datum/sex_session_tgui/S = D
+			if(QDELETED(S))
+				continue
+
 			if (S.user == giver && S.target == taker)
 				return S
 	return null
@@ -64,39 +67,6 @@
 			if (U == S.user || U == S.target)
 				sessions |= S
 	return sessions
-
-/proc/return_highest_priority_action_tgui(list/sessions = list(), mob/living/carbon/human/U)
-	var/datum/sex_session_tgui/best_session = null
-	var/best_score = -1
-
-	for (var/datum/D in sessions)
-		if (!istype(D, /datum/sex_session_tgui))
-			continue
-		var/datum/sex_session_tgui/S = D
-
-		var/datum/sex_action_session/I = null
-		for (var/id in S.current_actions)
-			I = S.current_actions[id]
-			if (I)
-				break
-		if (!I || !I.action)
-			continue
-
-		var/init_type = S.node_organ_type(I.actor_node_id)
-		if (!init_type)
-			init_type = 0
-
-		var/score = init_type
-		if (U == S.target)
-			score += 100
-		else if (U == S.user)
-			score += 50
-
-		if (score > best_score)
-			best_score = score
-			best_session = S
-
-	return best_session
 
 /proc/create_dullahan_head_partner(obj/item/bodypart/head/dullahan/H)
     var/mob/living/carbon/human/erp_proxy/P = new()
@@ -166,3 +136,41 @@
 			return /obj/item/organ/penis/tentacle
 
 	return /obj/item/organ/penis
+
+/proc/erp_filter_to_body_zone(organ_id)
+    if(!organ_id)
+        return BODY_ZONE_CHEST
+
+    switch(organ_id)
+        if(SEX_ORGAN_FILTER_MOUTH)
+            return BODY_ZONE_HEAD
+
+        if(SEX_ORGAN_FILTER_LHAND)
+            return BODY_ZONE_L_ARM
+
+        if(SEX_ORGAN_FILTER_RHAND)
+            return BODY_ZONE_R_ARM
+
+        if(SEX_ORGAN_FILTER_LEGS)
+            return BODY_ZONE_R_LEG
+
+        if(SEX_ORGAN_FILTER_TAIL)
+            return BODY_ZONE_CHEST
+
+        if(SEX_ORGAN_FILTER_BREASTS)
+            return BODY_ZONE_CHEST
+
+        if(SEX_ORGAN_FILTER_VAGINA, SEX_ORGAN_FILTER_PENIS, SEX_ORGAN_FILTER_ANUS)
+            return BODY_ZONE_CHEST
+
+    return BODY_ZONE_CHEST
+
+/proc/erp_body_zone_to_organs(zone)
+	var/list/types = list()
+	switch(zone)
+		if(BODY_ZONE_PRECISE_GROIN, BODY_ZONE_CHEST)
+			types += SEX_ORGAN_VAGINA
+			types += SEX_ORGAN_ANUS
+		if(BODY_ZONE_PRECISE_MOUTH)
+			types += SEX_ORGAN_MOUTH
+	return types

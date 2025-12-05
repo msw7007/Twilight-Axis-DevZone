@@ -3,7 +3,7 @@
 	name = "Использовать хвост"
 	required_target = SEX_ORGAN_TAIL
 	stamina_cost = 0.06
-	affects_self_arousal = 0.08
+	affects_self_arousal = 0.06
 	affects_arousal      = 0.12
 	affects_self_pain    = 0.01
 	affects_pain         = 0.01

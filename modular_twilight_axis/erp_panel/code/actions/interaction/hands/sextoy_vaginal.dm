@@ -6,10 +6,10 @@
 	armor_slot_init = BODY_ZONE_PRECISE_GROIN
 	check_same_tile = FALSE
 
-	affects_self_arousal = 0.2
-	affects_arousal      = 0
-	affects_self_pain    = 0.02
-	affects_pain         = 0
+	affects_self_arousal = 0
+	affects_arousal      = 0.18
+	affects_self_pain    = 0
+	affects_pain         = 0.02
 
 /datum/sex_panel_action/other/hands/toy_vaginal/can_perform(mob/living/carbon/human/user, mob/living/carbon/human/target)
 	. = ..()
@@ -28,7 +28,7 @@
 
 /datum/sex_panel_action/other/hands/toy_vaginal/get_perform_message(mob/living/carbon/human/user, mob/living/carbon/human/target)
 	var/pose_state = get_pose_key(user, target)
-	var/message = "[user] [get_pose_text(pose_state)], [get_force_text()] и [get_speed_text()] водит игрушкой внутри [target]."
+	var/message = "[user] [get_pose_text(pose_state)], [get_force_text()] и [get_speed_text()] водит игрушкой внутри лона [target]."
 	do_onomatopoeia(user)
 	show_sex_effects(user)
 	do_thrust_animate(user, target)

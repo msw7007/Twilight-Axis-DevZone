@@ -6,18 +6,12 @@
 	var/mob/living/carbon/human/actor
 	var/mob/living/carbon/human/partner
 
-	var/datum/sex_organ/init_organ
-	var/datum/sex_organ/target_organ
-
 	var/instance_id
 	var/actor_node_id
 	var/partner_node_id
 
 	var/speed = SEX_SPEED_MID
 	var/force = SEX_FORCE_MID
-
-	var/continous = FALSE
-	var/friction_count = 0
 
 	var/timer_id
 	var/next_tick_time = 0
@@ -32,7 +26,6 @@
 
 	if(action)
 		action_type = action.type
-		continous = action.continous
 
 	instance_id = "[REF(src)]"
 	actor_node_id = actor_node
@@ -45,6 +38,10 @@
 	partner = p
 
 /datum/sex_action_session/Destroy()
+	if(timer_id)
+		deltimer(timer_id)
+		timer_id = null
+	
 	var/datum/sex_organ/src_org = session?.resolve_organ_datum(actor, actor_node_id)
 	if(src_org)
 		src_org.unbind()
@@ -218,52 +215,54 @@
 	return base * mult
 
 /datum/sex_action_session/proc/apply_arousal_delta(delta, self_pain_delta, target_pain_delta)
-	if(delta <= 0 && self_pain_delta <= 0 && target_pain_delta <= 0)
-		return
+    if(delta <= 0 && self_pain_delta <= 0 && target_pain_delta <= 0)
+        return
 
-	var/mob/living/carbon/human/U = actor
-	var/mob/living/carbon/human/T = partner
+    var/mob/living/carbon/human/U = actor
+    var/mob/living/carbon/human/T = partner
 
-	var/user_sources   = get_arousal_source_count_for(U)
-	var/target_sources = get_arousal_source_count_for(T)
+    var/user_sources   = get_arousal_source_count_for(U)
+    var/target_sources = get_arousal_source_count_for(T)
 
-	var/user_delta   = 0
-	var/target_delta = 0
+    var/user_delta   = 0
+    var/target_delta = 0
 
-	if(action.affects_self_arousal && delta > 0)
-		user_delta = delta
-	if(action.affects_arousal && delta > 0)
-		target_delta = delta
+    if(action.affects_self_arousal && delta > 0)
+        user_delta = delta
+    if(action.affects_arousal && delta > 0)
+        target_delta = delta
 
-	if(user_sources > 1 && user_delta)
-		user_delta /= user_sources
-	if(target_sources > 1 && target_delta)
-		target_delta /= target_sources
+    if(user_sources > 1 && user_delta)
+        user_delta /= user_sources
+    if(target_sources > 1 && target_delta)
+        target_delta /= target_sources
 
-	var/user_pain   = 0
-	var/target_pain = 0
+    var/user_pain   = 0
+    var/target_pain = 0
 
-	if(action.affects_self_pain && self_pain_delta > 0)
-		user_pain = self_pain_delta
-	if(action.affects_pain && target_pain_delta > 0)
-		target_pain = target_pain_delta
+    if(action.affects_self_pain && self_pain_delta > 0)
+        user_pain = self_pain_delta
+    if(action.affects_pain && target_pain_delta > 0)
+        target_pain = target_pain_delta
 
-	if(user_pain > 0 && U)
-		if(session?.is_maso_or_nympho(U))
-			user_delta += user_pain
-		else
-			user_delta -= user_pain
+    if(user_pain > 0 && U)
+        if(session?.is_maso_or_nympho(U))
+            user_delta += user_pain
+        else
+            user_delta -= user_pain
 
-	if(target_pain > 0 && T)
-		if(session?.is_maso_or_nympho(T))
-			target_delta += target_pain
-		else
-			target_delta -= target_pain
+    if(target_pain > 0 && T)
+        if(session?.is_maso_or_nympho(T))
+            target_delta += target_pain
+        else
+            target_delta -= target_pain
 
-	if(U && (user_delta || user_pain))
-		SEND_SIGNAL(U, COMSIG_SEX_RECEIVE_ACTION, user_delta, user_pain, TRUE, force, speed)
-	if(T && (target_delta || target_pain))
-		SEND_SIGNAL(T, COMSIG_SEX_RECEIVE_ACTION, target_delta, target_pain, FALSE, force, speed)
+    if(U && (user_delta || user_pain))
+        SEND_SIGNAL(U, COMSIG_SEX_RECEIVE_ACTION, user_delta, user_pain, TRUE, force, speed, actor_node_id)
+
+    if(T && (target_delta || target_pain))
+        SEND_SIGNAL(T, COMSIG_SEX_RECEIVE_ACTION, target_delta, target_pain, FALSE, force, speed, partner_node_id)
+
 
 /datum/sex_action_session/proc/get_arousal_source_count_for(mob/living/carbon/human/M)
 	if(!M || !session || !length(session.current_actions))

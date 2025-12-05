@@ -46,7 +46,7 @@
 		start_production_timer()
 		stored_liquid.add_reagent(R.type, (stored_liquid_max/5))
 
-/datum/sex_organ/penis/inject_liquid(obj/item/container = null, mob/living/carbon/human/preferred_holder = null)
+/datum/sex_organ/penis/inject_liquid(obj/item/container = null, mob/living/carbon/human/preferred_holder = null, list/blocked_containers = list())
 	if(!has_storage() || total_volume() <= 0)
 		return ..(container, preferred_holder)
 
@@ -69,7 +69,7 @@
 	var/old_injection = injection_amount
 	injection_amount = amount
 
-	var/moved = ..(container, preferred_holder)
+	var/moved = ..(container, preferred_holder, blocked_containers)
 
 	injection_amount = old_injection
 	return moved

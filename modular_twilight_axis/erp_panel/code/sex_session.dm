@@ -71,7 +71,11 @@
 			qdel(I)
 	current_actions.Cut()
 	locked_actor_categories.Cut()
+	for(var/mob/living/carbon/human/M in partners)
+		if(istype(M, /mob/living/carbon/human/erp_proxy))
+			qdel(M)
 	partners.Cut()
+	LAZYREMOVE(GLOB.sex_sessions, src)
 	return ..()
 
 /datum/sex_session_tgui/proc/update_knotted_penis_flag()
@@ -138,7 +142,7 @@
 
 	var/is_actor = (side == "actor")
 
-	#define BUSY_FOR(id) (is_actor ? !slot_available_for(id) : FALSE)
+	#define BUSY_FOR(id) (is_actor ? !slot_available_for(id) : is_partner_node_reserved(id, M))
 
 	var/obj/item/bodypart/head/HD = M.get_bodypart(BODY_ZONE_HEAD)
 	if(HD)
@@ -321,7 +325,7 @@
 
 	if(A.require_grab)
 		var/grabstate2 = U.get_highest_grab_state_on(T)
-		if(!grabstate2 || grabstate2 < A.required_grab_state)
+		if(isnull(grabstate2) || grabstate2 < A.required_grab_state)
 			return FALSE
 
 	return TRUE
@@ -334,9 +338,6 @@
 	if(!A)
 		return FALSE
 
-	var/mob/living/carbon/human/U = user
-	var/mob/living/carbon/human/T = get_current_partner()
-
 	var/a_id = actor_node_id
 	if(!a_id)
 		a_id = selected_actor_organ_id
@@ -345,44 +346,7 @@
 	if(!p_id)
 		p_id = selected_partner_organ_id
 
-	var/a_type = a_id ? node_organ_type(a_id) : null
-	var/p_type = p_id ? node_organ_type(p_id) : null
-
-	if(a_type == SEX_ORGAN_PENIS)
-		if(U)
-			var/datum/component/knotting/K = U.GetComponent(/datum/component/knotting)
-			if(K && K.knotted_status == KNOTTED_AS_TOP && K.knotted_recipient)
-				return FALSE
-
-	if(A.required_init && a_type && A.required_init != a_type)
-		return FALSE
-	if(A.required_target && p_type && A.required_target != p_type)
-		return FALSE
-
-	if(!A.can_perform(U, T))
-		return FALSE
-
-	var/a_cat = a_id ? category_of_actor_node(a_id) : null
-	if(a_cat && is_locked(a_cat))
-		return FALSE
-
-	if(performing)
-		if(A.required_init && !a_type)
-			return FALSE
-		if(A.required_target && !p_type)
-			return FALSE
-
-		if(p_id)
-			var/mob/living/carbon/human/P = T
-			if(P && is_partner_node_reserved(p_id, P))
-				return FALSE
-
-		if(!inherent_perform_check(A, U, T))
-			return FALSE
-
-		return TRUE
-
-	return TRUE
+	return can_execute_action(A, a_id, p_id, performing)
 
 /datum/sex_session_tgui/proc/ui_key()
 	return "EroticRolePlayPanel"
@@ -460,12 +424,7 @@
 	D["can_knot_now"] = can_knot_now
 	D["yield_to_partner"] = yield_to_partner
 
-	var/mob/living/carbon/human/human_viewer = null
-	if(ishuman(src.user))
-		human_viewer = src.user
-	else
-		human_viewer = src.user
-
+	var/mob/living/carbon/human/human_viewer = src.user
 	D["status_organs"] = build_status_org_nodes(human_viewer)
 
 	var/list/can = list()
@@ -637,7 +596,7 @@
 
 		if("set_link_force")
 			var/id2 = params["id"]
-			var/value2 = clamp(text2num(params["value"]), SEX_FORCE_MIN, SEX_SPEED_MAX)
+			var/value2 = clamp(text2num(params["value"]), SEX_FORCE_MIN, SEX_FORCE_MAX)
 			var/datum/sex_action_session/I2 = current_actions[id2]
 			if(I2)
 				I2.force = value2
@@ -787,7 +746,14 @@
 	if(!a_id || !p_id)
 		return
 
-	if(!can_perform_action_type(action_type, TRUE, a_id, p_id))
+	if(!can_execute_action(A, a_id, p_id, TRUE))
+		return
+
+	var/datum/sex_action_session/existing = find_existing_action_session(A, a_id, p_id)
+	if(existing)
+		existing.speed = global_speed
+		existing.force = global_force
+		SStgui.update_uis(src)
 		return
 
 	var/cat = category_of_actor_node(a_id)
@@ -802,7 +768,6 @@
 	INVOKE_ASYNC(I, TYPE_PROC_REF(/datum/sex_action_session, start))
 
 	start_broadcast_loop()
-
 	SStgui.update_uis(src)
 
 /datum/sex_session_tgui/proc/stop_all_actions()
@@ -961,27 +926,32 @@
 		return null
 
 	if(!A.required_init)
-		if(!is_locked(category_of_actor_node(SEX_ORGAN_FILTER_BODY)))
+		var/body_cat = category_of_actor_node(SEX_ORGAN_FILTER_BODY)
+		if(!is_locked(body_cat))
 			return SEX_ORGAN_FILTER_BODY
-		else
-			return null
+		return null
 
 	if(selected_actor_organ_id)
-		var/t = node_organ_type(selected_actor_organ_id)
-		if((!A.required_init || A.required_init == t) && !is_locked(category_of_actor_node(selected_actor_organ_id)))
-			return selected_actor_organ_id
+		var/sel_type = node_organ_type(selected_actor_organ_id)
+		if(sel_type && sel_type == A.required_init)
+			var/sel_cat = category_of_actor_node(selected_actor_organ_id)
+			if(!is_locked(sel_cat))
+				return selected_actor_organ_id
 
 	var/list/nodes = build_org_nodes(user, "actor")
 	for(var/i in 1 to nodes.len)
 		var/list/N = nodes[i]
 		var/id = N["id"]
+
 		if(id == SEX_ORGAN_FILTER_BODY)
 			continue
 
-		var/t2 = node_organ_type(id)
-		if(A.required_init && A.required_init != t2)
+		var/t = node_organ_type(id)
+		if(!t || t != A.required_init)
 			continue
-		if(is_locked(category_of_actor_node(id)))
+
+		var/cat = category_of_actor_node(id)
+		if(is_locked(cat))
 			continue
 
 		return id
@@ -1103,11 +1073,12 @@
 		locked_actor_categories.Cut()
 
 /datum/sex_session_tgui/proc/build_status_org_nodes(mob/living/carbon/human/M)
-	var/list/out = list()
+	if(!M)
+		return list()
 
-	var/list/base = build_org_nodes(M, "actor")
-	for(var/i in 1 to base.len)
-		var/list/N = base[i]
+	var/list/nodes = build_org_nodes(M, "actor")
+	for(var/i in 1 to nodes.len)
+		var/list/N = nodes[i]
 		var/id = N["id"]
 
 		var/datum/sex_organ/O = resolve_organ_datum(M, id)
@@ -1126,19 +1097,11 @@
 				N["erect"] = P.erect_state
 				N["manual"] = P.manual_erection_override
 
-		out += list(list(
-			"id"          = id,
-			"name"        = N["name"],
-			"busy"        = N["busy"],
-			"side"        = N["side"],
-			"sensitivity" = sens,
-			"pain"        = pain,
-			"fullness"    = fullness,
-			"erect"       = N["erect"],
-			"manual"      = N["manual"],
-		))
+		N["sensitivity"] = sens
+		N["pain"] = pain
+		N["fullness"] = fullness
 
-	return out
+	return nodes
 
 /datum/sex_session_tgui/proc/can_see_partner_arousal()
 	if(!user)
@@ -1198,6 +1161,8 @@
 
 	var/mob/living/carbon/human/H = mover
 	var/list/to_stop = list()
+	var/moved_breaks_any = FALSE
+
 	for(var/id in current_actions)
 		var/datum/sex_action_session/I = current_actions[id]
 		if(!I || QDELETED(I) || !I.action)
@@ -1206,16 +1171,23 @@
 		if(H != I.actor && H != I.partner)
 			continue
 
+		var/stop = FALSE
 		if(!can_continue_action_session(I))
+			stop = TRUE
+		else
+			var/datum/sex_panel_action/A = I.action
+			if(A.break_on_move)
+				stop = TRUE
+				moved_breaks_any = TRUE
+
+		if(stop)
 			to_stop += id
 
 	for(var/id in to_stop)
 		stop_instance(id)
 
-	if(!length(to_stop))
-		return
-
-	to_chat(H, span_notice("Движение прерывает часть интимных действий."))
+	if(moved_breaks_any)
+		to_chat(H, span_notice("Движение прерывает часть интимных действий."))
 
 /proc/get_or_create_sex_session_tgui(mob/living/carbon/human/user, mob/living/carbon/human/target)
 	return get_or_create_sex_session_tgui_with_bodypart(user, target, null)
@@ -1268,11 +1240,12 @@
 			if(!A.required_init || !a_type || A.required_init != a_type)
 				continue
 
+		var/list/targets = A.get_filter_target_organ_types()
 		if(p_sel == SEX_ORGAN_FILTER_BODY)
-			if(A.required_target)
+			if(targets && targets.len)
 				continue
 		else if(p_sel != SEX_ORGAN_FILTER_ALL)
-			if(!A.required_target || !p_type || A.required_target != p_type)
+			if(!targets || !p_type || !(p_type in targets))
 				continue
 
 		res += key
@@ -1309,12 +1282,114 @@
 	var/a_id = pick_actor_node_for_action(A)
 	var/p_id = pick_partner_node_for_action(A)
 
-	if(A.required_init && !a_id)
+	return can_execute_action(A, a_id, p_id, TRUE)
+
+/datum/sex_session_tgui/proc/is_partner_node_reserved(node_id, mob/living/carbon/human/P)
+	if(!node_id || !P)
 		return FALSE
-	if(A.required_target && !p_id)
+	if(!length(current_actions))
 		return FALSE
 
-	if(!can_perform_action_type(action_type, TRUE, a_id, p_id))
+	var/candidate_type = node_organ_type(node_id)
+	if(!candidate_type)
 		return FALSE
+
+	for(var/id in current_actions)
+		var/datum/sex_action_session/I = current_actions[id]
+		if(!I || QDELETED(I) || !I.action)
+			continue
+
+		if(I.partner != P)
+			continue
+
+		if(!I.action.reserve_target_for_session)
+			continue
+
+		var/list/reserved_types = I.action.get_reserved_target_organ_types()
+		if(!islist(reserved_types) || !reserved_types.len)
+			continue
+
+		if(candidate_type in reserved_types)
+			return TRUE
+
+	return FALSE
+
+/datum/sex_session_tgui/proc/can_execute_action(datum/sex_panel_action/A, actor_node_id, partner_node_id, perform_checks = FALSE)
+	if(!A)
+		return FALSE
+
+	var/mob/living/carbon/human/U = user
+	var/mob/living/carbon/human/T = get_current_partner()
+
+	var/a_id = actor_node_id
+	var/p_id = partner_node_id
+
+	var/a_type = a_id ? node_organ_type(a_id) : null
+	var/p_type = p_id ? node_organ_type(p_id) : null
+
+	if(a_type == SEX_ORGAN_PENIS && U)
+		var/datum/component/knotting/K = U.GetComponent(/datum/component/knotting)
+		if(K && K.knotted_status == KNOTTED_AS_TOP && K.knotted_recipient)
+			return FALSE
+
+	if(A.required_init && a_type && A.required_init != a_type)
+		return FALSE
+	if(A.required_target && p_type && A.required_target != p_type)
+		return FALSE
+
+	if(!A.can_perform(U, T))
+		return FALSE
+
+	var/a_cat = a_id ? category_of_actor_node(a_id) : null
+	if(a_cat && is_locked(a_cat))
+		return FALSE
+
+	if(perform_checks)
+		if(A.required_init && !a_type)
+			return FALSE
+		if(A.required_target && !p_type)
+			return FALSE
+
+		if(p_id && T)
+			var/mob/living/carbon/human/P = T
+			if(P && is_partner_node_reserved(p_id, P))
+				return FALSE
+
+		if(!inherent_perform_check(A, U, T))
+			return FALSE
 
 	return TRUE
+
+/datum/sex_session_tgui/proc/find_existing_action_session(datum/sex_panel_action/A, actor_node_id, partner_node_id)
+	if(!A || !actor_node_id || !partner_node_id)
+		return null
+	if(!length(current_actions))
+		return null
+
+	for(var/id in current_actions)
+		var/datum/sex_action_session/I = current_actions[id]
+		if(!I || QDELETED(I) || !I.action)
+			continue
+
+		if(I.action_type != A.type)
+			continue
+		if(I.actor_node_id != actor_node_id)
+			continue
+		if(I.partner_node_id != partner_node_id)
+			continue
+
+		return I
+
+	return null
+
+/datum/sex_session_tgui/proc/is_node_busy_for_side(node_id, mob/living/carbon/human/M, side)
+	if(!node_id || !M)
+		return FALSE
+
+	if(side == "actor")
+		return !slot_available_for(node_id)
+
+	if(side == "partner")
+		return is_partner_node_reserved(node_id, M)
+
+	return FALSE

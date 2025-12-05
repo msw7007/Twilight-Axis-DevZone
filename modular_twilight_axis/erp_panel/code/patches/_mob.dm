@@ -1,3 +1,7 @@
+
+/mob/living
+	var/sex_procs_active = FALSE
+	
 /mob/living/carbon/human
 	var/datum/weakref/sex_surrender_ref
 
@@ -230,6 +234,12 @@
 /mob/living/carbon/human/erp_proxy/Life(seconds_per_tick)
 	return
 
+/obj/item/bodypart/head/dullahan/Destroy()
+	. = ..()
+	for(var/mob/living/carbon/human/erp_proxy/P in world)
+		if(P.source_part == src)
+			qdel(P)
+
 /mob/living/proc/start_sex_session_with_dullahan_head(obj/item/bodypart/head/dullahan/H)
 	var/mob/living/carbon/human/erp_proxy/P = create_dullahan_head_partner(H)
 
@@ -250,5 +260,34 @@
 
 	SEND_SIGNAL(src, COMSIG_SEX_RECEIVE_ACTION, delta, 0, FALSE, SEX_FORCE_LOW, SEX_SPEED_LOW)
 
-/mob/living
-	var/sex_procs_active = FALSE
+/mob/living/carbon/human/proc/wash_sex_organs_for_clean(clean)
+	var/zone = zone_selected
+	if(!zone)
+		return 0
+
+	var/list/org_types = erp_body_zone_to_organs(zone)
+	if(!length(org_types))
+		return 0
+
+	var/total_removed = 0
+
+	for(var/t in org_types)
+		if(t == SEX_ORGAN_PENIS || t == SEX_ORGAN_BREASTS)
+			continue
+
+		var/zone_for_type = sex_organ_to_zone(t)
+		if(zone_for_type && !can_access_erp_zone(src, src, zone_for_type, FALSE, GRAB_PASSIVE))
+			continue
+
+		var/datum/sex_organ/O = get_sex_organ_by_type(t, FALSE)
+		if(!O || !O.has_storage() || O.total_volume() <= 0)
+			continue
+
+		var/removed = O.wash_out()
+		if(removed > 0)
+			total_removed += removed
+
+	if(total_removed > 0)
+		to_chat(src, span_notice("Вода смывает с твоего тела посторонние жидкости."))
+
+	return total_removed

@@ -3,10 +3,10 @@
 	name = "Седлать анусом"
 	required_target = SEX_ORGAN_PENIS
 	stamina_cost = 0.06
-	affects_self_arousal = 0.08
-	affects_arousal      = 0.12
+	affects_self_arousal = 0.03
+	affects_arousal      = 0.03
 	affects_self_pain    = 0.01
-	affects_pain         = 0.01
+	affects_pain         = 0
 
 /datum/sex_panel_action/other/anus/sex/get_start_message(mob/living/carbon/human/user, mob/living/carbon/human/target)
 	var/pose_state = get_pose_key(user, target)
@@ -14,7 +14,7 @@
 
 /datum/sex_panel_action/other/anus/sex/get_perform_message(mob/living/carbon/human/user, mob/living/carbon/human/target)
 	var/pose_state = get_pose_key(user, target)
-	var/message = "[user] [get_pose_text(pose_state)], [get_force_text()] и [get_speed_text()] скачет задницей на члене [target]."
+	var/message = "[user] [get_pose_text(pose_state)], [get_force_text()] и [get_speed_text()] скачет [is_agressive_tier() ? "задницей" : "ягодицами"] на члене [target]."
 	do_onomatopoeia(user)
 	show_sex_effects(user)
 	do_thrust_animate(user, target)

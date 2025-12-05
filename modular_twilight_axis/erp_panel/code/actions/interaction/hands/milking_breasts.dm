@@ -4,10 +4,10 @@
 	required_target = SEX_ORGAN_BREASTS
 	armor_slot_target = BODY_ZONE_CHEST
 	stamina_cost = 0.05
-	affects_self_arousal = 0.06
-	affects_arousal      = 0.04
-	affects_self_pain    = 0.01
-	affects_pain         = 0.01
+	affects_self_arousal = 0
+	affects_arousal      = 0.06
+	affects_self_pain    = 0
+	affects_pain         = 0.02
 
 /datum/sex_panel_action/other/hands/milking_breasts/can_perform(mob/living/carbon/human/user, mob/living/carbon/human/target)
 	. = ..()
@@ -41,7 +41,7 @@
 	return spanify_force(message)
 
 /datum/sex_panel_action/other/hands/milking_breasts/get_finish_message(mob/living/carbon/human/user, mob/living/carbon/human/target)
-	return "[user] убирает руки от доек [target]."
+	return "[user] убирает руки от груди [target]."
 
 /datum/sex_panel_action/other/hands/milking_breasts/on_perform(mob/living/carbon/human/user, mob/living/carbon/human/target)
 	. = ..()
@@ -58,20 +58,3 @@
 /datum/sex_panel_action/other/hands/milking_breasts/handle_injection_feedback(mob/living/carbon/human/user, mob/living/carbon/human/target, moved)
 	to_chat(user, "Я чувствую, как соски [target] выплескивают молоко.")
 	to_chat(target, "Я чувствую, как молоко покидает мою грудь.")
-
-/datum/sex_panel_action/other/hands/milking_breasts/proc/find_best_container(mob/living/carbon/human/user, mob/living/carbon/human/target, datum/sex_organ/boobs)
-	if(user)
-		var/obj/item/I_left = user.get_item_for_held_index(LEFT_HANDS)
-		if(istype(I_left, /obj/item/reagent_containers))
-			return I_left
-
-		var/obj/item/I_right = user.get_item_for_held_index(RIGHT_HANDS)
-		if(istype(I_right, /obj/item/reagent_containers))
-			return I_right
-
-	if(boobs)
-		var/obj/item/C = boobs.find_liquid_container()
-		if(C)
-			return C
-
-	return null

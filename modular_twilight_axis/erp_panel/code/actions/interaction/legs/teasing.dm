@@ -3,9 +3,9 @@
 	name = "Тереться ногой"
 	required_target = null
 	stamina_cost = 0.05
-	affects_self_arousal = 0.12
+	affects_self_arousal = 0
 	affects_arousal      = 0.12
-	affects_self_pain    = 0.01
+	affects_self_pain    = 0
 	affects_pain         = 0.01
 	check_same_tile = FALSE
 

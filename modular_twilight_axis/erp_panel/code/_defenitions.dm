@@ -12,11 +12,6 @@
 #define SEX_SENSITIVITY_MAX  2
 #define SEX_PAIN_MAX         2
 
-#define SEX_SENSITIVITY_GAIN          0.1
-#define SEX_PAIN_GAIN_HIGH_PASSIVE    0.05
-#define SEX_PAIN_GAIN_EXTREME_PASSIVE 0.1
-#define SEX_PAIN_GAIN_EXTREME_ACTIVE  0.03
-
 #define SEX_POSE_BOTH_STANDING "both_standing"
 #define SEX_POSE_USER_LYING    "user_lying"
 #define SEX_POSE_TARGET_LYING  "target_lying"
@@ -73,6 +68,8 @@
 #define NYMPHO_BOOST_DURATION (10 MINUTES)
 
 #define SEX_MIN_REAGENT_QUANT 0.1
+
+#define COMSIG_SEX_MODIFY_EFFECT "sex_modify_effect"
 
 GLOBAL_LIST_INIT(sex_panel_actions, build_sex_panel_actions())
 

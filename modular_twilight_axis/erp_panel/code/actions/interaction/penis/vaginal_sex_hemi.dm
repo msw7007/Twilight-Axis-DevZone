@@ -5,7 +5,7 @@
 	required_target = SEX_ORGAN_VAGINA
 	armor_slot_target = BODY_ZONE_PRECISE_GROIN
 
-	affects_self_arousal = 0.18  // чуть сильнее
+	affects_self_arousal = 0.18
 	affects_arousal      = 0.06
 	affects_self_pain    = 0.04
 	affects_pain         = 0.01

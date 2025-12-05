@@ -2,11 +2,11 @@
 	abstract_type = FALSE
 	name = "Работать попкой"
 	required_target = SEX_ORGAN_PENIS
-	stamina_cost = 0.06
-	affects_self_arousal = 0.04
+	stamina_cost = 0.1
+	affects_self_arousal = 0.06
 	affects_arousal      = 0.12
 	affects_self_pain    = 0
-	affects_pain         = 0.01
+	affects_pain         = 0.04
 
 /datum/sex_panel_action/other/anus/butt/get_start_message(mob/living/carbon/human/user, mob/living/carbon/human/target)
 	var/pose_state = get_pose_key(user, target)
@@ -14,7 +14,7 @@
 
 /datum/sex_panel_action/other/anus/butt/get_perform_message(mob/living/carbon/human/user, mob/living/carbon/human/target)
 	var/pose_state = get_pose_key(user, target)
-	var/message = "[user] [get_pose_text(pose_state)], [get_force_text()] и [get_speed_text()] водит ягодицами по члену [target]."
+	var/message = "[user] [get_pose_text(pose_state)], [get_force_text()] и [get_speed_text()] водит [is_agressive_tier() ? "задницей" : "ягодицами"] по члену [target]."
 	show_sex_effects(user)
 	playsound(user, 'sound/misc/mat/fingering.ogg', 30, TRUE, -2, ignore_walls = FALSE)
 	return spanify_force(message)

@@ -4,9 +4,9 @@
 	required_target = SEX_ORGAN_ANUS
 	armor_slot_target = BODY_ZONE_PRECISE_GROIN
 	stamina_cost = 0.05
-	affects_self_arousal = 0.06
+	affects_self_arousal = 0
 	affects_arousal      = 0.04
-	affects_self_pain    = 0.01
+	affects_self_pain    = 0
 	affects_pain         = 0.01
 
 /datum/sex_panel_action/other/hands/finger_anal/get_start_message(mob/living/carbon/human/user, mob/living/carbon/human/target)

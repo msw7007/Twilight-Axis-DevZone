@@ -12,8 +12,6 @@
 	/// Armor slot that prevent action
 	var/armor_slot_init
 	var/armor_slot_target
-	/// Whether this action can continue indefinitely
-	var/continous = TRUE
 	/// How long each iteration takes
 	var/interaction_timer = 3 SECONDS
 	/// How much stamina each iteration takes
@@ -40,6 +38,8 @@
 	var/datum/sex_action_session/session
 	/// Is taregt organ reserverd for action
 	var/reserve_target_for_session = FALSE
+	var/obj/item/active_container = null
+	var/break_on_move = TRUE
 
 /datum/sex_panel_action/proc/shows_on_menu(mob/living/carbon/human/user, mob/living/carbon/human/target)
 	if(abstract_type)
@@ -326,10 +326,10 @@
 	var/list/orgs = get_action_organs(user, target, FALSE, FALSE)
 	if(!orgs) return 0
 
-	var/datum/sex_organ/init = orgs["target"]
-	if(!init) return 0
+	var/datum/sex_organ/target_organ = orgs["target"]
+	if(!target_organ) return 0
 
-	var/moved = init.inject_liquid()
+	var/moved = target_organ.inject_liquid()
 	if(moved > 0)
 		handle_injection_feedback(user, target, moved)
 	return moved
@@ -356,25 +356,45 @@
 
 	return TRUE
 
-/datum/sex_session_tgui/proc/is_partner_node_reserved(node_id, mob/living/carbon/human/P)
-	if(!node_id || !P)
+/datum/sex_panel_action/proc/get_reserved_target_organ_types()
+	if(!reserve_target_for_session)
+		return null
+
+	if(required_target)
+		return list(required_target)
+
+	return null
+
+/datum/sex_panel_action/proc/find_best_container(mob/living/carbon/human/user, mob/living/carbon/human/target, datum/sex_organ/organ)
+	if(user)
+		var/obj/item/I_left = user.get_item_for_held_index(LEFT_HANDS)
+		if(istype(I_left, /obj/item/reagent_containers))
+			return I_left
+
+		var/obj/item/I_right = user.get_item_for_held_index(RIGHT_HANDS)
+		if(istype(I_right, /obj/item/reagent_containers))
+			return I_right
+
+	if(organ)
+		var/obj/item/C = organ.find_liquid_container()
+		if(C)
+			return C
+
+	return null
+
+/datum/sex_panel_action/proc/get_filter_target_organ_types()
+	if(required_target)
+		return list(required_target)
+	return null
+
+/datum/sex_panel_action/proc/is_agressive_tier()
+	if(!session)
 		return FALSE
-	if(!length(current_actions))
-		return FALSE
 
-	for(var/id in current_actions)
-		var/datum/sex_action_session/I = current_actions[id]
-		if(!I || QDELETED(I) || !I.action)
-			continue
-
-		if(!I.action.reserve_target_for_session)
-			continue
-
-		if(I.partner != P)
-			continue
-		if(I.partner_node_id != node_id)
-			continue
-
-		return TRUE
+	switch(session.force)
+		if(SEX_FORCE_LOW, SEX_FORCE_MID)
+			return FALSE
+		if(SEX_FORCE_HIGH, SEX_FORCE_EXTREME)
+			return TRUE
 
 	return FALSE

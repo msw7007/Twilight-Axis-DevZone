@@ -8,9 +8,9 @@
 	check_same_tile = FALSE
 
 	affects_self_arousal = 0.12
-	affects_arousal      = 0
-	affects_self_pain    = 0.03
-	affects_pain         = 0
+	affects_arousal      = 0.04
+	affects_self_pain    = 0.01
+	affects_pain         = 0.03
 
 /datum/sex_panel_action/other/penis/rubbing/get_start_message(mob/living/carbon/human/user, mob/living/carbon/human/target)
 	var/pose_state = get_pose_key(user, target)

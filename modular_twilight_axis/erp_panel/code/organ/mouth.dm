@@ -17,4 +17,5 @@
 /datum/sex_organ/mouth/Destroy(force, ...)
 	. = ..()
 	var/mob/living/carbon/human/H = get_owner()
-	H.remove_status_effect(/datum/status_effect/mouth_full)
+	if(H)
+		H.remove_status_effect(/datum/status_effect/mouth_full)
