@@ -19,7 +19,7 @@
 
 	message_param = "pats %t on the head."
 
-	playsound(target.loc, 'sound/misc/mat/girlmouth (2).ogg', 50, FALSE, -1)
+	playsound(target.loc, 'sound/vo/hug.ogg', 50, FALSE, -1)
 
 
 /datum/emote/living/kiss/adjacentaction(mob/user, mob/target)
