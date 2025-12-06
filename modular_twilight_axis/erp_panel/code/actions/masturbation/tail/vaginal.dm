@@ -6,8 +6,8 @@
 	required_target = SEX_ORGAN_VAGINA
 	armor_slot_init = BODY_ZONE_PRECISE_GROIN
 
-	affects_self_arousal = 0.18
-	affects_self_pain    = 0.02
+	affects_self_arousal	= 0.18
+	affects_self_pain		= 0.02
 
 /datum/sex_panel_action/self/tail/vag_tail/get_start_message(user, target)
 	return "[user] подводит кончик хвоста к своему лону."

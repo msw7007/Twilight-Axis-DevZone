@@ -214,21 +214,29 @@
 	try_do_pain_effect(final_pain, giving)
 	try_do_moan(arousal_amt, final_pain, applied_force, giving)
 
-/datum/component/arousal/damage_from_pain(pain_amt, organ_id)
-    var/mob/living/carbon/user = parent
-    if(pain_amt <= 1)
-        return
+/datum/component/arousal/damage_from_pain(pain_amt, organ_id, applied_force)
+	var/mob/living/carbon/human/user = parent
+	if(!user || pain_amt <= 0)
+		return
 
-    var/excess = pain_amt - 1
-    var/damage = excess
+	var/zone = erp_filter_to_body_zone(organ_id)
+	var/obj/item/bodypart/part = user.get_bodypart(zone)
+	if(!part)
+		return
 
-    var/zone = erp_filter_to_body_zone(organ_id)
+	var/effective_pain = max(0, pain_amt - 1)
+	if(effective_pain <= 0)
+		return
+	
+	var/effective_chance = effective_pain
+	effective_chance *= (applied_force == SEX_FORCE_EXTREME) ? (SEX_PAIN_CHANCE_BOOST * 2) : SEX_PAIN_CHANCE_BOOST
+	var/pain_chance_maximum = (applied_force == SEX_FORCE_EXTREME) ? (SEX_PAIN_CHANCE_MAX * 2) : SEX_PAIN_CHANCE_MAX
+	var/chance = min(pain_chance_maximum, effective_chance)
+	if(!prob(chance))
+		return
 
-    var/obj/item/bodypart/part = user.get_bodypart(zone)
-    if(!part)
-        return
-
-    user.apply_damage(damage, BRUTE, zone)
+	var/damage = ((applied_force == SEX_FORCE_EXTREME) ? max(1, effective_pain /2) : 0.5)
+	user.apply_damage(damage, BRUTE, zone)
 
 /datum/component/arousal/get_arousal(datum/source, list/arousal_data)
 	arousal_data += list(
@@ -236,7 +244,8 @@
 		"frozen" = arousal_frozen,
 		"last_increase" = last_arousal_increase_time,
 		"arousal_multiplier" = arousal_multiplier,
-		"is_spent" = is_spent()
+		"is_spent" = is_spent(),
+		"charge" = charge
 	)
 
 /datum/component/arousal/handle_climax(climax_type, mob/living/carbon/human/user, mob/living/carbon/human/target)

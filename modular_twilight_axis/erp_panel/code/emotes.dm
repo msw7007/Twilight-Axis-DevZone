@@ -21,7 +21,6 @@
 
 	playsound(target.loc, 'sound/vo/hug.ogg', 50, FALSE, -1)
 
-
 /datum/emote/living/kiss/adjacentaction(mob/user, mob/target)
 	. = ..()
 	message_param = initial(message_param)

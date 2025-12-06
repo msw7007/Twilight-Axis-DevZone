@@ -3,10 +3,10 @@
 	name = "Работа бедрами"
 	required_target = SEX_ORGAN_PENIS
 	stamina_cost = 0.06
-	affects_self_arousal = 0.03
-	affects_arousal      = 0.15
-	affects_self_pain    = 0
-	affects_pain         = 0.02
+	affects_self_arousal	= 0.03
+	affects_arousal			= 0.15
+	affects_self_pain		= 0
+	affects_pain			= 0.02
 	require_grab = TRUE
 
 /datum/sex_panel_action/other/legs/legsjob/get_start_message(mob/living/carbon/human/user, mob/living/carbon/human/target)

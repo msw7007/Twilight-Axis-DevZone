@@ -5,10 +5,10 @@
 	armor_slot_target = BODY_ZONE_PRECISE_GROIN
 	break_on_move = FALSE
 	stamina_cost = 0.05
-	affects_self_arousal = 0
-	affects_arousal      = 0.15
-	affects_self_pain    = 0
-	affects_pain         = 0.04
+	affects_self_arousal	= 0
+	affects_arousal			= 0.15
+	affects_self_pain		= 0
+	affects_pain			= 0.04
 
 /datum/sex_panel_action/other/hands/tease_vagina/get_start_message(mob/living/carbon/human/user, mob/living/carbon/human/target)
 	var/pose_state = get_pose_key(user, target)

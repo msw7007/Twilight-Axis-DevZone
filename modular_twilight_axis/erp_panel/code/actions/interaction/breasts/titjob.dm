@@ -3,10 +3,10 @@
 	name = "Работа грудью"
 	required_target = SEX_ORGAN_PENIS
 	stamina_cost = 0.05
-	affects_self_arousal = 0.06
-	affects_arousal      = 0.12
-	affects_self_pain    = 0
-	affects_pain         = 0.01
+	affects_self_arousal	= 0.06
+	affects_arousal			= 0.12
+	affects_self_pain		= 0
+	affects_pain			= 0.01
 	require_grab = TRUE
 	check_same_tile = FALSE
 

@@ -6,8 +6,8 @@
 	required_target = SEX_ORGAN_PENIS
 	armor_slot_init = BODY_ZONE_PRECISE_GROIN
 
-	affects_self_arousal = 0.2
-	affects_self_pain    = 0.01
+	affects_self_arousal	= 0.2
+	affects_self_pain		= 0.01
 
 /datum/sex_panel_action/self/tail/penis_tail/get_start_message(user, target)
 	return "[user] оборачивает хвост вокруг своего члена."

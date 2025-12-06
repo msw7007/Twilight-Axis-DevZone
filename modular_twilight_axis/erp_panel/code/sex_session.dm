@@ -428,7 +428,9 @@
 	arousal_frozen = is_frozen
 	D["actor_arousal"] = clamp(round(actor_arousal_ui), 0, 100)
 	D["frozen"] = arousal_frozen
-
+	var/charge_u = ad_user["charge"] || 0
+	D["actor_charge"] = round(charge_u)
+	
 	D["do_until_finished"] = do_until_finished
 	var/can_knot_now = FALSE
 	if(has_knotted_penis && length(current_actions))
@@ -498,9 +500,12 @@
 		if(!I)
 			continue
 
-		var/datum/sex_organ/partner_org = resolve_organ_datum(I.partner, I.partner_node_id)
-		var/sens = partner_org ? partner_org.sensivity : 0
-		var/pain = partner_org ? partner_org.pain : 0
+		var/datum/sex_organ/tuned_org = resolve_organ_datum(I.actor, I.actor_node_id)
+		if(!tuned_org)
+			tuned_org = resolve_organ_datum(I.partner, I.partner_node_id)
+
+		var/sens = tuned_org ? tuned_org.sensivity : 0
+		var/pain = tuned_org ? tuned_org.pain : 0
 
 		links += list(list(
 			"id"                = I.instance_id,

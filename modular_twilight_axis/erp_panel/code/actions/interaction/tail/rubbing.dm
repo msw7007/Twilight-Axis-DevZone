@@ -3,10 +3,10 @@
 	name = "Тереться хвостом"
 	required_target = null
 	stamina_cost = 0.06
-	affects_self_arousal = 0.02
-	affects_arousal      = 0.04
-	affects_self_pain    = 0
-	affects_pain         = 0.01
+	affects_self_arousal	= 0.02
+	affects_arousal			= 0.04
+	affects_self_pain		= 0
+	affects_pain			= 0.01
 
 /datum/sex_panel_action/other/tail/rubbing/get_start_message(mob/living/carbon/human/user, mob/living/carbon/human/target)
 	var/pose_state = get_pose_key(user, target)

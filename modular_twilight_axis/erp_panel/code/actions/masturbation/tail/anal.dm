@@ -6,8 +6,8 @@
 	required_target = SEX_ORGAN_ANUS
 	armor_slot_init = BODY_ZONE_PRECISE_GROIN
 
-	affects_self_arousal = 0.15
-	affects_self_pain    = 0.03
+	affects_self_arousal	= 0.15
+	affects_self_pain		= 0.03
 
 /datum/sex_panel_action/self/tail/anal_tail/get_start_message(user, target)
 	return "[user] изгибает свой хвост, кончик поводя к своей попке."

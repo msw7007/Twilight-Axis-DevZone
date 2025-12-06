@@ -5,10 +5,10 @@
 	required_init = SEX_ORGAN_TAIL
 	required_target = SEX_ORGAN_MOUTH
 
-	affects_self_arousal = 0.1
-	affects_arousal      = 0
-	affects_self_pain    = 0
-	affects_pain         = 0
+	affects_self_arousal	= 0.1
+	affects_arousal			= 0
+	affects_self_pain		= 0
+	affects_pain			= 0
 
 /datum/sex_panel_action/self/tail/suck_tail/get_start_message(mob/living/carbon/human/user, mob/living/carbon/human/target)
 	return "[user] подводит хвост ближе к лицу."

@@ -89,6 +89,7 @@ export type SexSessionData = {
   current_actions?: string[];
 
   active_links?: ActiveLink[];
+  actor_charge?: number;
 };
 
 const fmt2 = (value?: number) =>
@@ -96,8 +97,8 @@ const fmt2 = (value?: number) =>
     ? '0'
     : Number(value).toFixed(2);
 
-const speedColors = ['#eac8de', '#e9a8d1', '#f05ee1', '#d146f5'];
-const forceColors = ['#eac8de', '#e9a8d1', '#f05ee1', '#d146f5'];
+const speedColors = ['#a798a2ff', '#e67ec0ff', '#f05ee1', '#f54689ff'];
+const forceColors = ['#a798a2ff', '#e67ec0ff', '#f05ee1', '#f54689ff'];
 
 const Pill: React.FC<{
   selected?: boolean;
@@ -132,17 +133,19 @@ const OrganList: React.FC<{
       {organs.map((org) => {
         const isSelected = selectedId === org.id;
         const isBusy = !!org.busy;
-        const baseColor = isBusy ? '#a05080' : '#c080ff';
+        const baseColor = isBusy
+          ? 'var(--color-bad)'
+          : 'var(--color-text)';
 
         const style: CSSProperties = {
           border: isSelected
-            ? '2px solid rgba(255, 180, 255, 0.9)'
-            : '1px solid rgba(255,255,255,0.2)',
+            ? '2px solid var(--color-border)'
+            : '1px solid var(--color-border)',
           boxShadow: isSelected
-            ? '0 0 8px rgba(255, 150, 255, 0.9)'
+            ? '0 0 8px var(--button-background-selected)'
             : undefined,
           background: isSelected
-            ? 'rgba(255, 150, 255, 0.18)'
+            ? 'var(--button-background-selected)'
             : 'rgba(255,255,255,0.05)',
           color: baseColor,
           textAlign: 'center',
@@ -315,7 +318,7 @@ const ArousalBars: React.FC<{
         <BarRow
           label={actorName || 'Я'}
           valuePercent={actorArousal}
-          color="#d146f5"
+          color="var(--button-background-selected)"
           clickable
           onClick={onSetActor}
         />
@@ -325,7 +328,7 @@ const ArousalBars: React.FC<{
           <BarRow
             label={partnerLabel || 'Партнёр'}
             valuePercent={partnerArousal}
-            color="#f05ee1"
+            color="var(--button-background)"
           />
         </Stack.Item>
       )}
@@ -359,7 +362,7 @@ const StatusPanel: React.FC<{
   editable,
   onEditOrgan,
   onSetErectState,
-  viewAs = 'actor',
+  viewAs = 'target',
 }) => {
   const links = data.active_links || [];
   const canEdit = editable !== false;
@@ -455,7 +458,7 @@ const StatusPanel: React.FC<{
                       selected={erectMode === 'partial'}
                       onClick={() => onSetErectState(org.id, 'partial')}
                     >
-                      ПРИПОДНЯТ
+                      ВОЗБУЖДЕН
                     </Pill>
                   </Stack.Item>
                   <Stack.Item>
@@ -463,7 +466,7 @@ const StatusPanel: React.FC<{
                       selected={erectMode === 'hard'}
                       onClick={() => onSetErectState(org.id, 'hard')}
                     >
-                      ВСТАЛО
+                      КРЕПКИЙ
                     </Pill>
                   </Stack.Item>
                 </Stack>
@@ -795,18 +798,16 @@ const ActionsList: React.FC<{
       wordBreak: 'break-word',
       lineHeight: 1.2,
       background: isCurrent
-        ? 'rgba(255, 140, 255, 0.23)'
+        ? 'var(--button-background-selected)'
         : isAvailable
-          ? 'rgba(255, 160, 255, 0.08)'
-          : 'rgba(255,255,255,0.02)',
+          ? 'var(--button-background)'
+          : 'rgba(0, 0, 0, 0.3)', // приглушённое для недоступных
       boxShadow: isCurrent
-        ? '0 0 8px rgba(255, 140, 255, 0.9)'
+        ? '0 0 8px var(--button-background-selected)'
         : undefined,
       color: !isAvailable
-        ? '#777'
-        : isCurrent
-          ? '#ffe6ff'
-          : '#f5b3ff',
+        ? 'var(--color-label)'
+        : 'var(--color-text)',
       textAlign: 'center',
     };
 
@@ -950,6 +951,7 @@ export const EroticRolePlayPanel: React.FC = () => {
   const canPerform = data.can_perform ?? [];
   const availableTags = data.available_tags ?? [];
   const organFilteredTypes = data.organ_filtered ?? [];
+  const actorCharge = data.actor_charge ?? 0;
 
   const [searchText, setSearchText] = useState('');
   const [activeTags, setActiveTags] = useState<string[]>([]);
@@ -1153,8 +1155,16 @@ export const EroticRolePlayPanel: React.FC = () => {
             </Section>
           </Stack.Item>
 
+
           {activeTab === 'status' && (
             <Stack.Item grow>
+              <Stack.Item>
+                <Section>
+                  <Box textAlign="center" color="label">
+                    Заряд: {Math.round(actorCharge)} (100 для оргазма, 300 максимум)
+                  </Box>
+                </Section>
+              </Stack.Item>
               <StatusPanel
                 data={data}
                 actorOrgans={statusOrgans}

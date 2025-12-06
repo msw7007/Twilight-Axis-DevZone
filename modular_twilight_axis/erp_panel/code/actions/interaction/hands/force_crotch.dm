@@ -4,10 +4,10 @@
 	required_target = SEX_ORGAN_MOUTH
 	armor_slot_target = BODY_ZONE_HEAD
 	stamina_cost = 0.05
-	affects_self_arousal = 0.1
-	affects_arousal      = 0
-	affects_self_pain    = 0.02
-	affects_pain         = 0.01
+	affects_self_arousal	= 0.1
+	affects_arousal			= 0
+	affects_self_pain		= 0.02
+	affects_pain			= 0.01
 	require_grab = TRUE
 
 /datum/sex_panel_action/other/hands/force_crotch/get_start_message(mob/living/carbon/human/user, mob/living/carbon/human/target)

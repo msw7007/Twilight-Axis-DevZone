@@ -4,10 +4,10 @@
 	required_target = SEX_ORGAN_BREASTS
 	armor_slot_target = BODY_ZONE_CHEST
 	stamina_cost = 0.02
-	affects_self_arousal = 0
-	affects_arousal      = 0.12
-	affects_self_pain    = 0
-	affects_pain         = 0.02
+	affects_self_arousal	= 0
+	affects_arousal			= 0.12
+	affects_self_pain		= 0
+	affects_pain			= 0.02
 	check_same_tile = FALSE
 
 /datum/sex_panel_action/other/mouth/breast_feed/get_start_message(mob/living/carbon/human/user, mob/living/carbon/human/target)

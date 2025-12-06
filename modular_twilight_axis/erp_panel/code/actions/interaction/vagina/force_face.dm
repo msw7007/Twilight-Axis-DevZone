@@ -4,10 +4,10 @@
 	required_target = SEX_ORGAN_MOUTH
 	armor_slot_target = BODY_ZONE_PRECISE_MOUTH
 	stamina_cost = 0.06
-	affects_self_arousal = 0.15
-	affects_arousal      = 0.02
-	affects_self_pain    = 0.02
-	affects_pain         = 0.01
+	affects_self_arousal	= 0.15
+	affects_arousal			= 0.02
+	affects_self_pain		= 0.02
+	affects_pain			= 0.01
 
 /datum/sex_panel_action/other/vagina/force_face/get_start_message(mob/living/carbon/human/user, mob/living/carbon/human/target)
 	var/pose_state = get_pose_key(user, target)

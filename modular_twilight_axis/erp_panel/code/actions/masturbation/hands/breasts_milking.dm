@@ -5,10 +5,10 @@
 	required_target = SEX_ORGAN_BREASTS
 	armor_slot_init = BODY_ZONE_CHEST
 
-	affects_self_arousal = 0.2
-	affects_arousal      = 0
-	affects_self_pain    = 0.01
-	affects_pain         = 0
+	affects_self_arousal	= 0.2
+	affects_arousal			= 0
+	affects_self_pain		= 0.01
+	affects_pain			= 0
 
 /datum/sex_panel_action/self/hands/milking_breasts/can_perform(mob/living/carbon/human/user, mob/living/carbon/human/target)
 	. = ..()

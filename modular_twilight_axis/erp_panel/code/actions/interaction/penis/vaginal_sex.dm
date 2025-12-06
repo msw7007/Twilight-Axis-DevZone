@@ -5,10 +5,10 @@
 	required_target = SEX_ORGAN_VAGINA
 	armor_slot_target = BODY_ZONE_PRECISE_GROIN
 
-	affects_self_arousal = 0.12
-	affects_arousal      = 0.12
-	affects_self_pain    = 0.02
-	affects_pain         = 0.02
+	affects_self_arousal	= 0.12
+	affects_arousal			= 0.12
+	affects_self_pain		= 0.02
+	affects_pain			= 0.02
 
 /datum/sex_panel_action/other/penis/vaginal_sex/get_start_message(mob/living/carbon/human/user, mob/living/carbon/human/target)
 	var/pose_state = get_pose_key(user, target)

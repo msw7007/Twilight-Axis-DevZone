@@ -3,10 +3,10 @@
 	name = "Тереться грудью"
 	required_target = null
 	stamina_cost = 0.05
-	affects_self_arousal = 0.12
-	affects_arousal      = 0
-	affects_self_pain    = 0.02
-	affects_pain         = 0
+	affects_self_arousal	= 0.12
+	affects_arousal			= 0
+	affects_self_pain		= 0.02
+	affects_pain			= 0
 	check_same_tile = FALSE
 
 /datum/sex_panel_action/other/breasts/teasing/get_start_message(mob/living/carbon/human/user, mob/living/carbon/human/target)

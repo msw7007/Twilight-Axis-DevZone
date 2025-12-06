@@ -4,10 +4,10 @@
 	required_target = SEX_ORGAN_PENIS
 	armor_slot_target = BODY_ZONE_PRECISE_GROIN
 	stamina_cost = 0.05
-	affects_self_arousal = 0
-	affects_arousal      = 0.06
-	affects_self_pain    = 0
-	affects_pain         = 0.05
+	affects_self_arousal	= 0
+	affects_arousal			= 0.06
+	affects_self_pain		= 0
+	affects_pain			= 0.05
 	check_same_tile = FALSE
 
 /datum/sex_panel_action/other/penis/tea_bag/can_perform(mob/living/carbon/human/user, mob/living/carbon/human/target)

@@ -5,10 +5,10 @@
 	required_target = SEX_ORGAN_MOUTH
 	armor_slot_init = BODY_ZONE_PRECISE_MOUTH
 
-	affects_self_arousal = 0.01
-	affects_arousal      = 0
-	affects_self_pain    = 0.00
-	affects_pain         = 0
+	affects_self_arousal	= 0.01
+	affects_arousal			= 0
+	affects_self_pain		= 0.00
+	affects_pain			= 0
 
 /datum/sex_panel_action/self/hands/fingering_oral/get_start_message(mob/living/carbon/human/user, mob/living/carbon/human/target)
 	var/pose_state = get_pose_key(user, target)

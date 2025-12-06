@@ -115,62 +115,39 @@
 	if(delta <= 0)
 		delta = 1
 
-	var/base_sens_self   = delta * 0.10
-	var/base_sens_target = delta * 0.10
 	var/base_pain_self   = delta * 0.10
 	var/base_pain_target = delta * 0.10
 
-	var/self_sens_delta   = 0
 	var/self_pain_delta   = 0
-	var/target_sens_delta = 0
 	var/target_pain_delta = 0
-
-	var/pleasure_mult = 1.0
 	var/pain_mult = 0.0
 
 	switch(force)
 		if(SEX_FORCE_LOW)
-			pleasure_mult = 0.5
 			pain_mult = 0.0
 		if(SEX_FORCE_MID)
-			pleasure_mult = 1.0
-			pain_mult = 0.0
+			pain_mult = 0.01
 		if(SEX_FORCE_HIGH)
-			pleasure_mult = 1.25
 			pain_mult = 1.0
 		if(SEX_FORCE_EXTREME)
-			pleasure_mult = 1.5
 			pain_mult = 1.25
-
-	self_sens_delta   = base_sens_self   * pleasure_mult
-	target_sens_delta = base_sens_target * pleasure_mult
 
 	self_pain_delta   = base_pain_self   * pain_mult
 	target_pain_delta = base_pain_target * pain_mult
-
-	var/speed_sens_mult = 1.0
 	var/speed_pain_mult = 1.0
 	switch(speed)
 		if(SEX_SPEED_LOW)
-			speed_sens_mult = 0.8
 			speed_pain_mult = 0.8
 		if(SEX_SPEED_MID)
-			speed_sens_mult = 1.0
 			speed_pain_mult = 1.0
 		if(SEX_SPEED_HIGH)
-			speed_sens_mult = 1.2
 			speed_pain_mult = 1.2
 		if(SEX_SPEED_EXTREME)
-			speed_sens_mult = 1.4
 			speed_pain_mult = 1.4
 
-	self_sens_delta   *= speed_sens_mult
-	target_sens_delta *= speed_sens_mult
 	self_pain_delta   *= speed_pain_mult
 	target_pain_delta *= speed_pain_mult
 
-	self_sens_delta   *= ORG_SENS_GAIN_RATE
-	target_sens_delta *= ORG_SENS_GAIN_RATE
 	self_pain_delta   *= ORG_PAIN_GAIN_RATE
 	target_pain_delta *= ORG_PAIN_GAIN_RATE
 
@@ -185,12 +162,10 @@
 	target_pain_delta += knot_pain_mult
 
 	if(src_org)
-		src_org.sensivity = clamp(src_org.sensivity + self_sens_delta, 0, src_org.sensivity_max)
-		src_org.pain      = clamp(src_org.pain      + self_pain_delta, 0, src_org.pain_max)
+		src_org.adjust_pain(self_pain_delta)
 
 	if(tgt_org)
-		tgt_org.sensivity = clamp(tgt_org.sensivity + target_sens_delta, 0, tgt_org.sensivity_max)
-		tgt_org.pain      = clamp(tgt_org.pain      + target_pain_delta, 0, tgt_org.pain_max)
+		tgt_org.adjust_pain(target_pain_delta)
 
 	return list(
 		"self"   = max(0, self_pain_delta),
@@ -215,54 +190,58 @@
 	return base * mult
 
 /datum/sex_action_session/proc/apply_arousal_delta(delta, self_pain_delta, target_pain_delta)
-    if(delta <= 0 && self_pain_delta <= 0 && target_pain_delta <= 0)
-        return
+	if(delta <= 0 && self_pain_delta <= 0 && target_pain_delta <= 0)
+		return
 
-    var/mob/living/carbon/human/U = actor
-    var/mob/living/carbon/human/T = partner
+	var/mob/living/carbon/human/U = actor
+	var/mob/living/carbon/human/T = partner
 
-    var/user_sources   = get_arousal_source_count_for(U)
-    var/target_sources = get_arousal_source_count_for(T)
+	var/user_sources   = get_arousal_source_count_for(U)
+	var/target_sources = get_arousal_source_count_for(T)
 
-    var/user_delta   = 0
-    var/target_delta = 0
+	var/user_delta   = 0
+	var/target_delta = 0
 
-    if(action.affects_self_arousal && delta > 0)
-        user_delta = delta
-    if(action.affects_arousal && delta > 0)
-        target_delta = delta
+	if(action.affects_self_arousal && delta > 0)
+		user_delta = delta
+	if(action.affects_arousal && delta > 0)
+		target_delta = delta
 
-    if(user_sources > 1 && user_delta)
-        user_delta /= user_sources
-    if(target_sources > 1 && target_delta)
-        target_delta /= target_sources
+	if(user_sources > 1 && user_delta)
+		user_delta /= user_sources
+	if(target_sources > 1 && target_delta)
+		target_delta /= target_sources
 
-    var/user_pain   = 0
-    var/target_pain = 0
+	if(self_pain_delta > 0 && U)
+		if(session?.is_maso_or_nympho(U))
+			user_delta += self_pain_delta
+		else
+			user_delta -= self_pain_delta
 
-    if(action.affects_self_pain && self_pain_delta > 0)
-        user_pain = self_pain_delta
-    if(action.affects_pain && target_pain_delta > 0)
-        target_pain = target_pain_delta
+	if(target_pain_delta > 0 && T)
+		if(session?.is_maso_or_nympho(T))
+			target_delta += target_pain_delta
+		else
+			target_delta -= target_pain_delta
 
-    if(user_pain > 0 && U)
-        if(session?.is_maso_or_nympho(U))
-            user_delta += user_pain
-        else
-            user_delta -= user_pain
+	var/total_user_pain = 0
+	var/total_target_pain = 0
 
-    if(target_pain > 0 && T)
-        if(session?.is_maso_or_nympho(T))
-            target_delta += target_pain
-        else
-            target_delta -= target_pain
+	if(U && actor_node_id && session)
+		var/datum/sex_organ/user_org = session.resolve_organ_datum(U, actor_node_id)
+		if(user_org)
+			total_user_pain = max(0, user_org.pain)
 
-    if(U && (user_delta || user_pain))
-        SEND_SIGNAL(U, COMSIG_SEX_RECEIVE_ACTION, user_delta, user_pain, TRUE, force, speed, actor_node_id)
+	if(T && partner_node_id && session)
+		var/datum/sex_organ/target_org = session.resolve_organ_datum(T, partner_node_id)
+		if(target_org)
+			total_target_pain = max(0, target_org.pain)
 
-    if(T && (target_delta || target_pain))
-        SEND_SIGNAL(T, COMSIG_SEX_RECEIVE_ACTION, target_delta, target_pain, FALSE, force, speed, partner_node_id)
+	if(U && (user_delta || total_user_pain))
+		SEND_SIGNAL(U, COMSIG_SEX_RECEIVE_ACTION, user_delta, total_user_pain, TRUE, force, speed, actor_node_id)
 
+	if(T && (target_delta || total_target_pain))
+		SEND_SIGNAL(T, COMSIG_SEX_RECEIVE_ACTION, target_delta, total_target_pain, FALSE, force, speed, partner_node_id)
 
 /datum/sex_action_session/proc/get_arousal_source_count_for(mob/living/carbon/human/M)
 	if(!M || !session || !length(session.current_actions))

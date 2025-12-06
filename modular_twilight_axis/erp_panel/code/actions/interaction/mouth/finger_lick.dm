@@ -3,10 +3,10 @@
 	name = "Облизать пальцы"
 	required_target = SEX_ORGAN_HANDS
 	stamina_cost = 0.01
-	affects_self_arousal = 0.01
-	affects_arousal      = 0.01
-	affects_self_pain    = 0.01
-	affects_pain         = 0.01
+	affects_self_arousal	= 0.01
+	affects_arousal			= 0.01
+	affects_self_pain		= 0.01
+	affects_pain			= 0.01
 	check_same_tile = FALSE
 
 /datum/sex_panel_action/other/mouth/finger_lick/get_start_message(mob/living/carbon/human/user, mob/living/carbon/human/target)

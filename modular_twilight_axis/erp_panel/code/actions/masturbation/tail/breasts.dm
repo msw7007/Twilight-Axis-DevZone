@@ -5,8 +5,8 @@
 	required_init = SEX_ORGAN_TAIL
 	required_target = SEX_ORGAN_BREASTS
 
-	affects_self_arousal = 0.1
-	affects_self_pain    = 0.0
+	affects_self_arousal	= 0.1
+	affects_self_pain		= 0.0
 
 /datum/sex_panel_action/self/tail/squeeze_breasts/get_start_message(user, target)
 	return "[user] обвивает хвост вокруг груди."

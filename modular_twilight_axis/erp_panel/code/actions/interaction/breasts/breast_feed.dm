@@ -3,10 +3,10 @@
 	name = "Насильное кормпление"
 	required_target = SEX_ORGAN_MOUTH
 	stamina_cost = 0.05
-	affects_self_arousal = 0.12
-	affects_arousal      = 0.08
-	affects_self_pain    = 0.01
-	affects_pain         = 0.00
+	affects_self_arousal	= 0.12
+	affects_arousal			= 0.08
+	affects_self_pain		= 0.01
+	affects_pain			= 0.00
 	require_grab = TRUE
 	check_same_tile = FALSE
 

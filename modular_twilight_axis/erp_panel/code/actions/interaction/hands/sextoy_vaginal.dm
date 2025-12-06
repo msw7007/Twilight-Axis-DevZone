@@ -6,10 +6,10 @@
 	armor_slot_init = BODY_ZONE_PRECISE_GROIN
 	check_same_tile = FALSE
 
-	affects_self_arousal = 0
-	affects_arousal      = 0.18
-	affects_self_pain    = 0
-	affects_pain         = 0.02
+	affects_self_arousal	= 0
+	affects_arousal			= 0.18
+	affects_self_pain		= 0
+	affects_pain			= 0.02
 
 /datum/sex_panel_action/other/hands/toy_vaginal/can_perform(mob/living/carbon/human/user, mob/living/carbon/human/target)
 	. = ..()

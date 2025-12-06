@@ -3,10 +3,10 @@
 	name = "Седлать анусом"
 	required_target = SEX_ORGAN_PENIS
 	stamina_cost = 0.06
-	affects_self_arousal = 0.03
-	affects_arousal      = 0.03
-	affects_self_pain    = 0.01
-	affects_pain         = 0
+	affects_self_arousal	= 0.03
+	affects_arousal			= 0.03
+	affects_self_pain		= 0.01
+	affects_pain			= 0
 
 /datum/sex_panel_action/other/anus/sex/get_start_message(mob/living/carbon/human/user, mob/living/carbon/human/target)
 	var/pose_state = get_pose_key(user, target)

@@ -6,10 +6,10 @@
 	armor_slot_init = BODY_ZONE_PRECISE_GROIN
 	can_knot = FALSE
 
-	affects_self_arousal = 0.12
-	affects_arousal      = 0.06
-	affects_self_pain    = 0
-	affects_pain         = 0
+	affects_self_arousal	= 0.12
+	affects_arousal			= 0.06
+	affects_self_pain		= 0
+	affects_pain			= 0
 
 /datum/sex_panel_action/other/penis/tea_bag/can_perform(mob/living/carbon/human/user, mob/living/carbon/human/target)
 	. = ..()

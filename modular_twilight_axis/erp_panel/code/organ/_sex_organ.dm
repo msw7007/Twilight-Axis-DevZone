@@ -6,13 +6,13 @@
 	// Link to physical organ
 	var/atom/movable/organ_link
 	// how sensitive organ is - multiplier to pleasure
-	var/sensivity = 0
+	var/sensivity = 1
 	// how painful organ is - negative multiplier to pleasure
 	var/pain = 0
 	// max sensitivity
 	var/sensivity_max = 2
 	// max pain
-	var/pain_max = 2
+	var/pain_max = 5
 	// object that currently this organ stuffed in
 	var/datum/sex_organ/active_target = null
 	// list of objects that use this organ
@@ -35,6 +35,7 @@
 	// intervals
 	var/production_interval = 5 SECONDS
 	var/drain_interval = 5 MINUTES
+	var/pain_decay_timer_id = null
 
 /datum/sex_organ/New(atom/movable/organ)
 	. = ..()
@@ -54,6 +55,10 @@
 	if(production_timer_id)
 		deltimer(production_timer_id)
 	production_timer_id = null
+
+	if(pain_decay_timer_id)
+		deltimer(pain_decay_timer_id)
+		pain_decay_timer_id = null
 
 	return ..()
 
@@ -432,3 +437,52 @@
 		return 0
 
 	return removed
+
+/// Жёстко выставить боль. reset_timer = TRUE, если это новое получение боли.
+/datum/sex_organ/proc/set_pain(new_pain, reset_timer = FALSE)
+	pain = clamp(new_pain, 0, pain_max)
+
+	if(pain > 0)
+		if(reset_timer || !pain_decay_timer_id)
+			start_pain_decay_timer()
+	else
+		if(pain_decay_timer_id)
+			deltimer(pain_decay_timer_id)
+			pain_decay_timer_id = null
+
+	return pain
+
+/datum/sex_organ/proc/adjust_pain(delta)
+	if(!delta)
+		return pain
+	return set_pain(pain + delta)
+
+/datum/sex_organ/proc/start_pain_decay_timer()
+	if(pain_decay_timer_id)
+		deltimer(pain_decay_timer_id)
+
+	pain_decay_timer_id = addtimer(
+		CALLBACK(src, PROC_REF(pain_decay_tick)),
+		5 MINUTES,
+		TIMER_STOPPABLE,
+	)
+
+/datum/sex_organ/proc/pain_decay_tick()
+	if(QDELETED(src))
+		pain_decay_timer_id = null
+		return
+
+	pain = max(0, pain - 2)
+
+	if(pain <= 0)
+		pain = 0
+		if(pain_decay_timer_id)
+			deltimer(pain_decay_timer_id)
+			pain_decay_timer_id = null
+		return
+
+	pain_decay_timer_id = addtimer(
+		CALLBACK(src, PROC_REF(pain_decay_tick)),
+		5 MINUTES,
+		TIMER_STOPPABLE,
+	)

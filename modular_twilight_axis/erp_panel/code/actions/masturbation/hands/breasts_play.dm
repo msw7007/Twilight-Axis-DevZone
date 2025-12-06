@@ -5,10 +5,10 @@
 	required_target = SEX_ORGAN_BREASTS
 	armor_slot_init = BODY_ZONE_CHEST
 
-	affects_self_arousal = 0.1
-	affects_arousal      = 0
-	affects_self_pain    = 0.01
-	affects_pain         = 0
+	affects_self_arousal	= 0.1
+	affects_arousal			= 0
+	affects_self_pain		= 0.01
+	affects_pain			= 0
 
 /datum/sex_panel_action/self/hands/breasts_play/get_start_message(mob/living/carbon/human/user, mob/living/carbon/human/target)
 	var/pose_state = get_pose_key(user, target)
