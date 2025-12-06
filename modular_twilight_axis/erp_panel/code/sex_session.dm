@@ -669,20 +669,17 @@
 
 		if("set_link_tuning")
 			var/id = params["id"]
-			var/field = params["field"]
 			var/value = text2num(params["value"])
 
 			var/datum/sex_action_session/I = current_actions[id]
 			if(!I)
 				return FALSE
 
-			var/datum/sex_organ/partner_org = resolve_organ_datum(I.partner, I.partner_node_id)
-			if(!partner_org)
+			var/datum/sex_organ/user_org = resolve_organ_datum(I.actor, I.actor_node_id)
+			if(!user_org)
 				return FALSE
 
-			switch(field)
-				if("sensitivity")
-					partner_org.sensivity = clamp(value, 0, partner_org.sensivity_max)
+			user_org.sensivity = clamp(value, 0, user_org.sensivity_max)
 
 			SStgui.update_uis(src)
 			return TRUE
@@ -928,6 +925,9 @@
 			var/obj/item/bodypart/chest/A = M.get_bodypart(BODY_ZONE_CHEST)
 			return A?.sex_organ
 		if(SEX_ORGAN_FILTER_BODY)
+			if(ishuman(M))
+				var/mob/living/carbon/human/H2 = M
+				return H2.ensure_body_organ()
 			return null
 
 	return null
@@ -1126,9 +1126,15 @@
 		return list()
 
 	var/list/nodes = build_org_nodes(M, "actor")
+	var/list/out = list()
+
 	for(var/i in 1 to nodes.len)
 		var/list/N = nodes[i]
 		var/id = N["id"]
+
+		// "Все" — чистый фильтр для меню, в статусе не нужен
+		if(id == SEX_ORGAN_FILTER_ALL)
+			continue
 
 		var/datum/sex_organ/O = resolve_organ_datum(M, id)
 		var/sens = O ? O.sensivity : 0
@@ -1150,7 +1156,9 @@
 		N["pain"] = pain
 		N["fullness"] = fullness
 
-	return nodes
+		out += list(N)
+
+	return out
 
 /datum/sex_session_tgui/proc/can_see_partner_arousal()
 	if(!user)

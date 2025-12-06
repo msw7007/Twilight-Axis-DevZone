@@ -231,11 +231,13 @@
 		var/datum/sex_organ/user_org = session.resolve_organ_datum(U, actor_node_id)
 		if(user_org)
 			total_user_pain = max(0, user_org.pain)
+			user_delta *= user_org.sensivity
 
 	if(T && partner_node_id && session)
 		var/datum/sex_organ/target_org = session.resolve_organ_datum(T, partner_node_id)
 		if(target_org)
 			total_target_pain = max(0, target_org.pain)
+			target_delta *= target_org.sensivity
 
 	if(U && (user_delta || total_user_pain))
 		SEND_SIGNAL(U, COMSIG_SEX_RECEIVE_ACTION, user_delta, total_user_pain, TRUE, force, speed, actor_node_id)

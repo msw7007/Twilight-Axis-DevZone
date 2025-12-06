@@ -25,6 +25,7 @@
 	// timers
 	var/deflation_timer_id = null
 	var/production_timer_id = null
+	var/pain_decay_timer_id = null
 	// reagent id that organ produces over time
 	var/producing_reagent_id = null
 	// production rate per tick
@@ -35,7 +36,8 @@
 	// intervals
 	var/production_interval = 5 SECONDS
 	var/drain_interval = 5 MINUTES
-	var/pain_decay_timer_id = null
+
+/datum/sex_organ/body
 
 /datum/sex_organ/New(atom/movable/organ)
 	. = ..()
@@ -461,11 +463,7 @@
 	if(pain_decay_timer_id)
 		deltimer(pain_decay_timer_id)
 
-	pain_decay_timer_id = addtimer(
-		CALLBACK(src, PROC_REF(pain_decay_tick)),
-		5 MINUTES,
-		TIMER_STOPPABLE,
-	)
+	pain_decay_timer_id = addtimer(CALLBACK(src, PROC_REF(pain_decay_tick)), 5 MINUTES, TIMER_STOPPABLE)
 
 /datum/sex_organ/proc/pain_decay_tick()
 	if(QDELETED(src))
@@ -481,8 +479,4 @@
 			pain_decay_timer_id = null
 		return
 
-	pain_decay_timer_id = addtimer(
-		CALLBACK(src, PROC_REF(pain_decay_tick)),
-		5 MINUTES,
-		TIMER_STOPPABLE,
-	)
+	pain_decay_timer_id = addtimer(CALLBACK(src, PROC_REF(pain_decay_tick)), 5 MINUTES, TIMER_STOPPABLE)

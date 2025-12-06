@@ -140,7 +140,7 @@ const OrganList: React.FC<{
         const style: CSSProperties = {
           border: isSelected
             ? '2px solid var(--color-border)'
-            : '1px solid var(--color-border)',
+            : '1px solid rgba(255,255,255,0.2)',
           boxShadow: isSelected
             ? '0 0 8px var(--button-background-selected)'
             : undefined,
@@ -796,7 +796,7 @@ const ActionsList: React.FC<{
       width: '100%',
       whiteSpace: 'normal',
       wordBreak: 'break-word',
-      lineHeight: 1.2,
+      lineHeight: 1.5,
       background: isCurrent
         ? 'var(--button-background-selected)'
         : isAvailable

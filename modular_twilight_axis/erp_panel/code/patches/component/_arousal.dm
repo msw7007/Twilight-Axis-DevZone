@@ -57,7 +57,7 @@
 	SEND_SIGNAL(user, COMSIG_SEX_SET_AROUSAL, 20)
 	SEND_SIGNAL(user, COMSIG_SEX_CLIMAX)
 
-	charge = max(0, charge - CHARGE_FOR_CLIMAX)
+	adjust_charge(CHARGE_FOR_CLIMAX)
 
 	user.add_stress(/datum/stressevent/cumok)
 	if(user.has_flaw(/datum/charflaw/addiction/lovefiend))

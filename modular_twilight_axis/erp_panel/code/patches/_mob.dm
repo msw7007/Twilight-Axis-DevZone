@@ -4,6 +4,12 @@
 	
 /mob/living/carbon/human
 	var/datum/weakref/sex_surrender_ref
+	var/datum/sex_organ/body/body_organ
+
+/mob/living/carbon/human/proc/ensure_body_organ()
+	if(!body_organ)
+		body_organ = new /datum/sex_organ/body(src)
+	return body_organ
 
 /mob/living/carbon/human/proc/set_sex_surrender_to(mob/living/carbon/human/mob_object)
 	if(mob_object)
