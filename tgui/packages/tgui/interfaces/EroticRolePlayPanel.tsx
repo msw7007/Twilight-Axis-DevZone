@@ -232,19 +232,33 @@ const PartnerSelector: React.FC<{
 const BarRow: React.FC<{
   label: string;
   valuePercent: number;
-  color: string;
+  color?: string; // цвет оставляем, но можем игнорить
   clickable?: boolean;
   onClick?: () => void;
-}> = ({ label, valuePercent, color, clickable, onClick }) => {
-  const content = (
+}> = ({ label, valuePercent, clickable, onClick }) => {
+  // Нормализация
+  let v = Number(valuePercent);
+  if (!Number.isFinite(v)) {
+    v = 0;
+  }
+  // Если вдруг пришло 0–1 — считаем это 0–100
+  if (v > 0 && v <= 1) {
+    v = v * 100;
+  }
+
+  const clamped = Math.max(0, Math.min(100, v));
+  const percentText = Math.round(clamped);
+
+  const bar = (
     <Box
       style={{
         position: 'relative',
-        height: 22,
+        height: 26,
         width: '100%',
         border: '1px solid rgba(255,255,255,0.35)',
         borderRadius: 6,
         overflow: 'hidden',
+        background: 'rgba(0, 0, 0, 0.6)',
       }}
     >
       <Box
@@ -253,9 +267,11 @@ const BarRow: React.FC<{
           top: 0,
           left: 0,
           height: '100%',
-          width: `${valuePercent}%`,
-          background: color,
-          transition: 'width 0.2s',
+          width: `${clamped}%`,
+          background: 'var(--color-border)',
+          opacity: 0.95,
+          transition: 'width 0.15s linear',
+          pointerEvents: 'none',
         }}
       />
       <Box
@@ -269,13 +285,13 @@ const BarRow: React.FC<{
           justifyContent: 'space-between',
           padding: '0 6px',
           fontSize: 11,
-          color: '#fff',
+          color: '#ffffff',
           textShadow: '0 0 3px #000',
         }}
       >
         <span>{label}</span>
         <span>
-          {Math.round(valuePercent)} / 100 ({Math.round(valuePercent)}%)
+          {percentText} / 100 ({percentText}%)
         </span>
       </Box>
     </Box>
@@ -289,12 +305,12 @@ const BarRow: React.FC<{
         onClick={onClick}
         style={{ width: '100%', padding: 0 }}
       >
-        {content}
+        {bar}
       </Button>
     );
   }
 
-  return content;
+  return bar;
 };
 
 const ArousalBars: React.FC<{
@@ -902,12 +918,12 @@ const BottomControls: React.FC<{
         <Stack justify="center" wrap>
           <Stack.Item style={{ marginInline: 4, marginBlock: 2 }}>
             <Button selected={!!yieldToPartner} onClick={onToggleYield}>
-              ПОДДАТЬСЯ
+              {yieldToPartner ? 'ПОДДАЕТСЯ' : 'НЕ ПОДДАЕТСЯ'}
             </Button>
           </Stack.Item>
           <Stack.Item style={{ marginInline: 4, marginBlock: 2 }}>
             <Button selected={!!frozen} onClick={onToggleFreeze}>
-              {frozen ? 'НЕ ВОЗБУЖДАТЬСЯ (ВКЛ)' : 'НЕ ВОЗБУЖДАТЬСЯ'}
+              {frozen ? 'ВОЗБУЖДАЕТСЯ' : 'НЕ ВОЗБУЖДАЕТСЯ'}
             </Button>
           </Stack.Item>
         </Stack>

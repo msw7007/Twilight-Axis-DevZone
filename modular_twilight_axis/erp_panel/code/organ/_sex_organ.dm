@@ -22,10 +22,10 @@
 	// liquids
 	var/datum/reagents/stored_liquid
 	var/stored_liquid_max = 0
-	// timers
-	var/deflation_timer_id = null
-	var/production_timer_id = null
-	var/pain_decay_timer_id = null
+	// "псевдотаймеры" через world.time
+	var/next_deflation_time = 0
+	var/next_production_time = 0
+	var/next_pain_decay_time = 0
 	// reagent id that organ produces over time
 	var/producing_reagent_id = null
 	// production rate per tick
@@ -50,18 +50,9 @@
 		stored_liquid = new(stored_liquid_max)
 
 /datum/sex_organ/Destroy()
-	if(deflation_timer_id)
-		deltimer(deflation_timer_id)
-	deflation_timer_id = null
-
-	if(production_timer_id)
-		deltimer(production_timer_id)
-	production_timer_id = null
-
-	if(pain_decay_timer_id)
-		deltimer(pain_decay_timer_id)
-		pain_decay_timer_id = null
-
+	next_deflation_time = 0
+	next_production_time = 0
+	next_pain_decay_time = 0
 	return ..()
 
 /datum/sex_organ/proc/pleasure_bonus(datum/sex_organ/organ)
@@ -118,32 +109,27 @@
 	if(!has_storage())
 		return FALSE
 
-	if(deflation_timer_id)
-		deltimer(deflation_timer_id)
-	deflation_timer_id = addtimer(CALLBACK(src, PROC_REF(on_timer_end)), time, TIMER_STOPPABLE)
+	next_deflation_time = world.time + time
 	return TRUE
 
 /datum/sex_organ/proc/start_production_timer()
-	if(production_timer_id)
-		return FALSE
 	if(!has_storage())
 		return FALSE
 	if(!producing_reagent_id || producing_reagent_rate <= 0)
 		return FALSE
 
-	production_timer_id = addtimer(
-		CALLBACK(src, PROC_REF(on_production_tick)),
-		production_interval,
-		TIMER_STOPPABLE,
-	)
+	if(!next_production_time)
+		next_production_time = world.time + production_interval
+
 	return TRUE
 
 /datum/sex_organ/proc/on_production_tick()
-	production_timer_id = null
-
 	if(!has_storage())
+		next_production_time = 0
 		return
+
 	if(!producing_reagent_id || producing_reagent_rate <= 0)
+		next_production_time = 0
 		return
 
 	var/produced = 0
@@ -159,7 +145,9 @@
 				arousal_object.on_sex_organ_produced(src, produced)
 
 	if(has_storage() && producing_reagent_id && producing_reagent_rate > 0)
-		start_production_timer()
+		next_production_time = world.time + production_interval
+	else
+		next_production_time = 0
 
 /datum/sex_organ/proc/insert_organ(datum/sex_organ/organ)
 	if(!stuff_object)
@@ -225,8 +213,6 @@
 	return null
 
 /datum/sex_organ/proc/on_timer_end()
-	deflation_timer_id = null
-
 	if(!has_storage())
 		return
 
@@ -444,13 +430,8 @@
 /datum/sex_organ/proc/set_pain(new_pain, reset_timer = FALSE)
 	pain = clamp(new_pain, 0, pain_max)
 
-	if(pain > 0)
-		if(reset_timer || !pain_decay_timer_id)
-			start_pain_decay_timer()
-	else
-		if(pain_decay_timer_id)
-			deltimer(pain_decay_timer_id)
-			pain_decay_timer_id = null
+	if(reset_timer)
+		start_pain_decay_timer()
 
 	return pain
 
@@ -460,23 +441,29 @@
 	return set_pain(pain + delta)
 
 /datum/sex_organ/proc/start_pain_decay_timer()
-	if(pain_decay_timer_id)
-		deltimer(pain_decay_timer_id)
-
-	pain_decay_timer_id = addtimer(CALLBACK(src, PROC_REF(pain_decay_tick)), 5 MINUTES, TIMER_STOPPABLE)
+	next_pain_decay_time = world.time + 5 MINUTES
 
 /datum/sex_organ/proc/pain_decay_tick()
 	if(QDELETED(src))
-		pain_decay_timer_id = null
+		next_pain_decay_time = 0
 		return
 
 	pain = max(0, pain - 2)
 
 	if(pain <= 0)
 		pain = 0
-		if(pain_decay_timer_id)
-			deltimer(pain_decay_timer_id)
-			pain_decay_timer_id = null
+		next_pain_decay_time = 0
 		return
 
-	pain_decay_timer_id = addtimer(CALLBACK(src, PROC_REF(pain_decay_tick)), 5 MINUTES, TIMER_STOPPABLE)
+	next_pain_decay_time = world.time + 5 MINUTES
+
+/datum/sex_organ/proc/process_org()
+	if(next_production_time && world.time >= next_production_time)
+		on_production_tick()
+
+	if(next_deflation_time && world.time >= next_deflation_time)
+		on_timer_end()
+
+	// спад боли
+	if(next_pain_decay_time && world.time >= next_pain_decay_time)
+		pain_decay_tick()

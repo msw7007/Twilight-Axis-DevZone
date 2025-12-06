@@ -11,14 +11,13 @@
 
 /datum/sex_organ/breasts/New(obj/item/organ/breasts/organ)
 	. = ..()
+	var/size = clamp(organ.breast_size, 1, 5)
 	if(!organ || !organ.lactating)
 		return
 	
 	var/datum/reagent/reagent_object = GLOB.chemical_reagents_list[producing_reagent_id]
 	if(!reagent_object)
-		return 
-
-	var/size = clamp(organ.breast_size, 1, 5)
+		return 	
 
 	stored_liquid_max = max(75, size * BREAST_STORAGE_PER_SIZE)
 	producing_reagent_rate = size * BREAST_BASE_PROD_PER_SIZE

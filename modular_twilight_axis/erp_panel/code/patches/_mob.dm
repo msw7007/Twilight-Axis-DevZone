@@ -297,3 +297,8 @@
 		to_chat(src, span_notice("Вода смывает с твоего тела посторонние жидкости."))
 
 	return total_removed
+
+/mob/living/carbon/human/proc/process_sex_organs()
+	for(var/datum/sex_organ/O in get_sex_organs())
+		if(O)
+			O.process_org()

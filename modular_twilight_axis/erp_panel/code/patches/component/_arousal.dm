@@ -57,7 +57,7 @@
 	SEND_SIGNAL(user, COMSIG_SEX_SET_AROUSAL, 20)
 	SEND_SIGNAL(user, COMSIG_SEX_CLIMAX)
 
-	adjust_charge(CHARGE_FOR_CLIMAX)
+	adjust_charge(-CHARGE_FOR_CLIMAX)
 
 	user.add_stress(/datum/stressevent/cumok)
 	if(user.has_flaw(/datum/charflaw/addiction/lovefiend))
@@ -357,6 +357,7 @@
 
 	var/mob/living/carbon/human/human_object = parent
 	if(istype(human_object))
+		human_object.process_sex_organs()
 		if(human_object.has_flaw(/datum/charflaw/addiction/lovefiend))
 			if(charge >= SEX_MAX_CHARGE && arousal < NYMPHO_AROUSAL_SOFT_CAP)
 				if(is_in_sex_scene())
