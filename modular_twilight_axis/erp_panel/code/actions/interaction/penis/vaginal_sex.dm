@@ -31,5 +31,5 @@
 	user.visible_message(span_love(message))
 	return "into"
 
-/datum/sex_panel_action/other/penis/anal_sex/get_knot_count()
+/datum/sex_panel_action/other/penis/vaginal_sex/get_knot_count()
 	return 1
