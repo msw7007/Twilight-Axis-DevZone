@@ -127,7 +127,34 @@
 
 /datum/status_effect/debuff/corrosivesplash/tick()
 	var/mob/living/target = owner
-	target.adjustFireLoss(5)
+	target.adjustFireLoss(4)
+	if(ishuman(target))
+		var/mob/living/carbon/human/H = target
+		var/list/armor = list()
+		var/list/body_parts = list(H.head, H.wear_mask, H.wear_wrists, H.wear_shirt, H.wear_neck, H.wear_armor, H.wear_pants, H.gloves, H.shoes, H.belt, H.glasses)
+		for(var/bp in body_parts)
+			if(!bp)
+				continue
+			if(bp && istype(bp, /obj/item/clothing))
+				armor += bp
+		if(armor)
+			var/obj/item/clothing/C = pick(armor)
+			C.take_damage(damage_amount = (C.max_integrity * 0.05), damage_type = BURN, damage_flag = "fire")
+			
+/datum/status_effect/debuff/corrosivesplash_weak
+	id = "corrosive splash weak"
+	alert_type = /atom/movable/screen/alert/status_effect/debuff/corrosivesplash
+	duration = 20 SECONDS
+
+/datum/status_effect/debuff/corrosivesplash_weak/on_apply()
+	. = ..()
+	owner.playsound_local(get_turf(owner), 'sound/misc/lava_death.ogg', 35, FALSE, pressure_affected = FALSE)
+	owner.visible_message(span_warning("[owner] is covered in acid!"), span_danger("I am covered in acid!"))
+	owner.emote("scream")
+
+/datum/status_effect/debuff/corrosivesplash_weak/tick()
+	var/mob/living/target = owner
+	target.adjustFireLoss(1)
 	if(ishuman(target))
 		var/mob/living/carbon/human/H = target
 		var/list/armor = list()
@@ -201,7 +228,7 @@
 			switch(gunpowder) //Hande gunpowder types that are NOT BLOCKED by shields and armor
 				if("corrosive gunpowder")
 					playsound(src, 'sound/misc/drink_blood.ogg', 100)
-					T.apply_status_effect(/datum/status_effect/debuff/corrosivesplash)
+					T.apply_status_effect(/datum/status_effect/debuff/corrosivesplash_weak)
 					new /obj/effect/temp_visual/acidsplash(get_turf(T))
 				if("terrorpowder")
 					gunpowder_npc_critfactor += 1
@@ -281,7 +308,7 @@
 			for(var/mob/living/L in range(1, T)) //apply damage over time to mobs
 				if(!(L == target))
 					var/mob/living/carbon/M = L
-					M.apply_status_effect(/datum/status_effect/debuff/corrosivesplash)
+					M.apply_status_effect(/datum/status_effect/debuff/corrosivesplash_weak)
 					new /obj/effect/temp_visual/acidsplash(get_turf(M))
 			for(var/turf/turfs_in_range in range(2, T)) //make a splash
 				new /obj/effect/temp_visual/acidsplash(turfs_in_range)

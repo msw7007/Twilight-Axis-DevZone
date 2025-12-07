@@ -45,13 +45,13 @@
 	H.adjust_blindness(-3)
 
 	if(H.mind)
-		var/weapons = list("Аркебуза со штыком","Кулеврина и картечь")
+		var/weapons = list("Гаковница","Кулеврина и картечь")
 		var/weapon_choice = input("Выберите свое оружие.", "К ОРУЖИЮ") as anything in weapons
 		H.set_blindness(0)
 		switch(weapon_choice)
-			if("Аркебуза со штыком")
+			if("Гаковница")
 				beltr = /obj/item/quiver/twilight_bullet/lead
-				backl = /obj/item/gun/ballistic/twilight_firearm/arquebus/bayonet
+				backl = /obj/item/gun/ballistic/twilight_firearm/flintgonne
 			if("Кулеврина и картечь") 
 				beltr = /obj/item/quiver/twilight_bullet/cannonball/grapeshot
 				backl = /obj/item/gun/ballistic/twilight_firearm/handgonne

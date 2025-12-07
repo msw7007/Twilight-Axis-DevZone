@@ -320,7 +320,7 @@
 // BIG INQ SHOP
 
 /datum/inqports/equipment/twilight_runelock_bullets
-	name = "(6 bullets) Runelock Ammunition"
+	name = "(10 bullets) Runelock Ammunition"
 	item_type = /obj/structure/closet/crate/chest/inqcrate/supplies/twilight_runelock_bullets
 	marquescost = 15
 
@@ -329,7 +329,7 @@
 	new /obj/item/quiver/twilight_bullet/runed(src)
 
 /datum/inqports/equipment/twilight_blessed_bullets
-	name = "(4 bullets) Runelock Blessed Ammunition"
+	name = "(7 bullets) Runelock Blessed Ammunition"
 	item_type = /obj/structure/closet/crate/chest/inqcrate/supplies/twilight_blessed_bullets
 	marquescost = 30
 
