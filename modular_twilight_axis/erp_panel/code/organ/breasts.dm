@@ -66,7 +66,7 @@
 	if(h_mult <= 0)
 		return 0
 
-	amount *= mult * h_mult
+	amount *= mult * h_mult * BASIC_LACTATION_MULTIPLIER
 	if(istype(human_object))
 		var/max_from_nutrition = max(0, human_object.nutrition - NUTRITION_LEVEL_STARVING)
 		if(max_from_nutrition <= 0)

@@ -92,6 +92,11 @@
 	if(!sex_organ)
 		sex_organ = new /datum/sex_organ/tail(src)
 
+/obj/item/bodypart/taur/lamia/Initialize()
+	. = ..()
+	if(!sex_organ)
+		sex_organ = new /datum/sex_organ/tail(src)
+
 /obj/item/bodypart
 	var/datum/sex_organ/sex_organ
 
@@ -114,6 +119,12 @@
 	var/datum/sex_organ/legs/legs_organ
 
 /mob/living/carbon/human/proc/ensure_legs_organ()
+	if(is_lamia_taur())
+		if(legs_organ)
+			qdel(legs_organ)
+			legs_organ = null
+		return null
+
 	var/obj/item/bodypart/l_leg/lleg_object = get_bodypart(BODY_ZONE_L_LEG)
 	var/obj/item/bodypart/r_leg/rleg_object = get_bodypart(BODY_ZONE_R_LEG)
 	var/obj/item/bodypart/bodypart_object = lleg_object || rleg_object

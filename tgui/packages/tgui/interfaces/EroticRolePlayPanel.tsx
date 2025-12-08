@@ -941,7 +941,7 @@ const BottomControls: React.FC<{
           </Stack.Item>
           <Stack.Item style={{ marginInline: 4, marginBlock: 2 }}>
             <Button selected={!!frozen} onClick={onToggleFreeze}>
-              {frozen ? 'ВОЗБУЖДАЕТСЯ' : 'НЕ ВОЗБУЖДАЕТСЯ'}
+              {frozen ? 'НЕ ВОЗБУЖДАЕТСЯ' : 'ВОЗБУЖДАЕТСЯ'}
             </Button>
           </Stack.Item>
         </Stack>
@@ -956,12 +956,12 @@ const BottomControls: React.FC<{
         </Stack.Item>
         <Stack.Item style={{ marginInline: 4 }}>
           <Button selected={!!yieldToPartner} onClick={onToggleYield}>
-            {yieldToPartner ? 'ПОДДАВАТЬСЯ' : 'НЕ ПОДДАВАТЬСЯ'}
+            {yieldToPartner ? 'ПОДДАЕТСЯ' : 'НЕ ПОДДАЕТСЯ'}
           </Button>
         </Stack.Item>
         <Stack.Item style={{ marginInline: 4 }}>
           <Button selected={!!frozen} onClick={onToggleFreeze}>
-            {frozen ? 'ВОЗБУЖДАТЬСЯ' : 'НЕ ВОЗБУЖДАТЬСЯ'}
+            {frozen ? 'НЕ ВОЗБУЖДАЕТСЯ' : 'ВОЗБУЖДАЕТСЯ'}
           </Button>
         </Stack.Item>
       </Stack>

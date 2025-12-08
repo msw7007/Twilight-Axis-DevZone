@@ -173,7 +173,10 @@
 
 	var/obj/item/bodypart/l_leg/LL = M.get_bodypart(BODY_ZONE_L_LEG)
 	var/obj/item/bodypart/r_leg/RL = M.get_bodypart(BODY_ZONE_R_LEG)
-	if(LL || RL)
+
+	var/is_lamia = ishuman(M) && M.is_lamia_taur()
+
+	if((LL || RL) && !is_lamia)
 		out += list(list(
 			"id"   = SEX_ORGAN_FILTER_LEGS,
 			"name" = "Ноги",

@@ -302,3 +302,13 @@
 	for(var/datum/sex_organ/O in get_sex_organs())
 		if(O)
 			O.process_org()
+
+/mob/living/carbon/human/proc/is_lamia_taur()
+	if(!islist(bodyparts) || !bodyparts.len)
+		return FALSE
+
+	for(var/obj/item/bodypart/taur/lamia/L in bodyparts)
+		if(!QDELETED(L))
+			return TRUE
+
+	return FALSE
