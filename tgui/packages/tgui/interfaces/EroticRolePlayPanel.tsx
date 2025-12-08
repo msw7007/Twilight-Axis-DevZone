@@ -89,6 +89,7 @@ export type SexSessionData = {
   current_actions?: string[];
 
   active_links?: ActiveLink[];
+  passive_links?: ActiveLink[];
   actor_charge?: number;
 };
 
@@ -96,6 +97,14 @@ const fmt2 = (value?: number) =>
   value === undefined || value === null
     ? '0'
     : Number(value).toFixed(2);
+
+const clampName = (name?: string, max = 10): string => {
+  if (!name) return '';
+  const s = String(name);
+  if (s.length <= max) return s;
+  if (max <= 1) return s.slice(0, max);
+  return `${s.slice(0, max - 1)}…`;
+};
 
 const speedColors = ['#a798a2ff', '#e67ec0ff', '#f05ee1', '#f54689ff'];
 const forceColors = ['#a798a2ff', '#e67ec0ff', '#f05ee1', '#f54689ff'];
@@ -128,7 +137,7 @@ const OrganList: React.FC<{
   selectedId?: string;
   onSelect: (id: string) => void;
 }> = ({ title, organs, selectedId, onSelect }) => (
-  <Section title={title} fill>
+  <Section title={clampName(title)} fill>
     <Stack vertical>
       {organs.map((org) => {
         const isSelected = selectedId === org.id;
@@ -191,7 +200,7 @@ const PartnerSelector: React.FC<{
   return (
     <Section>
       <Box textAlign="center" bold>
-        {actorName}{' '}
+        {clampName(actorName)}{' '}
         <Box as="span" color="label">
           {' ↔ '}
         </Box>
@@ -201,7 +210,7 @@ const PartnerSelector: React.FC<{
           onClick={() => setOpen((prev) => !prev)}
           selected={open}
         >
-          {current ? current.name : '—'}
+          {current ? clampName(current.name) : '—'}
         </Button>
       </Box>
       {open && partners.length > 1 && (
@@ -218,7 +227,7 @@ const PartnerSelector: React.FC<{
                     setOpen(false);
                   }}
                 >
-                  {p.name}
+                  {clampName(p.name)}
                 </Button>
               </Stack.Item>
             ))}
@@ -232,16 +241,14 @@ const PartnerSelector: React.FC<{
 const BarRow: React.FC<{
   label: string;
   valuePercent: number;
-  color?: string; // цвет оставляем, но можем игнорить
+  color?: string;
   clickable?: boolean;
   onClick?: () => void;
 }> = ({ label, valuePercent, clickable, onClick }) => {
-  // Нормализация
   let v = Number(valuePercent);
   if (!Number.isFinite(v)) {
     v = 0;
   }
-  // Если вдруг пришло 0–1 — считаем это 0–100
   if (v > 0 && v <= 1) {
     v = v * 100;
   }
@@ -289,7 +296,7 @@ const BarRow: React.FC<{
           textShadow: '0 0 3px #000',
         }}
       >
-        <span>{label}</span>
+        <span>{clampName(label)}</span>
         <span>
           {percentText} / 100 ({percentText}%)
         </span>
@@ -332,7 +339,7 @@ const ArousalBars: React.FC<{
     <Stack vertical>
       <Stack.Item>
         <BarRow
-          label={actorName || 'Я'}
+          label={clampName(actorName || 'Я')}
           valuePercent={actorArousal}
           color="var(--button-background-selected)"
           clickable
@@ -342,7 +349,7 @@ const ArousalBars: React.FC<{
       {showPartnerBar && (
         <Stack.Item mt={0.5}>
           <BarRow
-            label={partnerLabel || 'Партнёр'}
+            label={clampName(partnerLabel || 'Партнёр')}
             valuePercent={partnerArousal}
             color="var(--button-background)"
           />
@@ -380,7 +387,10 @@ const StatusPanel: React.FC<{
   onSetErectState,
   viewAs = 'target',
 }) => {
-  const links = data.active_links || [];
+  const allLinks = [
+    ...(data.active_links || []),
+    ...(data.passive_links || []),
+  ];
   const canEdit = editable !== false;
 
   const speedName = (v: number) => {
@@ -394,9 +404,9 @@ const StatusPanel: React.FC<{
   };
 
   return (
-    <Section title={`Состояние: ${actorName}`} fill scrollable>
+    <Section title={`Состояние: ${clampName(actorName)}`} fill scrollable>
       {actorOrgans.map((org) => {
-        const affecting = links.filter((l) => {
+        const affecting = allLinks.filter((l) => {
           if (viewAs === 'actor') {
             return l.actor_organ_id === org.id;
           }
@@ -503,7 +513,7 @@ const StatusPanel: React.FC<{
             {affecting.length ? (
               <Stack vertical mt={0.5}>
                 {affecting.map((l) => {
-                  const whoLabel = partnerLabel || 'Партнёр';
+                  const whoLabel = clampName(partnerLabel || 'Партнёр');
 
                   return (
                     <Box key={l.id} ml={1}>
@@ -817,7 +827,7 @@ const ActionsList: React.FC<{
         ? 'var(--button-background-selected)'
         : isAvailable
           ? 'var(--button-background)'
-          : 'rgba(0, 0, 0, 0.3)', // приглушённое для недоступных
+          : 'rgba(0, 0, 0, 0.3)',
       boxShadow: isCurrent
         ? '0 0 8px var(--button-background-selected)'
         : undefined,
@@ -938,12 +948,12 @@ const BottomControls: React.FC<{
         </Stack.Item>
         <Stack.Item style={{ marginInline: 4 }}>
           <Button selected={!!yieldToPartner} onClick={onToggleYield}>
-            ПОДДАТЬСЯ
+            {yieldToPartner ? 'ПОДДАВАТЬСЯ' : 'НЕ ПОДДАВАТЬСЯ'}
           </Button>
         </Stack.Item>
         <Stack.Item style={{ marginInline: 4 }}>
           <Button selected={!!frozen} onClick={onToggleFreeze}>
-            {frozen ? 'НЕ ВОЗБУЖДАТЬСЯ (ВКЛ)' : 'НЕ ВОЗБУЖДАТЬСЯ'}
+            {frozen ? 'ВОЗБУЖДАТЬСЯ' : 'НЕ ВОЗБУЖДАТЬСЯ'}
           </Button>
         </Stack.Item>
       </Stack>

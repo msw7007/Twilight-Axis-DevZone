@@ -97,7 +97,7 @@
 		return
 
 	var/dist = get_dist(top, btm)
-	if(dist > 2)
+	if(dist > 1)
 		knot_remove(forceful_removal = TRUE)
 		return
 

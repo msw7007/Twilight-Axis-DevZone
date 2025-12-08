@@ -522,6 +522,12 @@
 
 	D["active_links"] = links
 
+	if(ishuman(user))
+		var/mob/living/carbon/human/H = user
+		D["passive_links"] = collect_passive_links_for(H)
+	else
+		D["passive_links"] = list()
+
 	return D
 
 /datum/sex_session_tgui/ui_act(action, list/params)

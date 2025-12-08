@@ -69,7 +69,7 @@
 		if(user == target)
 			var/datum/charflaw/addiction/lovefiend/link_flaw = user.get_flaw()
 			if(link_flaw)
-				link_flaw.time = rand(6 MINUTES, 30 MINUTES)
+				link_flaw.time = rand(24 MINUTES, 48 MINUTES)
 
 	if(last_moan + MOAN_COOLDOWN < world.time)
 		user.emote("moan", forced = TRUE)
@@ -150,12 +150,16 @@
 	var/datum/sex_panel_action/action_object = session_object.action
 	var/return_type = action_object.handle_climax_message(source, partner, is_active)
 	if(!return_type)
+		do_ejac_inject_from_session(source, null)
 		var/turf/turf2 = get_turf(mob)
 		new /obj/effect/decal/cleanable/coom(turf2)
 		after_ejaculation(FALSE, source, partner)
-	else
-		handle_climax(return_type, source, partner)
-		after_ejaculation(return_type == "into" || return_type == "onto", source, partner)
+		return
+
+	handle_climax(return_type, source, partner)
+
+	var/intimate = (return_type == "into" || return_type == "oral")
+	after_ejaculation(intimate, source, partner)
 
 	if(session_tgui_object.do_knot_action && action_object.can_knot && source)
 		var/obj/item/organ/penis/penis_item = source.getorganslot(ORGAN_SLOT_PENIS)
@@ -275,8 +279,6 @@
 			log_combat(user, user, "Ejaculated")
 			playsound(user, 'sound/misc/mat/endout.ogg', 50, TRUE, ignore_walls = FALSE)
 
-	after_ejaculation(climax_type == "into" || climax_type == "oral", user, target)
-
 /datum/component/arousal/proc/on_sex_organ_produced(datum/sex_organ/org, amount)
 	if(amount <= 0)
 		return
@@ -359,10 +361,12 @@
 	if(istype(human_object))
 		human_object.process_sex_organs()
 		if(human_object.has_flaw(/datum/charflaw/addiction/lovefiend))
-			if(charge >= SEX_MAX_CHARGE && arousal < NYMPHO_AROUSAL_SOFT_CAP)
-				if(is_in_sex_scene())
-					var/gain = dt * NYMPHO_PASSIVE_AROUSAL_GAIN
-					set_arousal(parent, arousal + gain)
+			if(charge >= SEX_MAX_CHARGE && !(is_in_sex_scene()))
+				if(arousal < NYMPHO_AROUSAL_SOFT_CAP)
+					var/need_to_boost = max(0, (NYMPHO_AROUSAL_SOFT_CAP - arousal))
+					if(need_to_boost > 0)
+						set_arousal(parent, need_to_boost)
+				return
 
 	if(!can_lose_arousal())
 		return
@@ -466,12 +470,8 @@
 	if(!istype(human_object))
 		return FALSE
 
-	var/list/sessions = return_sessions_with_user_tgui(human_object)
-	if(!length(sessions))
-		return FALSE
-
-	for(var/datum/sex_session_tgui/session_object in sessions)
-		if(QDELETED(session_object))
+	for(var/datum/sex_session_tgui/session_object in GLOB.sex_sessions)
+		if(!session_object || QDELETED(session_object))
 			continue
 		if(!length(session_object.current_actions))
 			continue

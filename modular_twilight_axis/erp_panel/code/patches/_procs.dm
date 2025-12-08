@@ -174,3 +174,44 @@
 		if(BODY_ZONE_PRECISE_MOUTH)
 			types += SEX_ORGAN_MOUTH
 	return types
+
+/proc/collect_passive_links_for(mob/living/carbon/human/H)
+	if(!H)
+		return list()
+
+	var/list/passive_links = list()
+	for(var/datum/sex_session_tgui/session in GLOB.sex_sessions)
+		if(!session || QDELETED(session))
+			continue
+
+		if(session.user == H)
+			continue
+
+		if(!(H in session.partners))
+			continue
+
+		for(var/id in session.current_actions)
+			var/datum/sex_action_session/I = session.current_actions[id]
+			if(!I || QDELETED(I))
+				continue
+			if(I.partner != H)
+				continue
+
+			var/datum/sex_organ/tuned_org = session.resolve_organ_datum(I.partner, I.partner_node_id)
+			var/sens = tuned_org ? tuned_org.sensivity : 0
+			var/pain = tuned_org ? tuned_org.pain : 0
+
+			passive_links += list(list(
+				"id"                = I.instance_id,
+				"actor_organ_id"    = I.actor_node_id,
+				"partner_organ_id"  = I.partner_node_id,
+				"action_type"       = I.action_type,
+				"action_name"       = I.action?.name,
+				"speed"             = I.speed,
+				"force"             = I.force,
+				"do_until_finished" = session.do_until_finished,
+				"sensitivity"       = sens,
+				"pain"              = pain,
+			))
+
+	return passive_links
