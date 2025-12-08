@@ -1,4 +1,0 @@
-author: "PPooch"
-delete-after: True
-changes:
-  - bugfix: "Simple bleeds now clear beneath negligible levels."
