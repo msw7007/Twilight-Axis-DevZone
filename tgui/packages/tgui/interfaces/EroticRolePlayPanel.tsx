@@ -199,8 +199,15 @@ const PartnerSelector: React.FC<{
 
   return (
     <Section>
-      <Box textAlign="center" bold>
-        {clampName(actorName)}{' '}
+      <Box
+        textAlign="center"
+        bold
+        style={{
+          whiteSpace: 'normal',
+          wordBreak: 'break-word',
+        }}
+      >
+        {actorName || '—'}{' '}
         <Box as="span" color="label">
           {' ↔ '}
         </Box>
@@ -210,9 +217,10 @@ const PartnerSelector: React.FC<{
           onClick={() => setOpen((prev) => !prev)}
           selected={open}
         >
-          {current ? clampName(current.name) : '—'}
+          {current ? current.name : '—'}
         </Button>
       </Box>
+
       {open && partners.length > 1 && (
         <Box mt={1}>
           <Stack justify="center" wrap>
@@ -227,7 +235,7 @@ const PartnerSelector: React.FC<{
                     setOpen(false);
                   }}
                 >
-                  {clampName(p.name)}
+                  {p.name}
                 </Button>
               </Stack.Item>
             ))}
@@ -1223,7 +1231,7 @@ export const EroticRolePlayPanel: React.FC = () => {
                   <Stack fill align="stretch">
                     <Stack.Item basis="18%">
                       <OrganList
-                        title={data.actor_name}
+                        title="Я"
                         organs={actorOrgansBase}
                         selectedId={data.selected_actor_organ}
                         onSelect={(id) =>
@@ -1258,7 +1266,7 @@ export const EroticRolePlayPanel: React.FC = () => {
 
                     <Stack.Item basis="18%">
                       <OrganList
-                        title={currentPartner?.name || 'Партнёр'}
+                        title={currentPartner ? 'Партнёр' : '—'}
                         organs={partnerOrgans}
                         selectedId={data.selected_partner_organ}
                         onSelect={(id) =>
