@@ -304,7 +304,7 @@ const BarRow: React.FC<{
           textShadow: '0 0 3px #000',
         }}
       >
-        <span>{clampName(label)}</span>
+        <span>{label}</span>
         <span>
           {percentText} / 100 ({percentText}%)
         </span>
@@ -347,7 +347,7 @@ const ArousalBars: React.FC<{
     <Stack vertical>
       <Stack.Item>
         <BarRow
-          label={clampName(actorName || 'Я')}
+          label="Я"
           valuePercent={actorArousal}
           color="var(--button-background-selected)"
           clickable
@@ -357,7 +357,7 @@ const ArousalBars: React.FC<{
       {showPartnerBar && (
         <Stack.Item mt={0.5}>
           <BarRow
-            label={clampName(partnerLabel || 'Партнёр')}
+            label="Партнёр"
             valuePercent={partnerArousal}
             color="var(--button-background)"
           />
@@ -412,7 +412,7 @@ const StatusPanel: React.FC<{
   };
 
   return (
-    <Section title={`Состояние: ${clampName(actorName)}`} fill scrollable>
+    <Section title={`Состояние: ${actorName}`} fill scrollable>
       {actorOrgans.map((org) => {
         const affecting = allLinks.filter((l) => {
           if (viewAs === 'actor') {
@@ -521,7 +521,7 @@ const StatusPanel: React.FC<{
             {affecting.length ? (
               <Stack vertical mt={0.5}>
                 {affecting.map((l) => {
-                  const whoLabel = clampName(partnerLabel || 'Партнёр');
+                  const whoLabel = partnerLabel || 'Партнёр';
 
                   return (
                     <Box key={l.id} ml={1}>
