@@ -14,7 +14,6 @@
 	var/force = SEX_FORCE_MID
 
 	var/timer_id
-	var/next_tick_time = 0
 
 /datum/sex_action_session/New(datum/sex_session_tgui/S, datum/sex_panel_action/A, actor_node, partner_node)
 	. = ..()
@@ -76,12 +75,14 @@
 	if(timer_id)
 		deltimer(timer_id)
 		timer_id = null
-	
+
 	var/datum/sex_organ/src_org = session?.resolve_organ_datum(actor, actor_node_id)
 	if(src_org)
 		src_org.unbind()
+
 	qdel(action)
 	action = null
+
 	return ..()
 
 /datum/sex_action_session/proc/start()
@@ -97,6 +98,7 @@
 /datum/sex_action_session/proc/loop_tick()
 	if(QDELETED(session))
 		return
+
 	if(QDELETED(actor) || QDELETED(partner))
 		return session.stop_instance(instance_id)
 
@@ -111,12 +113,8 @@
 		return session.stop_instance(instance_id)
 
 	var/do_time = action.interaction_timer / get_speed_multiplier(speed)
-	if(do_time < 0.1)
-		do_time = 0.1
-
-	if(world.time < next_tick_time)
-		timer_id = addtimer(CALLBACK(src, PROC_REF(loop_tick)), world.tick_lag, TIMER_STOPPABLE)
-		return
+	if(do_time < world.tick_lag)
+		do_time = world.tick_lag
 
 	if(action.stamina_cost)
 		var/mob/living/carbon/human/U = actor
@@ -137,8 +135,7 @@
 	session.sync_arousal_ui()
 	SStgui.update_uis(session)
 
-	next_tick_time = world.time + do_time
-	timer_id = addtimer(CALLBACK(src, PROC_REF(loop_tick)), world.tick_lag, TIMER_STOPPABLE)
+	timer_id = addtimer(CALLBACK(src, PROC_REF(loop_tick)), do_time, TIMER_STOPPABLE)
 
 /datum/sex_action_session/proc/update_organ_response(delta = 0)
 	if(!session || !action)
