@@ -193,20 +193,20 @@
 	return TRUE
 
 /datum/sex_panel_action/proc/get_start_message(user, target)
-    var/msg = compiled_messages?["start"]
-    if(!msg) return null
-    return finalize_message(msg, user, target)
+	var/msg = compiled_messages?["start"]
+	if(!msg) return null
+	return finalize_message(msg, user, target)
 
 /datum/sex_panel_action/proc/get_perform_message(user, target)
-    var/msg = compiled_messages?["perform"]
-    if(!msg) return null
-    apply_effects(user, target)
-    return spanify_force(finalize_message(msg, user, target))
+	var/msg = compiled_messages?["perform"]
+	if(!msg) return null
+	apply_effects(user, target)
+	return spanify_force(finalize_message(msg, user, target))
 
 /datum/sex_panel_action/proc/get_finish_message(user, target)
-    var/msg = compiled_messages?["finish"]
-    if(!msg) return null
-    return finalize_message(msg, user, target)
+	var/msg = compiled_messages?["finish"]
+	if(!msg) return null
+	return finalize_message(msg, user, target)
 
 /datum/sex_panel_action/proc/handle_climax_message(mob/living/carbon/human/user, target, is_active = TRUE)
 	var/key = is_active ? "climax_a" : "climax_t"
@@ -595,22 +595,22 @@
 	return T
 
 /datum/sex_panel_action/proc/finalize_message(template, user, target)
-    var/t = "[template]"
+	var/t = "[template]"
 
-    var/pose_state = get_pose_key(user, target)
-    var/pose_text  = get_pose_text(pose_state)
-    var/force_text = get_force_text()
-    var/speed_text = get_speed_text()
-    var/zone_text  = get_target_zone(user, target)
-    var/knot_text  = get_knot_action()
+	var/pose_state = get_pose_key(user, target)
+	var/pose_text  = get_pose_text(pose_state)
+	var/force_text = get_force_text()
+	var/speed_text = get_speed_text()
+	var/zone_text  = get_target_zone(user, target)
+	var/knot_text  = get_knot_action()
 
-    t = replacetext(t, "{actor}", "[user]")
-    t = replacetext(t, "{partner}", "[target]")
-    t = replacetext(t, "{pose}", "[pose_text]")
-    t = replacetext(t, "{force}", "[force_text]")
-    t = replacetext(t, "{speed}", "[speed_text]")
-    t = replacetext(t, "{zone}", "[zone_text]")
-    t = replacetext(t, "{knot}", "[knot_text]")
+	t = replacetext(t, "{actor}", "[user]")
+	t = replacetext(t, "{partner}", "[target]")
+	t = replacetext(t, "{pose}", "[pose_text]")
+	t = replacetext(t, "{force}", "[force_text]")
+	t = replacetext(t, "{speed}", "[speed_text]")
+	t = replacetext(t, "{zone}", "[zone_text]")
+	t = replacetext(t, "{knot}", "[knot_text]")
 
-    return t
+	return t
 
