@@ -337,9 +337,6 @@
 	return FALSE
 
 /mob/living/carbon/human/proc/is_erp_blocked_as_target()
-	if(stat == DEAD)
-		return TRUE
-
 	if(is_erp_defiant_in_combat())
 		return TRUE
 

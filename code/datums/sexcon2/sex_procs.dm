@@ -89,7 +89,7 @@
 	
 	// TWILIGHT AXIS EDITION START - new ERP system
 	if(!user.start_sex_session_tgui(target)) 
-		to_chat(user, "<span class='warning'>Blocked by combat mode or Leprosy.</span>")
+		to_chat(user, "<span class='warning'>Blocked by Defiant settings or Leprosy.</span>")
 	// TWILIGHT AXIS EDITION END- new ERP system
 		return
 
