@@ -1182,6 +1182,9 @@
 	if(HAS_TRAIT(user, TRAIT_EMPATH))
 		return TRUE
 
+	if(HAS_TRAIT(user, TRAIT_GOODLOVER))
+		return TRUE
+
 	return FALSE
 
 /datum/sex_session_tgui/proc/can_toggle_knot()
