@@ -57,6 +57,9 @@
 		RegisterSignal(target, COMSIG_MOVABLE_MOVED, PROC_REF(on_moved))
 
 /datum/sex_session_tgui/Destroy()
+	if(broadcast_timer_id)
+		deltimer(broadcast_timer_id)
+		broadcast_timer_id = null
 	if(user)
 		user.set_sex_surrender_to(null)
 		UnregisterSignal(user, list(COMSIG_SEX_CLIMAX, COMSIG_SEX_AROUSAL_CHANGED, COMSIG_MOVABLE_MOVED))

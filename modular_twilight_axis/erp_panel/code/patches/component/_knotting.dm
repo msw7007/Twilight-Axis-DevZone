@@ -1,3 +1,5 @@
+/datum/component/knotting
+	var/movement_timer_id
 
 /datum/component/knotting/should_remove_knot_on_movement(mob/living/carbon/human/top, mob/living/carbon/human/btm)
 	var/list/arousal_data = list()
@@ -98,11 +100,14 @@
 
 	var/dist = get_dist(top, btm)
 	if(dist > 1)
-		knot_remove(forceful_removal = TRUE)
-		return
+		for(var/i in 1 to min(2, dist))
+			if(get_dist(top, btm) <= 1)
+				break
+			step_towards(btm, top)
 
-	for(var/i in 2 to dist)
-		step_towards(btm, top)
+		if(get_dist(top, btm) > 1)
+			knot_remove(forceful_removal = TRUE)
+			return
 
 	top.set_pull_offsets(btm, GRAB_AGGRESSIVE)
 
@@ -121,4 +126,30 @@
 		else if(prob(4))
 			btm.emote("painmoan")
 
-	addtimer(CALLBACK(src, PROC_REF(knot_movement_btm_after)), 0.1 SECONDS)
+	if(movement_timer_id)
+		deltimer(movement_timer_id)
+		movement_timer_id = null
+
+	movement_timer_id = addtimer(CALLBACK(src, PROC_REF(knot_movement_btm_after)), 0.1 SECONDS, TIMER_STOPPABLE)
+
+/datum/component/knotting/knot_remove(forceful_removal = FALSE, notify = TRUE, keep_top_status = FALSE, keep_btm_status = FALSE)
+	var/mob/living/carbon/human/top = knotted_owner
+	var/mob/living/carbon/human/btm = knotted_recipient
+
+	if(movement_timer_id)
+		deltimer(movement_timer_id)
+		movement_timer_id = null
+
+	if(ishuman(btm) && !QDELETED(btm) && ishuman(top) && !QDELETED(top))
+		handle_knot_removal_effects(top, btm, forceful_removal, notify, keep_btm_status)
+
+	knot_exit(keep_top_status, keep_btm_status)
+
+/datum/component/knotting/Destroy(force)
+	if(movement_timer_id)
+		deltimer(movement_timer_id)
+		movement_timer_id = null
+		
+	if(knotted_status)
+		knot_exit()
+	. = ..()
