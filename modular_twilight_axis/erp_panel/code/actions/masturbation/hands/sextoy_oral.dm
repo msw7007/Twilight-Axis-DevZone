@@ -22,15 +22,15 @@
 
 /datum/sex_panel_action/self/hands/toy_oral/get_start_message(mob/living/carbon/human/user, mob/living/carbon/human/target)
 	var/pose_state = get_pose_key(user, target)
-	return "[user] [get_pose_text(pose_state)] подносит игрушку ближе к лицу."
+	return "[user] [get_pose_text(pose_state)] подносит игрушку ближе к лицу  [user?.is_dullahan_head_partner() ? "своей отделенной головы " : ""]."
 
 /datum/sex_panel_action/self/hands/toy_oral/get_perform_message(mob/living/carbon/human/user, mob/living/carbon/human/target)
 	var/pose_state = get_pose_key(user, target)
-	var/message = "[user] [get_pose_text(pose_state)], [get_force_text()] и [get_speed_text()] играет с игрушкой во рту."
+	var/message = "[user] [get_pose_text(pose_state)], [get_force_text()] и [get_speed_text()] играет с игрушкой во рту [user?.is_dullahan_head_partner() ? "своей отделенной головы" : ""]."
 	do_onomatopoeia(user)
 	show_sex_effects(user)
 	playsound(user, 'sound/misc/mat/fingering.ogg', 30, TRUE, -2, ignore_walls = FALSE)
 	return spanify_force(message)
 
 /datum/sex_panel_action/self/hands/toy_oral/get_finish_message(mob/living/carbon/human/user, mob/living/carbon/human/target)
-	return "[user] убирает игрушку."
+	return "[user] убирает игрушку [user?.is_dullahan_head_partner() ? "от своей отделенной головы " : ""]."

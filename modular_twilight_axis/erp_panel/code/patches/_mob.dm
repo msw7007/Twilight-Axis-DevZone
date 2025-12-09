@@ -312,3 +312,14 @@
 			return TRUE
 
 	return FALSE
+
+/mob/living/carbon/human/proc/is_dullahan_head_partner()
+	if(!istype(src, /mob/living/carbon/human/erp_proxy))
+		return FALSE
+
+	var/mob/living/carbon/human/erp_proxy/P = src
+
+	if(!P.source_part || QDELETED(P.source_part))
+		return FALSE
+
+	return istype(P.source_part, /obj/item/bodypart/head/dullahan)

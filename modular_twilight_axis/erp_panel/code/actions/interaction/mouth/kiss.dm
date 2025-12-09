@@ -12,11 +12,11 @@
 
 /datum/sex_panel_action/other/mouth/kiss/get_start_message(mob/living/carbon/human/user, mob/living/carbon/human/target)
 	var/pose_state = get_pose_key(user, target)
-	return "[user] [get_pose_text(pose_state)] сплетается в поцелуе с [target]."
+	return "[user] [get_pose_text(pose_state)] сплетается в поцелуе с [target?.is_dullahan_head_partner() ? "отделенной головой " : ""][target]."
 
 /datum/sex_panel_action/other/mouth/kiss/get_perform_message(mob/living/carbon/human/user, mob/living/carbon/human/target)
 	var/pose_state = get_pose_key(user, target)
-	var/message = "[user] [get_pose_text(pose_state)], [get_force_text()] и [get_speed_text()] целуется с [target]."
+	var/message = "[user] [get_pose_text(pose_state)], [get_force_text()] и [get_speed_text()] целуется с [target?.is_dullahan_head_partner() ? "отделенной головой " : ""][target]."
 	show_sex_effects(user)
 	user.make_sucking_noise()
 	return spanify_force(message)

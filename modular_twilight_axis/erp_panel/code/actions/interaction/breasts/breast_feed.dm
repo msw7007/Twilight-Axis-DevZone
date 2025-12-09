@@ -25,17 +25,17 @@
 
 /datum/sex_panel_action/other/breasts/breast_feed/get_start_message(mob/living/carbon/human/user, mob/living/carbon/human/target)
 	var/pose_state = get_pose_key(user, target)
-	return "[user] [get_pose_text(pose_state)] прижимает лицо [target] к своей груди."
+	return "[user] [get_pose_text(pose_state)] прижимает лицо [target?.is_dullahan_head_partner() ? "отделенной головы " : ""][target] к своей груди."
 
 /datum/sex_panel_action/other/breasts/breast_feed/get_perform_message(mob/living/carbon/human/user, mob/living/carbon/human/target)
 	var/pose_state = get_pose_key(user, target)
-	var/message = "[user] [get_pose_text(pose_state)], [get_force_text()] и [get_speed_text()] насильно водит лицом [target] по своей груди."
+	var/message = "[user] [get_pose_text(pose_state)], [get_force_text()] и [get_speed_text()] насильно водит лицом [target?.is_dullahan_head_partner() ? "отделенной головы " : ""][target] по своей груди."
 	show_sex_effects(user)
 	target.make_sucking_noise()
 	return spanify_force(message)
 
 /datum/sex_panel_action/other/breasts/breast_feed/get_finish_message(mob/living/carbon/human/user, mob/living/carbon/human/target)
-	return "[user] убирает голову [target] от своей груди."
+	return "[user] убирает [target?.is_dullahan_head_partner() ? "отделенную голову" : "голову"] [target] от своей груди."
 
 /datum/sex_panel_action/other/breasts/breast_feed/handle_injection_feedback(mob/living/carbon/human/user, mob/living/carbon/human/target, moved)
 	to_chat(user, "Я чувствую, как мои соски выплескивают молоко.")

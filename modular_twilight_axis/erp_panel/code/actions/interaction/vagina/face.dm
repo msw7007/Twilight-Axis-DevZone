@@ -11,20 +11,20 @@
 
 /datum/sex_panel_action/other/vagina/face/get_start_message(mob/living/carbon/human/user, mob/living/carbon/human/target)
 	var/pose_state = get_pose_key(user, target)
-	return "[user] [get_pose_text(pose_state)] прижимается вагиной к лицу [target], раздвигая ноги."
+	return "[user] [get_pose_text(pose_state)] прижимается вагиной к лицу [target?.is_dullahan_head_partner() ? "отделенной головы " : ""][target], раздвигая ноги."
 
 /datum/sex_panel_action/other/vagina/face/get_perform_message(mob/living/carbon/human/user, mob/living/carbon/human/target)
 	var/pose_state = get_pose_key(user, target)
-	var/message = "[user] [get_pose_text(pose_state)], [get_force_text()] и [get_speed_text()] водит тазом по лицу [target]."
+	var/message = "[user] [get_pose_text(pose_state)], [get_force_text()] и [get_speed_text()] водит тазом по лицу [target?.is_dullahan_head_partner() ? "отделенной головы " : ""][target]."
 	show_sex_effects(user)
 	do_thrust_animate(user, target)
 	target.make_sucking_noise()
 	return spanify_force(message)
 
 /datum/sex_panel_action/other/vagina/face/get_finish_message(mob/living/carbon/human/user, mob/living/carbon/human/target)
-	return "[user] убирает лоно с лица [target]."
+	return "[user] убирает лоно с лица [target?.is_dullahan_head_partner() ? "отделенной головы " : ""][target]."
 
 /datum/sex_panel_action/other/mouth/rimming/handle_climax_message(mob/living/carbon/human/user, mob/living/carbon/human/target, is_active = TRUE)
-	var/message = is_active ? "[user] кончает на лицо [target]" : "[target] кончает под себя"
+	var/message = is_active ? "[user] кончает на лицо [target?.is_dullahan_head_partner() ? "отделенной головы " : ""][target]" : "[target] кончает под себя"
 	user.visible_message(span_love(message))
 	return "onto"

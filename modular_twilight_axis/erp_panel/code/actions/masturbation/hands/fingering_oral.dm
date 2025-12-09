@@ -23,5 +23,5 @@
 	return spanify_force(message)
 
 /datum/sex_panel_action/self/hands/fingering_oral/get_finish_message(mob/living/carbon/human/user, mob/living/carbon/human/target)
-	return "[user] вытаскивает палец из рта."
+	return "[user] вытаскивает палец из рта [user?.is_dullahan_head_partner() ? "своей отделенной головы " : ""]."
 

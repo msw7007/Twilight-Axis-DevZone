@@ -12,14 +12,14 @@
 
 /datum/sex_panel_action/other/legs/footfetish/get_start_message(mob/living/carbon/human/user, mob/living/carbon/human/target)
 	var/pose_state = get_pose_key(user, target)
-	return "[user] [get_pose_text(pose_state)] пихает ноги в рот [target]."
+	return "[user] [get_pose_text(pose_state)] пихает ноги в рот [target?.is_dullahan_head_partner() ? "отделенной головы " : ""][target]."
 
 /datum/sex_panel_action/other/legs/footfetish/get_perform_message(mob/living/carbon/human/user, mob/living/carbon/human/target)
 	var/pose_state = get_pose_key(user, target)
-	var/message = "[user] [get_pose_text(pose_state)], [get_force_text()] и [get_speed_text()] водит пальцами ног во рту [target]."
+	var/message = "[user] [get_pose_text(pose_state)], [get_force_text()] и [get_speed_text()] водит пальцами ног во рту [target?.is_dullahan_head_partner() ? "отделенной головы " : ""][target]."
 	show_sex_effects(user)
 	target.make_sucking_noise()
 	return spanify_force(message)
 
 /datum/sex_panel_action/other/legs/footfetish/get_finish_message(mob/living/carbon/human/user, mob/living/carbon/human/target)
-	return "[user] убирает ножки от лица [target]."
+	return "[user] убирает ножки от лица [target?.is_dullahan_head_partner() ? "отделенной головы " : ""][target]."
