@@ -93,3 +93,28 @@
   hazelrat:
   - rscadd: Implemented a significant expansion to the manor kitchen, also including
       mapping changes to the council office and wine cellar.
+2025-12-08:
+  FreeStylaLT:
+  - balance: Campfires now require a tree stump, bedsheet or a bed (bedroll is fine
+      too) to heal.
+  - balance: Campfires now restore blue bar.
+  HeroWithYay:
+  - bugfix: Carrot steak and Carrot steal meal no longer make nobles throw up
+  Lamasmaster:
+  - rscadd: Swimming skill to Retinue and bandit
+  - rscadd: Athletics to Hunter
+  - balance: Swimming/Athletics for Knave
+  SillyMoff:
+  - bugfix: fixed t2 and t3 obfuscate tier
+  bearrrrrrrr:
+  - bugfix: attacks targeting feet on taurs will no longer ignore their armor
+2025-12-09:
+  Lamasmaster:
+  - bugfix: Bascinet (nonvisor) FOV
+  - rscadd: Old Knight Helmet
+  - bugfix: Desert (the other one) hood
+  Matheo351:
+  - rscadd: Added sickle's instant crop harvest ability to scythe, as well as special
+      variants of those tools (Summer Scythe and Plaguebringer Sickle)
+  SillyMoff:
+  - bugfix: fixed switching inhumen patron to matthios
