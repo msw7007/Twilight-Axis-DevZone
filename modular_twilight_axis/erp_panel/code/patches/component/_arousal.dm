@@ -277,6 +277,8 @@
 					internal_effect.refresh_cum()
 		if("self")
 			log_combat(user, user, "Ejaculated")
+			var/turf/turf = get_turf(user)
+			new /obj/effect/decal/cleanable/coom(turf)
 			playsound(user, 'sound/misc/mat/endout.ogg', 50, TRUE, ignore_walls = FALSE)
 
 /datum/component/arousal/proc/on_sex_organ_produced(datum/sex_organ/org, amount)

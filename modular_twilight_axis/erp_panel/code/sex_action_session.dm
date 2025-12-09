@@ -21,10 +21,45 @@
 	session = S
 
 	if(A)
-		action = new A.type
-		action.session = src
+		var/datum/sex_panel_action/new_action = new A.type
 
-	if(action)
+		new_action.name                   = A.name
+		new_action.stamina_cost           = A.stamina_cost
+		new_action.affects_self_arousal   = A.affects_self_arousal
+		new_action.affects_arousal        = A.affects_arousal
+		new_action.affects_self_pain      = A.affects_self_pain
+		new_action.affects_pain           = A.affects_pain
+
+		new_action.required_init          = A.required_init
+		new_action.required_target        = A.required_target
+		new_action.armor_slot_init        = A.armor_slot_init
+		new_action.armor_slot_target      = A.armor_slot_target
+		new_action.can_knot               = A.can_knot
+		new_action.reserve_target_for_session = A.reserve_target_for_session
+		new_action.climax_liquid_mode     = A.climax_liquid_mode
+
+		new_action.message_on_start        = A.message_on_start
+		new_action.message_on_perform      = A.message_on_perform
+		new_action.message_on_finish       = A.message_on_finish
+		new_action.message_on_climax_actor = A.message_on_climax_actor
+		new_action.message_on_climax_target = A.message_on_climax_target
+
+		new_action.actor_sex_hearts            = A.actor_sex_hearts
+		new_action.target_sex_hearts           = A.target_sex_hearts
+		new_action.actor_suck_sound            = A.actor_suck_sound
+		new_action.target_suck_sound           = A.target_suck_sound
+		new_action.actor_make_sound            = A.actor_make_sound
+		new_action.target_make_sound           = A.target_make_sound
+		new_action.actor_make_fingering_sound  = A.actor_make_fingering_sound
+		new_action.target_make_fingering_sound = A.target_make_fingering_sound
+		new_action.actor_do_onomatopoeia       = A.actor_do_onomatopoeia
+		new_action.target_do_onomatopoeia      = A.target_do_onomatopoeia
+		new_action.actor_do_thrust             = A.actor_do_thrust
+		new_action.target_do_thrust            = A.target_do_thrust
+
+		new_action.session = src
+
+		action = new_action
 		action_type = action.type
 
 	instance_id = "[REF(src)]"

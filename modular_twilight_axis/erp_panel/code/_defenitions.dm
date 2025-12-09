@@ -37,6 +37,7 @@
 #define INJECT_MODE_CONTAINER 2
 #define INJECT_MODE_GROUND    3
 
+#define ORG_KEY_NONE "none"
 #define SEX_ORGAN_FILTER_MOUTH "mouth"
 #define SEX_ORGAN_FILTER_LHAND "left_hand"
 #define SEX_ORGAN_FILTER_RHAND "right_hand"
@@ -51,7 +52,7 @@
 #define SEX_ORGAN_FILTER_ALL "all"
 
 #define MILKING_BREAST_PROBABILITY 66
-#define BASIC_LACTATION_MULTIPLIER 12
+#define BASIC_LACTATION_MULTIPLIER 10
 #define TRAIT_NO_ATHLETICS_FROM_STAMINA "no_athletics_from_stamina"
 
 #define PENIS_MIN_EJAC_FRACTION 0.25
@@ -78,6 +79,7 @@ var/global/regex/SEX_REGEX_DULLAHAN  = regex(@"\{dullahan\?([^:}]*):([^}]*)\}", 
 var/global/regex/SEX_REGEX_AGGR      = regex(@"\{aggr\?([^:}]*):([^}]*)\}", "g")
 var/global/regex/SEX_REGEX_BIGBREAST = regex(@"\{bigbreast\?([^:}]*):([^}]*)\}", "g")
 
+GLOBAL_VAR_INIT(sex_custom_action_seq, 0)
 GLOBAL_LIST_INIT(sex_panel_actions, build_sex_panel_actions())
 
 #define SEX_PANEL_ACTION(sex_action_type) (GLOB.sex_panel_actions[sex_action_type])

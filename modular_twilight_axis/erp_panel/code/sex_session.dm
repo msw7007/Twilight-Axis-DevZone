@@ -289,10 +289,16 @@
 	var/a_sel = selected_actor_organ_id
 	var/p_sel = selected_partner_organ_id
 
+	var/user_ckey = U?.client?.ckey
+
 	for(var/key in GLOB.sex_panel_actions)
 		var/datum/sex_panel_action/A = GLOB.sex_panel_actions[key]
 		if(!A)
 			continue
+
+		if(A.ckey && A.ckey != user_ckey)
+			continue
+
 		if(!A.shows_on_menu(U, T))
 			continue
 
@@ -402,6 +408,24 @@
 	D["speed_names"] = speed_names.Copy()
 	D["force_names"] = force_names.Copy()
 	D["has_knotted_penis"] = has_knotted_penis
+
+	D["climax_modes"] = list(
+		list("id" = "none", "name" = "Без перелива"),
+		list("id" = "into", "name" = "Внутрь"),
+		list("id" = "onto", "name" = "Снаружи"),
+	)
+	
+	D["organ_type_options"] = list(
+		list("id" = ORG_KEY_NONE,              "name" = "Не важно"),
+		list("id" = SEX_ORGAN_FILTER_MOUTH,    "name" = "Рот"),
+		list("id" = "hands",                   "name" = "Руки"),
+		list("id" = SEX_ORGAN_FILTER_LEGS,     "name" = "Ноги"),
+		list("id" = SEX_ORGAN_FILTER_TAIL,     "name" = "Хвост"),
+		list("id" = SEX_ORGAN_FILTER_BREASTS,  "name" = "Грудь"),
+		list("id" = SEX_ORGAN_FILTER_VAGINA,   "name" = "Вагина"),
+		list("id" = SEX_ORGAN_FILTER_PENIS,    "name" = "Член"),
+		list("id" = SEX_ORGAN_FILTER_ANUS,     "name" = "Анус"),
+	)
 	return D
 
 /datum/sex_session_tgui/ui_data(mob/user)
@@ -467,7 +491,13 @@
 	D["status_organs"] = build_status_org_nodes(human_viewer)
 
 	var/list/can = list()
+	var/user_ckey = src.user?.client?.ckey
 	for(var/key in GLOB.sex_panel_actions)
+		var/datum/sex_panel_action/A = GLOB.sex_panel_actions[key]
+		if(!A)
+			continue
+		if(A.ckey && A.ckey != user_ckey)
+			continue
 		if(can_start_action_now(key))
 			can += key
 	D["can_perform"] = can
@@ -538,6 +568,9 @@
 		D["passive_links"] = collect_passive_links_for(H)
 	else
 		D["passive_links"] = list()
+
+	D["custom_templates"] = build_custom_templates_for_ui()
+	D["custom_actions"] = build_custom_actions_for_ui()
 
 	return D
 
@@ -752,6 +785,21 @@
 			update_knotted_penis_flag()
 			SStgui.update_uis(src)
 			return TRUE
+
+		if("custom_create")
+			handle_custom_create(params)
+			SStgui.update_uis(src)
+			return TRUE
+
+		if("custom_update")
+			handle_custom_update(params)
+			SStgui.update_uis(src)
+			return TRUE
+
+		if("custom_delete")
+			handle_custom_delete(params)
+			SStgui.update_uis(src)
+			return TRUE	
 
 	return FALSE
 
@@ -1525,3 +1573,292 @@
 		to_chat(M, span_warning("[H] больше не готов продолжать."))
 
 	qdel(src)
+
+/datum/sex_session_tgui/proc/get_action_by_key(key)
+	if(!key || !islist(GLOB.sex_panel_actions))
+		return null
+	return GLOB.sex_panel_actions[key]
+
+/datum/sex_session_tgui/proc/build_custom_templates_for_ui()
+	var/list/out = list()
+
+	for(var/key in GLOB.sex_panel_actions)
+		var/datum/sex_panel_action/A = GLOB.sex_panel_actions[key]
+		if(!A)
+			continue
+		if(A.abstract_type)
+			continue
+		if(!A.can_be_custom)
+			continue
+		if(A.ckey)
+			continue
+
+		out += list(list(
+			"type" = key,
+			"name" = A.name,
+			"stamina_cost" = A.stamina_cost,
+			"affects_self_arousal" = A.affects_self_arousal,
+			"affects_arousal" = A.affects_arousal,
+			"affects_self_pain" = A.affects_self_pain,
+			"affects_pain" = A.affects_pain,
+			"can_knot" = A.can_knot,
+			"climax_liquid_mode" = A.climax_liquid_mode,
+
+			"required_init" = organ_type_to_filter_id(A.required_init),
+			"required_target" = organ_type_to_filter_id(A.required_target),
+			"reserve_target_for_session" = A.reserve_target_for_session,
+
+			"actor_sex_hearts" = A.actor_sex_hearts,
+			"target_sex_hearts" = A.target_sex_hearts,
+			"actor_suck_sound" = A.actor_suck_sound,
+			"target_suck_sound" = A.target_suck_sound,
+			"actor_make_sound" = A.actor_make_sound,
+			"target_make_sound" = A.target_make_sound,
+			"actor_make_fingering_sound" = A.actor_make_fingering_sound,
+			"target_make_fingering_sound" = A.target_make_fingering_sound,
+			"actor_do_onomatopoeia" = A.actor_do_onomatopoeia,
+			"target_do_onomatopoeia" = A.target_do_onomatopoeia,
+			"actor_do_thrust" = A.actor_do_thrust,
+			"target_do_thrust" = A.target_do_thrust,
+
+			"message_on_start" = A.message_on_start,
+			"message_on_perform" = A.message_on_perform,
+			"message_on_finish" = A.message_on_finish,
+			"message_on_climax_actor" = A.message_on_climax_actor,
+			"message_on_climax_target" = A.message_on_climax_target,
+		))
+
+	return out
+
+/datum/sex_session_tgui/proc/build_custom_actions_for_ui()
+	var/list/out = list()
+	var/ck = user?.client?.ckey
+	if(!ck || !islist(GLOB.sex_panel_actions))
+		return out
+
+	for(var/key in GLOB.sex_panel_actions)
+		var/datum/sex_panel_action/A = GLOB.sex_panel_actions[key]
+		if(!A)
+			continue
+		if(A.ckey != ck)
+			continue
+
+		out += list(list(
+			"type" = A.custom_key,
+			"name" = A.name,
+			"stamina_cost" = A.stamina_cost,
+			"affects_self_arousal" = A.affects_self_arousal,
+			"affects_arousal" = A.affects_arousal,
+			"affects_self_pain" = A.affects_self_pain,
+			"affects_pain" = A.affects_pain,
+			"can_knot" = A.can_knot,
+			"climax_liquid_mode" = A.climax_liquid_mode,
+
+			"required_init" = organ_type_to_filter_id(A.required_init),
+			"required_target" = organ_type_to_filter_id(A.required_target),
+			"reserve_target_for_session" = A.reserve_target_for_session,
+
+			"actor_sex_hearts" = A.actor_sex_hearts,
+			"target_sex_hearts" = A.target_sex_hearts,
+			"actor_suck_sound" = A.actor_suck_sound,
+			"target_suck_sound" = A.target_suck_sound,
+			"actor_make_sound" = A.actor_make_sound,
+			"target_make_sound" = A.target_make_sound,
+			"actor_make_fingering_sound" = A.actor_make_fingering_sound,
+			"target_make_fingering_sound" = A.target_make_fingering_sound,
+			"actor_do_onomatopoeia" = A.actor_do_onomatopoeia,
+			"target_do_onomatopoeia" = A.target_do_onomatopoeia,
+			"actor_do_thrust" = A.actor_do_thrust,
+			"target_do_thrust" = A.target_do_thrust,
+
+			"message_on_start" = A.message_on_start,
+			"message_on_perform" = A.message_on_perform,
+			"message_on_finish" = A.message_on_finish,
+			"message_on_climax_actor" = A.message_on_climax_actor,
+			"message_on_climax_target" = A.message_on_climax_target,
+		))
+
+	return out
+
+/datum/sex_session_tgui/proc/handle_custom_create(list/params)
+	if(!user || !user.client)
+		return
+
+	var/template_type = params["template_type"]
+	if(!template_type)
+		return
+
+	var/datum/sex_panel_action/base = get_action_by_key(template_type)
+	if(!base || base.abstract_type || !base.can_be_custom)
+		return
+
+	var/datum/sex_panel_action/custom = new base.type
+	custom.abstract_type = FALSE
+	custom.ckey = user.client.ckey
+
+	custom.required_init = base.required_init
+	custom.required_target = base.required_target
+	custom.armor_slot_init = null
+	custom.armor_slot_target = null
+	custom.can_knot = base.can_knot
+	custom.reserve_target_for_session = base.reserve_target_for_session
+
+	var/init_key = params["required_init"]
+	if(init_key && init_key != ORG_KEY_NONE)
+		custom.required_init = node_organ_type(init_key)
+
+	var/target_key = params["required_target"]
+	if(target_key && target_key != ORG_KEY_NONE)
+		custom.required_target = node_organ_type(target_key)
+
+	if("reserve_target_for_session" in params)
+		custom.reserve_target_for_session = !!params["reserve_target_for_session"]
+
+	if("can_knot" in params)
+		custom.can_knot = !!params["can_knot"]
+
+	if("actor_sex_hearts" in params)
+		custom.actor_sex_hearts = !!params["actor_sex_hearts"]
+	if("target_sex_hearts" in params)
+		custom.target_sex_hearts = !!params["target_sex_hearts"]
+
+	if("actor_suck_sound" in params)
+		custom.actor_suck_sound = !!params["actor_suck_sound"]
+	if("target_suck_sound" in params)
+		custom.target_suck_sound = !!params["target_suck_sound"]
+
+	if("actor_make_sound" in params)
+		custom.actor_make_sound = !!params["actor_make_sound"]
+	if("target_make_sound" in params)
+		custom.target_make_sound = !!params["target_make_sound"]
+
+	if("actor_make_fingering_sound" in params)
+		custom.actor_make_fingering_sound = !!params["actor_make_fingering_sound"]
+	if("target_make_fingering_sound" in params)
+		custom.target_make_fingering_sound = !!params["target_make_fingering_sound"]
+
+	if("actor_do_onomatopoeia" in params)
+		custom.actor_do_onomatopoeia = !!params["actor_do_onomatopoeia"]
+	if("target_do_onomatopoeia" in params)
+		custom.target_do_onomatopoeia = !!params["target_do_onomatopoeia"]
+
+	if("actor_do_thrust" in params)
+		custom.actor_do_thrust = !!params["actor_do_thrust"]
+	if("target_do_thrust" in params)
+		custom.target_do_thrust = !!params["target_do_thrust"]
+
+	custom.name = params["name"] || base.name
+
+	custom.stamina_cost = text2num(params["stamina_cost"] || "[base.stamina_cost]")
+	custom.affects_self_arousal = text2num(params["affects_self_arousal"] || "[base.affects_self_arousal]")
+	custom.affects_arousal = text2num(params["affects_arousal"] || "[base.affects_arousal]")
+	custom.affects_self_pain = text2num(params["affects_self_pain"] || "[base.affects_self_pain]")
+	custom.affects_pain = text2num(params["affects_pain"] || "[base.affects_pain]")
+
+	custom.climax_liquid_mode = params["climax_liquid_mode"] || base.climax_liquid_mode
+
+	custom.message_on_start   = params["message_on_start"]   || base.message_on_start
+	custom.message_on_perform = params["message_on_perform"] || base.message_on_perform
+	custom.message_on_finish  = params["message_on_finish"]  || base.message_on_finish
+	custom.message_on_climax_actor  = params["message_on_climax_actor"]  || base.message_on_climax_actor
+	custom.message_on_climax_target = params["message_on_climax_target"] || base.message_on_climax_target
+
+	register_custom_sex_action(custom)
+
+/datum/sex_session_tgui/proc/handle_custom_update(list/params)
+	if(!user || !user.client)
+		return
+
+	var/key = params["type"]
+	if(!key)
+		return
+
+	var/datum/sex_panel_action/A = get_action_by_key(key)
+	if(A.ckey != user.client.ckey)
+		return
+
+	if(params["name"])
+		A.name = params["name"]
+
+	if(params["stamina_cost"])
+		A.stamina_cost = text2num(params["stamina_cost"])
+	if(params["affects_self_arousal"])
+		A.affects_self_arousal = text2num(params["affects_self_arousal"])
+	if(params["affects_arousal"])
+		A.affects_arousal = text2num(params["affects_arousal"])
+	if(params["affects_self_pain"])
+		A.affects_self_pain = text2num(params["affects_self_pain"])
+	if(params["affects_pain"])
+		A.affects_pain = text2num(params["affects_pain"])
+
+	if("required_init" in params)
+		A.required_init = node_organ_type(params["required_init"])
+	if("required_target" in params)
+		A.required_target = node_organ_type(params["required_target"])
+
+	if("reserve_target_for_session" in params)
+		A.reserve_target_for_session = !!params["reserve_target_for_session"]
+	if("can_knot" in params)
+		A.can_knot = !!params["can_knot"]
+
+	if("actor_sex_hearts" in params)
+		A.actor_sex_hearts = !!params["actor_sex_hearts"]
+	if("target_sex_hearts" in params)
+		A.target_sex_hearts = !!params["target_sex_hearts"]
+
+	if("actor_suck_sound" in params)
+		A.actor_suck_sound = !!params["actor_suck_sound"]
+	if("target_suck_sound" in params)
+		A.target_suck_sound = !!params["target_suck_sound"]
+
+	if("actor_make_sound" in params)
+		A.actor_make_sound = !!params["actor_make_sound"]
+	if("target_make_sound" in params)
+		A.target_make_sound = !!params["target_make_sound"]
+
+	if("actor_make_fingering_sound" in params)
+		A.actor_make_fingering_sound = !!params["actor_make_fingering_sound"]
+	if("target_make_fingering_sound" in params)
+		A.target_make_fingering_sound = !!params["target_make_fingering_sound"]
+
+	if("actor_do_onomatopoeia" in params)
+		A.actor_do_onomatopoeia = !!params["actor_do_onomatopoeia"]
+	if("target_do_onomatopoeia" in params)
+		A.target_do_onomatopoeia = !!params["target_do_onomatopoeia"]
+
+	if("actor_do_thrust" in params)
+		A.actor_do_thrust = !!params["actor_do_thrust"]
+	if("target_do_thrust" in params)
+		A.target_do_thrust = !!params["target_do_thrust"]
+
+	if(params["climax_liquid_mode"])
+		A.climax_liquid_mode = params["climax_liquid_mode"]
+
+	if(params["message_on_start"])
+		A.message_on_start = params["message_on_start"]
+	if(params["message_on_perform"])
+		A.message_on_perform = params["message_on_perform"]
+	if(params["message_on_finish"])
+		A.message_on_finish = params["message_on_finish"]
+	if(params["message_on_climax_actor"])
+		A.message_on_climax_actor = params["message_on_climax_actor"]
+	if(params["message_on_climax_target"])
+		A.message_on_climax_target = params["message_on_climax_target"]
+
+/datum/sex_session_tgui/proc/handle_custom_delete(list/params)
+	if(!user || !user.client)
+		return
+
+	var/key = params["type"]
+	if(!key)
+		return
+
+	var/datum/sex_panel_action/A = get_action_by_key(key)
+	if(!A)
+		return
+
+	if(A.ckey != user.client.ckey)
+		return
+
+	unregister_custom_sex_action(A)
+	qdel(A)

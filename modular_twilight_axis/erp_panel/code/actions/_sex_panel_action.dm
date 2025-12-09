@@ -80,6 +80,7 @@
 	var/break_on_move = TRUE
 	/// Ckey of creator to use for
 	var/ckey = null
+	var/custom_key = null
 	/// Variable texts for action
 	var/message_on_start = null
 	var/message_on_perform = null
@@ -102,6 +103,7 @@
 	/// Available for custom
 	var/can_be_custom = TRUE
 	var/list/compiled_messages = null
+	var/climax_liquid_mode
 
 /datum/sex_panel_action/proc/shows_on_menu(mob/living/carbon/human/user, mob/living/carbon/human/target)
 	if(abstract_type)
@@ -213,13 +215,13 @@
 
 	var/msg_template = compiled_messages?[key]
 	if(!msg_template)
-		return null
+		return climax_liquid_mode
 
 	var/msg = finalize_message(msg_template, user, target)
 	if(msg)
 		user.visible_message(span_love(msg))
 
-	return null
+	return climax_liquid_mode
 
 /datum/sex_panel_action/proc/get_knot_count()
 	return 0

@@ -224,3 +224,67 @@
 			))
 
 	return passive_links
+
+/proc/register_custom_sex_action(datum/sex_panel_action/A)
+	if(!A || !A.ckey)
+		return null
+
+	if(!isnum(GLOB.sex_custom_action_seq))
+		GLOB.sex_custom_action_seq = 0
+
+	GLOB.sex_custom_action_seq++
+
+	var/id = "custom:[A.ckey]:[GLOB.sex_custom_action_seq]"
+	A.custom_key = id
+
+	if(!islist(GLOB.sex_panel_actions))
+		GLOB.sex_panel_actions = list()
+
+	GLOB.sex_panel_actions[id] = A
+	return id
+
+/proc/unregister_custom_sex_action(datum/sex_panel_action/A)
+	if(!A)
+		return
+	if(A.custom_key && GLOB.sex_panel_actions)
+		GLOB.sex_panel_actions -= A.custom_key
+	A.custom_key = null
+
+/proc/get_custom_actions_for_ckey(ckey)
+	var/list/out = list()
+	if(!ckey || !islist(GLOB.sex_panel_actions))
+		return out
+
+	for(var/key in GLOB.sex_panel_actions)
+		var/datum/sex_panel_action/A = GLOB.sex_panel_actions[key]
+		if(!A)
+			continue
+		if(A.ckey != ckey)
+			continue
+		out += A
+
+	return out
+
+/proc/organ_type_to_filter_id(org_type)
+	if(!org_type)
+		return ORG_KEY_NONE
+
+	switch(org_type)
+		if(SEX_ORGAN_MOUTH)
+			return SEX_ORGAN_FILTER_MOUTH
+		if(SEX_ORGAN_HANDS)
+			return SEX_ORGAN_FILTER_LHAND
+		if(SEX_ORGAN_LEGS)
+			return SEX_ORGAN_FILTER_LEGS
+		if(SEX_ORGAN_TAIL)
+			return SEX_ORGAN_FILTER_TAIL
+		if(SEX_ORGAN_BREASTS)
+			return SEX_ORGAN_FILTER_BREASTS
+		if(SEX_ORGAN_VAGINA)
+			return SEX_ORGAN_FILTER_VAGINA
+		if(SEX_ORGAN_PENIS)
+			return SEX_ORGAN_FILTER_PENIS
+		if(SEX_ORGAN_ANUS)
+			return SEX_ORGAN_FILTER_ANUS
+
+	return ORG_KEY_NONE
