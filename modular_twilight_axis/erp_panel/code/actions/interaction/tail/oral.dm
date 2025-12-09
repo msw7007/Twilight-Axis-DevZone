@@ -9,23 +9,18 @@
 	affects_self_pain		= 0
 	affects_pain			= 0.01
 
-/datum/sex_panel_action/other/tail/oral/get_start_message(mob/living/carbon/human/user, mob/living/carbon/human/target)
-	var/pose_state = get_pose_key(user, target)
-	return "[user] [get_pose_text(pose_state)] проникает хвостом в рот [target?.is_dullahan_head_partner() ? "отделенной головы " : ""][target]."
+	actor_sex_hearts = TRUE
+	actor_make_sound = TRUE
+	target_suck_sound = TRUE
+	actor_do_onomatopoeia = TRUE
+	actor_do_thrust = TRUE
 
-/datum/sex_panel_action/other/tail/oral/get_perform_message(mob/living/carbon/human/user, mob/living/carbon/human/target)
-	var/pose_state = get_pose_key(user, target)
-	var/message = "[user] [get_pose_text(pose_state)], [get_force_text()] и [get_speed_text()] сношает хвостом рот [target?.is_dullahan_head_partner() ? "отделенной головы " : ""][target]."
-	do_onomatopoeia(user)
-	show_sex_effects(user)
-	do_thrust_animate(user, target)
-	target.make_sucking_noise()
-	return spanify_force(message)
-
-/datum/sex_panel_action/other/tail/oral/get_finish_message(mob/living/carbon/human/user, mob/living/carbon/human/target)
-	return "[user] выводит хвост из рта [target?.is_dullahan_head_partner() ? "отделенной головы " : ""][target]."
+	message_on_start   = "{actor} {pose}, {force} и {speed} проникает хвостом в рот {dullahan?отделенной головы :}{partner}."
+	message_on_perform = "{actor} {pose}, {force} и {speed} сношает хвостом рот {dullahan?отделенной головы :}{partner}."
+	message_on_finish  = "{actor} {pose}, {force} и {speed} выводит хвост из рта {dullahan?отделенной головы :}{partner}."
+	message_on_climax_actor  = "{actor} {pose}, {force} и {speed} {aggr?задницей:ягодицами} {dullahan?отделенной головы :}{partner}."
+	message_on_climax_target = "{partner} {pose} {force} {speed} {aggr?задницей:ягодицами} {dullahan?отделенной головы :}{actor}."
 
 /datum/sex_panel_action/other/tail/oral/handle_climax_message(mob/living/carbon/human/user, mob/living/carbon/human/target, is_active = TRUE)
-	var/message = is_active ? "[user] кончает под себя" : "[target] кончает, выпуская хвост [user]!"
-	user.visible_message(span_love(message))
+	. = ..()
 	return "onto"

@@ -1,3 +1,4 @@
+
 /datum/sex_panel_action/other/tail/penis
 	abstract_type = FALSE
 	name = "Мастурбация хвостом"
@@ -8,23 +9,13 @@
 	affects_self_pain		= 0
 	affects_pain			= 0.03
 
-/datum/sex_panel_action/other/tail/penis/get_start_message(mob/living/carbon/human/user, mob/living/carbon/human/target)
-	var/pose_state = get_pose_key(user, target)
-	return "[user] [get_pose_text(pose_state)] обвивает хвостом член [target]."
+	actor_sex_hearts = TRUE
+	actor_make_sound = TRUE
+	actor_do_onomatopoeia = TRUE
+	actor_do_thrust = TRUE
 
-/datum/sex_panel_action/other/tail/penis/get_perform_message(mob/living/carbon/human/user, mob/living/carbon/human/target)
-	var/pose_state = get_pose_key(user, target)
-	var/message = "[user] [get_pose_text(pose_state)], [get_force_text()] и [get_speed_text()] водит хвостом по члену [target]."
-	do_onomatopoeia(user)
-	show_sex_effects(user)
-	do_thrust_animate(user, target)
-	do_sound_effect(target)
-	return spanify_force(message)
-
-/datum/sex_panel_action/other/tail/penis/get_finish_message(mob/living/carbon/human/user, mob/living/carbon/human/target)
-	return "[user] отводит хвост от члена [target]."
-
-/datum/sex_panel_action/other/tail/penis/handle_climax_message(mob/living/carbon/human/user, mob/living/carbon/human/target, is_active = TRUE)
-	var/message = is_active ? "[user] кончает под себя" : "[target] кончает на хвост [user]!"
-	user.visible_message(span_love(message))
-	return "onto"
+	message_on_start   = "{actor} {pose} обвивает хвостом член {partner}."
+	message_on_perform = "{actor} {pose}, {force} и {speed} водит хвостом по члену {partner}."
+	message_on_finish  = "{actor} отводит хвост от члена {partner}."
+	message_on_climax_actor  = "{actor} кончает под себя."
+	message_on_climax_target = "{partner} кончает на хвост {actor}."

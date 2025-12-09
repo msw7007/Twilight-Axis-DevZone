@@ -9,14 +9,10 @@
 	affects_self_arousal	= 0.2
 	affects_self_pain		= 0.01
 
-/datum/sex_panel_action/self/tail/penis_tail/get_start_message(user, target)
-	return "[user] оборачивает хвост вокруг своего члена."
+	actor_sex_hearts = TRUE
+	actor_make_fingering_sound = TRUE
+	can_be_custom = FALSE
 
-/datum/sex_panel_action/self/tail/penis_tail/get_perform_message(user, target)
-	var/message = "[user] [get_force_text()] и [get_speed_text()] двигает хвостом по своему члену."
-	show_sex_effects(user)
-	playsound(user, 'sound/misc/mat/fingering.ogg', 30, TRUE, -2, ignore_walls = FALSE)
-	return spanify_force(message)
-
-/datum/sex_panel_action/self/tail/penis_tail/get_finish_message(user, target)
-	return "[user] ослабляет хватку хвостом."
+	message_on_start   = "{actor} оборачивает хвост вокруг своего члена."
+	message_on_perform = "{actor} {pose}, {force} и {speed} двигает хвостом по своему члену."
+	message_on_finish  = "{actor} ослабляет хватку хвостом."

@@ -8,16 +8,8 @@
 	affects_self_pain		= 0
 	affects_pain			= 0
 
-/datum/sex_panel_action/other/body/grinding/get_start_message(mob/living/carbon/human/user, mob/living/carbon/human/target)
-	var/pose_state = get_pose_key(user, target)
-	return "[user] [get_pose_text(pose_state)] прижимается лицом к [target]."
+	message_on_start  = "{actor} {pose} прижимается лицом к {partner}."
+	message_on_perform = "{actor} {pose}, {force} и {speed} трётся лицом об {zone} {partner}."
+	message_on_finish = "{actor} отстраняется лицом от {partner}."
 
-/datum/sex_panel_action/other/body/grinding/get_perform_message(mob/living/carbon/human/user, mob/living/carbon/human/target)
-	var/pose_state = get_pose_key(user, target)
-	var/message = "[user] [get_pose_text(pose_state)], [get_force_text()] и [get_speed_text()] трется лицом об [get_target_zone(user)] [target]."
-	playsound(user, 'sound/misc/mat/fingering.ogg', 30, TRUE, -2, ignore_walls = FALSE)
-	return spanify_force(message)
-
-/datum/sex_panel_action/other/body/grinding/get_finish_message(mob/living/carbon/human/user, mob/living/carbon/human/target)
-	return "[user] отстраняется лицом от [target]."
-
+	actor_make_fingering_sound = TRUE

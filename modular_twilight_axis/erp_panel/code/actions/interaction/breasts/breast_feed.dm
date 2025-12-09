@@ -3,12 +3,20 @@
 	name = "Насильное кормпление"
 	required_target = SEX_ORGAN_MOUTH
 	stamina_cost = 0.05
-	affects_self_arousal	= 0.12
-	affects_arousal			= 0.08
-	affects_self_pain		= 0.01
-	affects_pain			= 0.00
+	affects_self_arousal = 0.12
+	affects_arousal = 0.08
+	affects_self_pain = 0.01
+	affects_pain = 0
 	require_grab = TRUE
 	check_same_tile = FALSE
+
+	actor_sex_hearts = TRUE
+	target_suck_sound = TRUE
+	can_be_custom = FALSE
+
+	message_on_start   = "{actor} {pose} прижимает лицо {dullahan?отделенной головы :}{partner} к своей груди."
+	message_on_perform = "{actor} {pose}, {force} и {speed} водит {dullahan?отделенной :}головой {partner} по своей груди."
+	message_on_finish  = "{actor} убирает {dullahan?отделенную :}голову {partner} от своей груди."
 
 /datum/sex_panel_action/other/breasts/breast_feed/can_perform(mob/living/carbon/human/user, mob/living/carbon/human/target)
 	. = ..()
@@ -22,20 +30,6 @@
 			return TRUE
 
 	return FALSE
-
-/datum/sex_panel_action/other/breasts/breast_feed/get_start_message(mob/living/carbon/human/user, mob/living/carbon/human/target)
-	var/pose_state = get_pose_key(user, target)
-	return "[user] [get_pose_text(pose_state)] прижимает лицо [target?.is_dullahan_head_partner() ? "отделенной головы " : ""][target] к своей груди."
-
-/datum/sex_panel_action/other/breasts/breast_feed/get_perform_message(mob/living/carbon/human/user, mob/living/carbon/human/target)
-	var/pose_state = get_pose_key(user, target)
-	var/message = "[user] [get_pose_text(pose_state)], [get_force_text()] и [get_speed_text()] насильно водит лицом [target?.is_dullahan_head_partner() ? "отделенной головы " : ""][target] по своей груди."
-	show_sex_effects(user)
-	target.make_sucking_noise()
-	return spanify_force(message)
-
-/datum/sex_panel_action/other/breasts/breast_feed/get_finish_message(mob/living/carbon/human/user, mob/living/carbon/human/target)
-	return "[user] убирает [target?.is_dullahan_head_partner() ? "отделенную голову" : "голову"] [target] от своей груди."
 
 /datum/sex_panel_action/other/breasts/breast_feed/handle_injection_feedback(mob/living/carbon/human/user, mob/living/carbon/human/target, moved)
 	to_chat(user, "Я чувствую, как мои соски выплескивают молоко.")

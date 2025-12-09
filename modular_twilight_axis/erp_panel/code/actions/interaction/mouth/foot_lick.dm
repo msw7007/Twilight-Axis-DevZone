@@ -10,21 +10,15 @@
 	affects_pain			= 0.03
 	check_same_tile = FALSE
 
-/datum/sex_panel_action/other/mouth/foot_lick/get_start_message(mob/living/carbon/human/user, mob/living/carbon/human/target)
-	var/pose_state = get_pose_key(user, target)
-	return "[user] [get_pose_text(pose_state)] припадает губами к ногам [target]."
+	actor_sex_hearts = TRUE
+	actor_suck_sound = TRUE
 
-/datum/sex_panel_action/other/mouth/foot_lick/get_perform_message(mob/living/carbon/human/user, mob/living/carbon/human/target)
-	var/pose_state = get_pose_key(user, target)
-	var/message = "[user] [get_pose_text(pose_state)], [get_force_text()] и [get_speed_text()] лижет ножки [target]."
-	show_sex_effects(user)
-	user.make_sucking_noise()
-	return spanify_force(message)
-
-/datum/sex_panel_action/other/mouth/foot_lick/get_finish_message(mob/living/carbon/human/user, mob/living/carbon/human/target)
-	return "[user] убирает лицо с ножек [target]."
+	message_on_start   = "{actor} {pose} припадает губами к ногам {partner}."
+	message_on_perform = "{actor} {pose}, {force} и {speed} лижет ножки {partner}."
+	message_on_finish  = "{actor} убирает лицо с ножек {partner}."
+	message_on_climax_actor  = "{actor} кончает под себя."
+	message_on_climax_target = "{partner} кончает под себя."
 
 /datum/sex_panel_action/other/mouth/foot_lick/handle_climax_message(mob/living/carbon/human/user, mob/living/carbon/human/target, is_active = TRUE)
-	var/message = is_active ? "[user] кончает под себя" : "[target] кончает под себя"
-	user.visible_message(span_love(message))
+	. = ..()
 	return "self"

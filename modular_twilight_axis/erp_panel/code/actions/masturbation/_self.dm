@@ -1,8 +1,6 @@
 /datum/sex_panel_action/self
 	abstract_type = TRUE
-
 	name = "Корневое действие на себя"
-
 	can_knot = FALSE
 	interaction_timer = 2 SECONDS
 	stamina_cost = 0.2
@@ -11,6 +9,7 @@
 	check_same_tile = FALSE
 	require_grab = FALSE
 	required_grab_state = null
+	message_on_climax_actor  = "{actor} оставляет под собой беспорядок."
 
 /datum/sex_panel_action/self/shows_on_menu(mob/living/carbon/human/user, mob/living/carbon/human/target)
 	. = ..()
@@ -23,9 +22,5 @@
 	return TRUE
 
 /datum/sex_panel_action/self/handle_climax_message(mob/living/carbon/human/user, mob/living/carbon/human/target, is_active = TRUE)
-	var/message = span_love("[user] оставляет под собой беспорядок")
-	user.visible_message(message)
-	return "self"
-
-/datum/sex_panel_action/self/on_perform(mob/living/carbon/human/user, mob/living/carbon/human/target)
 	. = ..()
+	return "self"

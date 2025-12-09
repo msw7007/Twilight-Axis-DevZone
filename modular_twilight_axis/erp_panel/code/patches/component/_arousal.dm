@@ -363,9 +363,15 @@
 		if(human_object.has_flaw(/datum/charflaw/addiction/lovefiend))
 			if(charge >= SEX_MAX_CHARGE && !(is_in_sex_scene()))
 				if(arousal < NYMPHO_AROUSAL_SOFT_CAP)
-					var/need_to_boost = max(0, (NYMPHO_AROUSAL_SOFT_CAP - arousal))
+					var/need_to_boost = NYMPHO_AROUSAL_SOFT_CAP - arousal
 					if(need_to_boost > 0)
-						set_arousal(parent, need_to_boost)
+						adjust_arousal(parent, need_to_boost)
+					return
+				if(dt > 0)
+					var/max_loss = max(0, arousal - NYMPHO_AROUSAL_SOFT_CAP)
+					var/actual_loss = min(dt, max_loss)
+					if(actual_loss > 0)
+						adjust_arousal(parent, -actual_loss)
 					return
 
 	if(!can_lose_arousal())

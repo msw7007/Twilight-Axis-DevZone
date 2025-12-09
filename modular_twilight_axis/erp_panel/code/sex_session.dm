@@ -104,7 +104,7 @@
 /datum/sex_session_tgui/proc/get_partner_display_name(mob/living/carbon/human/M)
 	if(partner_bodypart_override && M && M == target)
 		if(istype(partner_bodypart_override, /obj/item/bodypart/head/dullahan))
-			return "Голова [M.name]"
+			return "[M.name]"
 		return "[partner_bodypart_override.name] ([M.name])"
 
 	return M?.name || "—"
@@ -185,6 +185,14 @@
 		))
 
 	if(M.getorganslot(ORGAN_SLOT_TAIL))
+		out += list(list(
+			"id"   = SEX_ORGAN_FILTER_TAIL,
+			"name" = "Хвост",
+			"busy" = BUSY_FOR(SEX_ORGAN_FILTER_TAIL),
+			"side" = side,
+		))
+
+	if(is_lamia)
 		out += list(list(
 			"id"   = SEX_ORGAN_FILTER_TAIL,
 			"name" = "Хвост",
@@ -919,8 +927,12 @@
 				return H.ensure_legs_organ()
 			return null
 		if(SEX_ORGAN_FILTER_TAIL)
-			var/obj/item/organ/tail/T = M.getorganslot(ORGAN_SLOT_TAIL)
-			return T?.sex_organ
+			if(ishuman(M) && M.is_lamia_taur())
+				var/obj/item/bodypart/taur/T  = M.get_bodypart(BODY_ZONE_TAUR)
+				return T?.sex_organ
+			else
+				var/obj/item/organ/tail/T = M.getorganslot(ORGAN_SLOT_TAIL)
+				return T?.sex_organ
 		if(SEX_ORGAN_FILTER_BREASTS)
 			var/obj/item/organ/breasts/B = M.getorganslot(ORGAN_SLOT_BREASTS)
 			return B?.sex_organ
@@ -1043,6 +1055,34 @@
 		return
 
 	if(!length(current_actions))
+		broadcast_timer_id = null
+		return
+	
+	for(var/id in current_actions)
+		var/datum/sex_action_session/I = current_actions[id]
+		if(!I || QDELETED(I) || !I.action)
+			continue
+
+		if(!I.should_hard_stop())
+			continue
+
+		var/mob/living/carbon/human/blocker
+
+		if(ishuman(I.actor))
+			var/mob/living/carbon/human/H1 = I.actor
+			if(H1.is_erp_blocked_as_target())
+				blocker = H1
+
+		if(!blocker && ishuman(I.partner))
+			var/mob/living/carbon/human/H2 = I.partner
+			if(H2.is_erp_blocked_as_target())
+				blocker = H2
+
+		if(blocker)
+			hard_abort_for(blocker)
+		else
+			qdel(src)
+
 		broadcast_timer_id = null
 		return
 
@@ -1462,3 +1502,26 @@
 		return is_partner_node_reserved(node_id, M)
 
 	return FALSE
+
+/datum/sex_action_session/proc/should_hard_stop()
+	var/mob/living/carbon/human/actor_h = actor
+	var/mob/living/carbon/human/partner_h = partner
+
+	if(actor_h && actor_h.is_erp_blocked_as_target())
+		return TRUE
+
+	if(partner_h && partner_h.is_erp_blocked_as_target())
+		return TRUE
+
+	return FALSE
+
+/datum/sex_session_tgui/proc/hard_abort_for(mob/living/carbon/human/H)
+	if(!(H in partners) && H != user && H != target)
+		return
+
+	for(var/mob/living/carbon/human/M in partners)
+		if(M == H)
+			continue
+		to_chat(M, span_warning("[H] больше не готов продолжать."))
+
+	qdel(src)

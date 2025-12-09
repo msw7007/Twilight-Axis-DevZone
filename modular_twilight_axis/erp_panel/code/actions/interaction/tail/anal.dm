@@ -9,23 +9,17 @@
 	affects_self_pain		= 0
 	affects_pain			= 0.01
 
-/datum/sex_panel_action/other/tail/anal/get_start_message(mob/living/carbon/human/user, mob/living/carbon/human/target)
-	var/pose_state = get_pose_key(user, target)
-	return "[user] [get_pose_text(pose_state)] вводит хвост в попку [target]."
+	actor_sex_hearts = TRUE
+	actor_make_sound = TRUE
+	actor_do_onomatopoeia = TRUE
+	actor_do_thrust = TRUE
 
-/datum/sex_panel_action/other/tail/anal/get_perform_message(mob/living/carbon/human/user, mob/living/carbon/human/target)
-	var/pose_state = get_pose_key(user, target)
-	var/message = "[user] [get_pose_text(pose_state)], [get_force_text()] и [get_speed_text()] сношает хвостом попку [target]."
-	do_onomatopoeia(user)
-	show_sex_effects(user)
-	do_thrust_animate(user, target)
-	do_sound_effect(target)
-	return spanify_force(message)
-
-/datum/sex_panel_action/other/tail/anal/get_finish_message(mob/living/carbon/human/user, mob/living/carbon/human/target)
-	return "[user] вытаскивает хвост из задницы [target]."
+	message_on_start   = "{actor} {pose} вводит хвост в попку {partner}."
+	message_on_perform = "{actor} {pose} сношает хвостом попку {partner}."
+	message_on_finish  = "{actor} вытаскивает хвост из задницы {partner}."
+	message_on_climax_actor  = "{actor} кончает под себя{partner}."
+	message_on_climax_target = "{partner} кончает сжимая попку вокруг хвоста {actor}."
 
 /datum/sex_panel_action/other/tail/anal/handle_climax_message(mob/living/carbon/human/user, mob/living/carbon/human/target, is_active = TRUE)
-	var/message = is_active ? "[user] кончает под себя" : "[target] кончает сжимая попку вокруг хвоста [user]!"
-	user.visible_message(span_love(message))
+	. = ..()
 	return "onto"

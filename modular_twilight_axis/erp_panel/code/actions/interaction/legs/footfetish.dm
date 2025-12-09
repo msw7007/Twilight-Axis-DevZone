@@ -4,22 +4,15 @@
 	required_target = SEX_ORGAN_MOUTH
 	armor_slot_target = BODY_ZONE_PRECISE_MOUTH
 	stamina_cost = 0.05
-	affects_self_arousal	= 0.02
-	affects_arousal			= 0.04
-	affects_self_pain		= 0.01
-	affects_pain			= 0.02
+	affects_self_arousal = 0.02
+	affects_arousal = 0.04
+	affects_self_pain = 0.01
+	affects_pain = 0.02
 	require_grab = TRUE
 
-/datum/sex_panel_action/other/legs/footfetish/get_start_message(mob/living/carbon/human/user, mob/living/carbon/human/target)
-	var/pose_state = get_pose_key(user, target)
-	return "[user] [get_pose_text(pose_state)] пихает ноги в рот [target?.is_dullahan_head_partner() ? "отделенной головы " : ""][target]."
+	actor_sex_hearts = TRUE
+	target_suck_sound = TRUE
 
-/datum/sex_panel_action/other/legs/footfetish/get_perform_message(mob/living/carbon/human/user, mob/living/carbon/human/target)
-	var/pose_state = get_pose_key(user, target)
-	var/message = "[user] [get_pose_text(pose_state)], [get_force_text()] и [get_speed_text()] водит пальцами ног во рту [target?.is_dullahan_head_partner() ? "отделенной головы " : ""][target]."
-	show_sex_effects(user)
-	target.make_sucking_noise()
-	return spanify_force(message)
-
-/datum/sex_panel_action/other/legs/footfetish/get_finish_message(mob/living/carbon/human/user, mob/living/carbon/human/target)
-	return "[user] убирает ножки от лица [target?.is_dullahan_head_partner() ? "отделенной головы " : ""][target]."
+	message_on_start   = "{actor} {pose} пихает ноги в рот {dullahan?отделенной головы :}{partner}."
+	message_on_perform = "{actor} {pose}, {force} и {speed} водит пальцами ног во рту {dullahan?отделенной головы :}{partner}."
+	message_on_finish  = "{actor} убирает ножки от лица {dullahan?отделенной головы :}{partner}."

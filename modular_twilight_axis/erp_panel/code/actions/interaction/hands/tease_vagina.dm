@@ -10,16 +10,9 @@
 	affects_self_pain		= 0
 	affects_pain			= 0.04
 
-/datum/sex_panel_action/other/hands/tease_vagina/get_start_message(mob/living/carbon/human/user, mob/living/carbon/human/target)
-	var/pose_state = get_pose_key(user, target)
-	return "[user] [get_pose_text(pose_state)] касается рукой киски [target]."
+	actor_sex_hearts = TRUE
+	actor_make_fingering_sound = TRUE
 
-/datum/sex_panel_action/other/hands/tease_vagina/get_perform_message(mob/living/carbon/human/user, mob/living/carbon/human/target)
-	var/pose_state = get_pose_key(user, target)
-	var/message = "[user] [get_pose_text(pose_state)], [get_force_text()] и [get_speed_text()] водит рукой по клитору [target]."
-	show_sex_effects(user)
-	playsound(user, 'sound/misc/mat/fingering.ogg', 30, TRUE, -2, ignore_walls = FALSE)
-	return spanify_force(message)
-
-/datum/sex_panel_action/other/hands/tease_vagina/get_finish_message(mob/living/carbon/human/user, mob/living/carbon/human/target)
-	return "[user] убирает руку от лона [target]."
+	message_on_start   = "{actor} {pose} касается рукой киски {partner}."
+	message_on_perform = "{actor} {pose}, {force} и {speed} водит рукой по клитору {partner}."
+	message_on_finish  = "{actor} убирает руку от лона {partner}."

@@ -6,10 +6,20 @@
 	armor_slot_init = BODY_ZONE_PRECISE_GROIN
 	check_same_tile = FALSE
 
-	affects_self_arousal	= 0
-	affects_arousal			= 0.18
-	affects_self_pain		= 0
-	affects_pain			= 0.02
+	affects_self_arousal = 0
+	affects_arousal = 0.18
+	affects_self_pain = 0
+	affects_pain = 0.02
+
+	actor_sex_hearts = TRUE
+	actor_make_fingering_sound = TRUE
+	actor_do_onomatopoeia = TRUE
+	actor_do_thrust = TRUE
+	can_be_custom = FALSE
+
+	message_on_start   = "{actor} {pose} подносит игрушку к лону {partner}."
+	message_on_perform = "{actor} {pose}, {force} и {speed} водит игрушкой внутри лона {partner}."
+	message_on_finish  = "{actor} отстраняет игрушку от {partner}."
 
 /datum/sex_panel_action/other/hands/toy_vaginal/can_perform(mob/living/carbon/human/user, mob/living/carbon/human/target)
 	. = ..()
@@ -21,20 +31,3 @@
 		return FALSE
 
 	return TRUE
-
-/datum/sex_panel_action/other/hands/toy_vaginal/get_start_message(mob/living/carbon/human/user, mob/living/carbon/human/target)
-	var/pose_state = get_pose_key(user, target)
-	return "[user] [get_pose_text(pose_state)] берет игрушку в руку и подносит к лону [target]."
-
-/datum/sex_panel_action/other/hands/toy_vaginal/get_perform_message(mob/living/carbon/human/user, mob/living/carbon/human/target)
-	var/pose_state = get_pose_key(user, target)
-	var/message = "[user] [get_pose_text(pose_state)], [get_force_text()] и [get_speed_text()] водит игрушкой внутри лона [target]."
-	do_onomatopoeia(user)
-	show_sex_effects(user)
-	do_thrust_animate(user, target)
-	playsound(user, 'sound/misc/mat/fingering.ogg', 30, TRUE, -2, ignore_walls = FALSE)
-	return spanify_force(message)
-
-/datum/sex_panel_action/other/hands/toy_vaginal/get_finish_message(mob/living/carbon/human/user, mob/living/carbon/human/target)
-	return "[user] отстраняет игрушку от [target]."
-

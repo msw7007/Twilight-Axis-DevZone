@@ -9,22 +9,16 @@
 	affects_self_pain		= 0.02
 	affects_pain			= 0.01
 
-/datum/sex_panel_action/other/vagina/force_face/get_start_message(mob/living/carbon/human/user, mob/living/carbon/human/target)
-	var/pose_state = get_pose_key(user, target)
-	return "[user] [get_pose_text(pose_state)] хватает [target?.is_dullahan_head_partner() ? "отделенной головы" : "головы"] [target], прижимая к своей промежности."
+	actor_sex_hearts = TRUE
+	actor_do_thrust = TRUE
+	target_suck_sound = TRUE
 
-/datum/sex_panel_action/other/vagina/force_face/get_perform_message(mob/living/carbon/human/user, mob/living/carbon/human/target)
-	var/pose_state = get_pose_key(user, target)
-	var/message = "[user] [get_pose_text(pose_state)], [get_force_text()] и [get_speed_text()] впечатывает лицу [target?.is_dullahan_head_partner() ? "отделенной головы " : ""][target] в свою промежность."
-	show_sex_effects(user)
-	do_thrust_animate(user, target)
-	target.make_sucking_noise()
-	return spanify_force(message)
-
-/datum/sex_panel_action/other/vagina/force_face/get_finish_message(mob/living/carbon/human/user, mob/living/carbon/human/target)
-	return "[user] убирает руки от [target?.is_dullahan_head_partner() ? "отделенной головы" : "головы"] [target]."
+	message_on_start   = "{actor} {pose}, {force} и {speed} хватает {dullahan?отделенную голову :}{partner}, прижимая к своей промежности."
+	message_on_perform = "{actor} {pose}, {force} и {speed} впечатывает лицо {dullahan?отделенной головы :}{partner} в свою промежность."
+	message_on_finish  = "{actor} убирает руки от {dullahan?отделенной головы:головы} {partner}."
+	message_on_climax_actor  = "{actor}  кончает на лицо {dullahan?отделенной головы :}{partner}."
+	message_on_climax_target = "{partner} кончает под себя"
 
 /datum/sex_panel_action/other/mouth/rimming/handle_climax_message(mob/living/carbon/human/user, mob/living/carbon/human/target, is_active = TRUE)
-	var/message = is_active ? "[user] кончает на лицо [target?.is_dullahan_head_partner() ? "отделенной головы " : ""][target]" : "[target] кончает под себя"
-	user.visible_message(span_love(message))
+	. = ..()
 	return "onto"

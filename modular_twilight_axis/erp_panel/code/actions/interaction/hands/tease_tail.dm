@@ -3,22 +3,15 @@
 	name = "Ласкать хвост"
 	required_target = SEX_ORGAN_TAIL
 	stamina_cost = 0.05
-	affects_self_arousal	= 0
-	affects_arousal			= 0.05
-	affects_self_pain		= 0
-	affects_pain			= 0.04
+	affects_self_arousal = 0
+	affects_arousal = 0.05
+	affects_self_pain = 0
+	affects_pain = 0.04
 	break_on_move = FALSE
 
-/datum/sex_panel_action/other/hands/tease_tail/get_start_message(mob/living/carbon/human/user, mob/living/carbon/human/target)
-	var/pose_state = get_pose_key(user, target)
-	return "[user] [get_pose_text(pose_state)] касается руками хвоста [target]."
+	actor_sex_hearts = TRUE
+	actor_make_fingering_sound = TRUE
 
-/datum/sex_panel_action/other/hands/tease_tail/get_perform_message(mob/living/carbon/human/user, mob/living/carbon/human/target)
-	var/pose_state = get_pose_key(user, target)
-	var/message = "[user] [get_pose_text(pose_state)], [get_force_text()] и [get_speed_text()] водит руками по хвосту [target]."
-	show_sex_effects(user)
-	playsound(user, 'sound/misc/mat/fingering.ogg', 30, TRUE, -2, ignore_walls = FALSE)
-	return spanify_force(message)
-
-/datum/sex_panel_action/other/hands/tease_tail/get_finish_message(mob/living/carbon/human/user, mob/living/carbon/human/target)
-	return "[user] убирает руки от хвоста [target]."
+	message_on_start   = "{actor} {pose} касается руками хвоста {partner}."
+	message_on_perform = "{actor} {pose}, {force} и {speed} водит руками по хвосту {partner}."
+	message_on_finish  = "{actor} убирает руки от хвоста {partner}."

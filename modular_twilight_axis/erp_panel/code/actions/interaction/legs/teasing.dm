@@ -9,16 +9,9 @@
 	affects_pain			= 0.01
 	check_same_tile = FALSE
 
-/datum/sex_panel_action/other/legs/teasing/get_start_message(mob/living/carbon/human/user, mob/living/carbon/human/target)
-	var/pose_state = get_pose_key(user, target)
-	return "[user] [get_pose_text(pose_state)] укладывает свою ногу на [target]."
+	actor_sex_hearts = TRUE
+	actor_make_fingering_sound = TRUE
 
-/datum/sex_panel_action/other/legs/teasing/get_perform_message(mob/living/carbon/human/user, mob/living/carbon/human/target)
-	var/pose_state = get_pose_key(user, target)
-	var/message = "[user] [get_pose_text(pose_state)], [get_force_text()] и [get_speed_text()] трется ногой об [get_target_zone(user)] [target]."
-	show_sex_effects(user)
-	playsound(user, 'sound/misc/mat/fingering.ogg', 30, TRUE, -2, ignore_walls = FALSE)
-	return spanify_force(message)
-
-/datum/sex_panel_action/other/legs/teasing/get_finish_message(mob/living/carbon/human/user, mob/living/carbon/human/target)
-	return "[user] убирает ногу от [target]."
+	message_on_start   = "{actor} {pose} укладывает свою ногу на {partner}."
+	message_on_perform = "{actor} {pose}, {force} и {speed} трётся ногой об {zone} {partner}."
+	message_on_finish  = "{actor} убирает ногу от {partner}."

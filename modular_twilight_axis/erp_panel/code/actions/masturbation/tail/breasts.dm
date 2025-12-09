@@ -8,16 +8,9 @@
 	affects_self_arousal	= 0.1
 	affects_self_pain		= 0.0
 
-/datum/sex_panel_action/self/tail/squeeze_breasts/get_start_message(user, target)
-	return "[user] обвивает хвост вокруг груди."
+	actor_sex_hearts = TRUE
+	actor_make_fingering_sound = TRUE
 
-/datum/sex_panel_action/self/tail/squeeze_breasts/get_perform_message(user, target)
-	var/message = "[user] [get_force_text()] и [get_speed_text()] сжимает хвостом грудь."
-	show_sex_effects(user)
-	playsound(user, 'sound/misc/mat/fingering.ogg', 30, TRUE, -2, ignore_walls = FALSE)
-	return spanify_force(message)
-
-/datum/sex_panel_action/self/tail/squeeze_breasts/get_finish_message(user, target)
-	return "[user] отпускает грудь."
-
-
+	message_on_start   = "{actor} обвивает хвост вокруг груди."
+	message_on_perform = "{actor} {pose}, {force} и {speed} сжимает хвостом грудь."
+	message_on_finish  = "{actor} отпускает грудь."

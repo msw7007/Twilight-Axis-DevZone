@@ -1,28 +1,24 @@
 /datum/sex_panel_action/other/anus/butt
 	abstract_type = FALSE
 	name = "Работать попкой"
+
 	required_target = SEX_ORGAN_PENIS
 	stamina_cost = 0.1
-	affects_self_arousal	= 0.06
-	affects_arousal			= 0.12
-	affects_self_pain		= 0
-	affects_pain			= 0.04
 
-/datum/sex_panel_action/other/anus/butt/get_start_message(mob/living/carbon/human/user, mob/living/carbon/human/target)
-	var/pose_state = get_pose_key(user, target)
-	return "[user] [get_pose_text(pose_state)] прижимается попкой к члену [target]."
+	affects_self_arousal = 0.06
+	affects_arousal = 0.12
+	affects_self_pain = 0
+	affects_pain = 0.04
 
-/datum/sex_panel_action/other/anus/butt/get_perform_message(mob/living/carbon/human/user, mob/living/carbon/human/target)
-	var/pose_state = get_pose_key(user, target)
-	var/message = "[user] [get_pose_text(pose_state)], [get_force_text()] и [get_speed_text()] водит [is_agressive_tier() ? "задницей" : "ягодицами"] по члену [target]."
-	show_sex_effects(user)
-	playsound(user, 'sound/misc/mat/fingering.ogg', 30, TRUE, -2, ignore_walls = FALSE)
-	return spanify_force(message)
+	actor_sex_hearts = TRUE
+	actor_make_fingering_sound = TRUE
 
-/datum/sex_panel_action/other/anus/butt/get_finish_message(mob/living/carbon/human/user, mob/living/carbon/human/target)
-	return "[user] отводит круп от члена [target]."
+	message_on_start   = "{actor} {pose} прижимается попкой к члену {partner}."
+	message_on_perform = "{actor} {pose}, {force} и {speed} водит {aggr?задницей:ягодицами} {dullahan?отделенной головы :}{partner}."
+	message_on_finish  = "{actor} отводит круп от члена {partner}."
+	message_on_climax_actor  = "{actor} кончает под себя."
+	message_on_climax_target = "{partner} кончает на ягодицы {actor}."
 
 /datum/sex_panel_action/other/anus/butt/handle_climax_message(mob/living/carbon/human/user, mob/living/carbon/human/target, is_active = TRUE)
-	var/message = is_active ? "[user] кончает под себя" : "[target] кончает на ягодицы [user]"
-	user.visible_message(span_love(message))
+	. = ..()
 	return "onto"

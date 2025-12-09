@@ -92,7 +92,7 @@
 	if(!sex_organ)
 		sex_organ = new /datum/sex_organ/tail(src)
 
-/obj/item/bodypart/taur/lamia/Initialize()
+/obj/item/bodypart/taur/lamia/attach_limb(mob/living/carbon/C)
 	. = ..()
 	if(!sex_organ)
 		sex_organ = new /datum/sex_organ/tail(src)

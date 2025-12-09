@@ -11,6 +11,26 @@
 	affects_self_pain		= 0
 	affects_pain			= 0
 
+	actor_sex_hearts = TRUE
+	target_sex_hearts = TRUE
+	actor_make_sound = TRUE
+	target_make_sound = TRUE
+	actor_suck_sound = TRUE
+	target_suck_sound = TRUE
+	actor_make_fingering_sound = TRUE
+	target_make_fingering_sound = TRUE
+	actor_do_onomatopoeia = TRUE
+	target_do_onomatopoeia = TRUE
+	actor_do_thrust = TRUE
+	target_do_thrust = TRUE
+	can_be_custom = FALSE
+
+	message_on_start   = "{actor} {pose}, {force} и {speed} приставляет тестикулы к лицу {dullahan?отделенной головы :}{partner}."
+	message_on_perform = "{actor} {pose}, {force} и {speed} водит тестикулам по лицу {dullahan?отделенной головы :}{partner}."
+	message_on_finish  = "{actor} убирает тестикулы от лица {dullahan?отделенной головы :}{partner}."
+	message_on_climax_actor  = "{actor} кончает на лицо  {dullahan?отделенной головы :}{partner}."
+	message_on_climax_target = "{partner} кончает под себя."
+
 /datum/sex_panel_action/other/penis/tea_bag/can_perform(mob/living/carbon/human/user, mob/living/carbon/human/target)
 	. = ..()
 
@@ -21,22 +41,6 @@
 	if(!testicles)
 		return
 
-/datum/sex_panel_action/other/penis/tea_bag/get_start_message(mob/living/carbon/human/user, mob/living/carbon/human/target)
-	var/pose_state = get_pose_key(user, target)
-	return "[user] [get_pose_text(pose_state)] приставляет тестикулами к лицу [target?.is_dullahan_head_partner() ? "отделенной головы " : ""][target]."
-
-/datum/sex_panel_action/other/penis/tea_bag/get_perform_message(mob/living/carbon/human/user, mob/living/carbon/human/target)
-	var/pose_state = get_pose_key(user, target)
-	var/message = "[user] [get_pose_text(pose_state)], [get_force_text()] и [get_speed_text()] водит тестикулам по лицу [target?.is_dullahan_head_partner() ? "отделенной головы " : ""][target]."
-	do_onomatopoeia(user)
-	show_sex_effects(user)
-	do_thrust_animate(user, target)
-	return spanify_force(message)
-
-/datum/sex_panel_action/other/penis/tea_bag/get_finish_message(mob/living/carbon/human/user, mob/living/carbon/human/target)
-	return "[user] убирает тестикулы с лица [target?.is_dullahan_head_partner() ? "отделенной головы " : ""][target]."
-
 /datum/sex_panel_action/other/penis/tea_bag/handle_climax_message(mob/living/carbon/human/user, mob/living/carbon/human/target, is_active = TRUE)
-	var/message = is_active ? "[user] кончает на лицо [target?.is_dullahan_head_partner() ? "отделенной головы " : ""][target]" : "[target] кончает под себя!"
-	user.visible_message(span_love(message))
+	. = ..()
 	return "onto"

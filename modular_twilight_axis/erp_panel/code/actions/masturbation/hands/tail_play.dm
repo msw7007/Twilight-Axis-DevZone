@@ -5,19 +5,9 @@
 	required_target = SEX_ORGAN_TAIL
 
 	affects_self_arousal	= 0.01
-	affects_arousal			= 0
-	affects_self_pain		= 0
-	affects_pain			= 0
 
-/datum/sex_panel_action/self/hands/tail_pet/get_start_message(mob/living/carbon/human/user, mob/living/carbon/human/target)
-	var/pose_state = get_pose_key(user, target)
-	return "[user] [get_pose_text(pose_state)] проводит рукой по хвосту."
+	actor_sex_hearts = TRUE
 
-/datum/sex_panel_action/self/hands/tail_pet/get_perform_message(mob/living/carbon/human/user, mob/living/carbon/human/target)
-	var/pose_state = get_pose_key(user, target)
-	var/message = "[user] [get_pose_text(pose_state)], [get_force_text()] и [get_speed_text()] ласкает свой хвост."
-	show_sex_effects(user)
-	return spanify_force(message)
-
-/datum/sex_panel_action/self/hands/tail_pet/get_finish_message(mob/living/carbon/human/user, mob/living/carbon/human/target)
-	return "[user] отпускает хвост."
+	message_on_start   = "{actor} {pose} проводит рукой по хвосту."
+	message_on_perform = "{actor} {pose}, {force} и {speed} ласкает свой хвост."
+	message_on_finish  = "{actor} отпускает хвост."

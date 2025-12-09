@@ -6,19 +6,11 @@
 	required_target = SEX_ORGAN_MOUTH
 
 	affects_self_arousal	= 0.1
-	affects_arousal			= 0
-	affects_self_pain		= 0
-	affects_pain			= 0
 
-/datum/sex_panel_action/self/tail/suck_tail/get_start_message(mob/living/carbon/human/user, mob/living/carbon/human/target)
-	return "[user] подводит хвост ближе к лицу."
+	actor_sex_hearts = TRUE
+	actor_suck_sound = TRUE
+	actor_make_fingering_sound = TRUE
 
-/datum/sex_panel_action/self/tail/suck_tail/get_perform_message(mob/living/carbon/human/user, mob/living/carbon/human/target)
-	var/message = "[user] [get_force_text()] и [get_speed_text()] обсасывает хвост в своем рту."
-	do_onomatopoeia(user)
-	show_sex_effects(user)
-	user.make_sucking_noise()
-	return spanify_force(message)
-
-/datum/sex_panel_action/self/tail/suck_tail/get_finish_message(mob/living/carbon/human/user, mob/living/carbon/human/target)
-	return "[user] уводит хвост от лица."
+	message_on_start   = "{actor} подводит хвост ближе к лицу."
+	message_on_perform = "{actor} {pose}, {force} и {speed} обсасывает хвост в своем рту."
+	message_on_finish  = "{actor} уводит хвост от лица."

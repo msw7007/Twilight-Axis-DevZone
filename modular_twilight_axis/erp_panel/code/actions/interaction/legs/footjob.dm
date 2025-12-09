@@ -9,9 +9,13 @@
 	affects_pain			= 0.01
 	require_grab = TRUE
 
-/datum/sex_panel_action/other/legs/footjob/get_start_message(mob/living/carbon/human/user, mob/living/carbon/human/target)
-	var/pose_state = get_pose_key(user, target)
-	return "[user] [get_pose_text(pose_state)] зажимает член [target] ступнями."
+	actor_sex_hearts = TRUE
+	actor_make_fingering_sound = TRUE
+	actor_do_thrust = TRUE
+
+	message_on_start   = "{actor} {pose} зажимает член {partner} ступнями.."
+	message_on_perform = "{actor} {pose}, {force} и {speed} водит ступнями по члену {partner}."
+	message_on_finish  = "{actor} убирает ножки от члена {partner}."
 
 /datum/sex_panel_action/other/legs/footjob/get_perform_message(mob/living/carbon/human/user, mob/living/carbon/human/target)
 	var/pose_state = get_pose_key(user, target)
@@ -20,6 +24,3 @@
 	do_thrust_animate(user, target)
 	playsound(user, 'sound/misc/mat/fingering.ogg', 30, TRUE, -2, ignore_walls = FALSE)
 	return spanify_force(message)
-
-/datum/sex_panel_action/other/legs/footjob/get_finish_message(mob/living/carbon/human/user, mob/living/carbon/human/target)
-	return "[user] убирает ножки от члена [target]."

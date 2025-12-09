@@ -323,3 +323,27 @@
 		return FALSE
 
 	return istype(P.source_part, /obj/item/bodypart/head/dullahan)
+
+/mob/living/carbon/human/proc/is_erp_defiant_in_combat()
+	if(cmode && defiant)
+		return TRUE
+
+	return FALSE
+
+/mob/living/carbon/human/proc/has_erp_leprosy()
+	if(HAS_TRAIT(src, TRAIT_LEPROSY))
+		return TRUE
+
+	return FALSE
+
+/mob/living/carbon/human/proc/is_erp_blocked_as_target()
+	if(stat == DEAD)
+		return TRUE
+
+	if(is_erp_defiant_in_combat())
+		return TRUE
+
+	if(has_erp_leprosy())
+		return TRUE
+
+	return FALSE

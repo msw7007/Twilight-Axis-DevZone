@@ -57,6 +57,7 @@
 #include "code\actions\interaction\breasts\teasing.dm"
 #include "code\actions\interaction\breasts\titjob.dm"
 #include "code\actions\interaction\hands\_hands.dm"
+#include "code\actions\interaction\hands\breasts_play.dm"
 #include "code\actions\interaction\hands\finger_anal.dm"
 #include "code\actions\interaction\hands\finger_oral.dm"
 #include "code\actions\interaction\hands\finger_vaginal.dm"

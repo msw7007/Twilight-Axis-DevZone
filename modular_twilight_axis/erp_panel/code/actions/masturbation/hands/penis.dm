@@ -6,22 +6,11 @@
 	armor_slot_init = BODY_ZONE_PRECISE_GROIN
 
 	affects_self_arousal	= 0.22
-	affects_arousal			= 0
 	affects_self_pain		= 0.01
-	affects_pain			= 0
 
-/datum/sex_panel_action/self/hands/masturbate_penis/get_start_message(mob/living/carbon/human/user, mob/living/carbon/human/target)
-	var/pose_state = get_pose_key(user, target)
-	return "[user] [get_pose_text(pose_state)] хватает свой член."
+	actor_sex_hearts = TRUE
+	actor_do_onomatopoeia = TRUE
 
-/datum/sex_panel_action/self/hands/masturbate_penis/get_perform_message(mob/living/carbon/human/user, mob/living/carbon/human/target)
-	var/pose_state = get_pose_key(user, target)
-	var/message = "[user] [get_pose_text(pose_state)], [get_force_text()] и [get_speed_text()] дёргает свой член."
-	show_sex_effects(user)
-	playsound(user, 'sound/misc/mat/fingering.ogg', 30, TRUE, -2, ignore_walls = FALSE)
-	return spanify_force(message)
-
-/datum/sex_panel_action/self/hands/masturbate_penis/get_finish_message(mob/living/carbon/human/user, mob/living/carbon/human/target)
-	return "[user] ослабляет хватку и останавливается."
-
-
+	message_on_start   = "{actor} {pose} хватает свой член."
+	message_on_perform = "{actor} {pose}, {force} и {speed} дёргает свой член."
+	message_on_finish  = "{actor} ослабляет хватку и останавливается."

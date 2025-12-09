@@ -11,23 +11,17 @@
 	affects_self_pain		= 0.01
 	affects_pain			= 0.03
 
-/datum/sex_panel_action/other/penis/force_blowjob/get_start_message(mob/living/carbon/human/user, mob/living/carbon/human/target)
-	var/pose_state = get_pose_key(user, target)
-	return "[user] [get_pose_text(pose_state)] приставляет свой член к лицу [target?.is_dullahan_head_partner() ? "отделенной головы " : ""][target]."
+	message_on_start			= "{actor} {pose} приставляет свой член к лицу {dullahan?отделенной головы :}{partner}."
+	message_on_perform			= "{actor} {pose}, {force} и {speed} трахает в глотку {dullahan?отделенной головы :}{partner}{knot}."
+	message_on_finish			= "{actor} вытаскивает член из рта {dullahan?отделенной головы :}{partner}."
+	message_on_climax_actor		= "{actor} кончает в рот {dullahan?отделенной головы :}{partner}."
+	message_on_climax_target	= "{partner} кончает под себя!"
 
-/datum/sex_panel_action/other/penis/force_blowjob/get_perform_message(mob/living/carbon/human/user, mob/living/carbon/human/target)
-	var/pose_state = get_pose_key(user, target)
-	var/message = "[user] [get_pose_text(pose_state)], [get_force_text()] и [get_speed_text()] трахает в [target?.is_dullahan_head_partner() ? "отделенной головы " : ""]глотку [target]."
-	do_onomatopoeia(user)
-	show_sex_effects(user)
-	do_sound_effect(user)
-	target.make_sucking_noise()
-	return spanify_force(message)
+	actor_do_onomatopoeia	= TRUE
+	actor_sex_hearts		= TRUE
+	actor_make_sound		= TRUE
+	target_suck_sound		= TRUE
 
-/datum/sex_panel_action/other/penis/force_blowjob/get_finish_message(mob/living/carbon/human/user, mob/living/carbon/human/target)
-	return "[user] вытаскивает член из рта [target?.is_dullahan_head_partner() ? "отделенной головы " : ""][target]."
-
-/datum/sex_panel_action/other/penis/force_blowjob/handle_climax_message(mob/living/carbon/human/user, mob/living/carbon/human/target, is_active = TRUE)
-	var/message = is_active ? "[user] кончает в рот [target?.is_dullahan_head_partner() ? "отделенной головы " : ""][target]" : "[target] кончает под себя!"
-	user.visible_message(span_love(message))
-	return "into"
+/datum/sex_panel_action/other/penis/force_blowjob/handle_climax_message(...)
+    . = ..()
+    return "into"

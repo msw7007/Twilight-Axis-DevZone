@@ -10,25 +10,19 @@
 	affects_self_pain		= 0.01
 	affects_pain			= 0.02
 
-/datum/sex_panel_action/other/penis/oral_sex/get_start_message(mob/living/carbon/human/user, mob/living/carbon/human/target)
-	var/pose_state = get_pose_key(user, target)
-	return "[user] [get_pose_text(pose_state)] приставляет свой член к лицу [target?.is_dullahan_head_partner() ? "отделенной головы " : ""][target]."
+	target_suck_sound = TRUE
+	actor_sex_hearts = TRUE
+	actor_do_onomatopoeia = TRUE
+	actor_do_thrust = TRUE
 
-/datum/sex_panel_action/other/penis/oral_sex/get_perform_message(mob/living/carbon/human/user, mob/living/carbon/human/target)
-	var/pose_state = get_pose_key(user, target)
-	var/message = "[user] [get_pose_text(pose_state)], [get_force_text()] и [get_speed_text()] трахает [target] в рот[target?.is_dullahan_head_partner() ? " отделенной головы" : ""] [get_knot_action(user, target)]."
-	do_onomatopoeia(user)
-	show_sex_effects(user)
-	do_thrust_animate(user, target)
-	target.make_sucking_noise()
-	return spanify_force(message)
-
-/datum/sex_panel_action/other/penis/oral_sex/get_finish_message(mob/living/carbon/human/user, mob/living/carbon/human/target)
-	return "[user] вытаскивает член из рта [target?.is_dullahan_head_partner() ? "отделенной головы " : ""][target]."
+	message_on_start   = "{actor} {pose} приставляет свой член к лицу {dullahan?отделенной головы :}{partner}."
+	message_on_perform = "{actor} {pose}, {force} и {speed} трахает в рот {dullahan?отделенной головы :}{partner}{knot}."
+	message_on_finish  = "{actor} {pose}, {force} и {speed} {aggr?задницей:ягодицами} {dullahan?отделенной головы :}{partner}."
+	message_on_climax_actor  = "{actor}  кончает в рот {dullahan?отделенной головы :}{partner}."
+	message_on_climax_target = "{partner} кончает под себя!"
 
 /datum/sex_panel_action/other/penis/oral_sex/handle_climax_message(mob/living/carbon/human/user, mob/living/carbon/human/target, is_active = TRUE)
-	var/message = is_active ? "[user] кончает в рот [target?.is_dullahan_head_partner() ? "отделенной головы " : ""][target]" : "[target] кончает под себя!"
-	user.visible_message(span_love(message))
+	. = ..()
 	return "into"
 
 /datum/sex_panel_action/other/penis/oral_sex/get_knot_count()

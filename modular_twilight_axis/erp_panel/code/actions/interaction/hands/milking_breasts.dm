@@ -1,13 +1,23 @@
+
 /datum/sex_panel_action/other/hands/milking_breasts
 	abstract_type = FALSE
 	name = "Доить грудь"
 	required_target = SEX_ORGAN_BREASTS
 	armor_slot_target = BODY_ZONE_CHEST
 	stamina_cost = 0.05
-	affects_self_arousal	= 0
-	affects_arousal			= 0.06
-	affects_self_pain		= 0
-	affects_pain			= 0.02
+	affects_self_arousal = 0
+	affects_arousal = 0.06
+	affects_self_pain = 0
+	affects_pain = 0.02
+
+	actor_sex_hearts = TRUE
+	actor_make_fingering_sound = TRUE
+	actor_do_onomatopoeia = TRUE
+	can_be_custom = FALSE
+
+	message_on_start   = "{actor} {pose} кладет руки на грудь {partner}."
+	message_on_perform = "{actor} {pose}, {force} и {speed} водит руками по сиськам {partner}."
+	message_on_finish  = "{actor} {pose} убирает руки от груди {partner}."
 
 /datum/sex_panel_action/other/hands/milking_breasts/can_perform(mob/living/carbon/human/user, mob/living/carbon/human/target)
 	. = ..()
@@ -27,21 +37,6 @@
 		return TRUE
 
 	return FALSE
-
-/datum/sex_panel_action/other/hands/milking_breasts/get_start_message(mob/living/carbon/human/user, mob/living/carbon/human/target)
-	var/pose_state = get_pose_key(user, target)
-	return "[user] [get_pose_text(pose_state)] кладет руки на грудь [target]."
-
-/datum/sex_panel_action/other/hands/milking_breasts/get_perform_message(mob/living/carbon/human/user, mob/living/carbon/human/target)
-	var/pose_state = get_pose_key(user, target)
-	var/message = "[user] [get_pose_text(pose_state)], [get_force_text()] и [get_speed_text()] водит руками по сиськам [target]."
-	do_onomatopoeia(user)
-	show_sex_effects(user)
-	playsound(user, 'sound/misc/mat/fingering.ogg', 30, TRUE, -2, ignore_walls = FALSE)
-	return spanify_force(message)
-
-/datum/sex_panel_action/other/hands/milking_breasts/get_finish_message(mob/living/carbon/human/user, mob/living/carbon/human/target)
-	return "[user] убирает руки от груди [target]."
 
 /datum/sex_panel_action/other/hands/milking_breasts/on_perform(mob/living/carbon/human/user, mob/living/carbon/human/target)
 	. = ..()

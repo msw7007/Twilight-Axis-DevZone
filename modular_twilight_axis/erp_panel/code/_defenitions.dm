@@ -74,6 +74,10 @@
 
 #define COMSIG_SEX_MODIFY_EFFECT "sex_modify_effect"
 
+var/global/regex/SEX_REGEX_DULLAHAN  = regex(@"\{dullahan\?([^:}]*):([^}]*)\}", "g")
+var/global/regex/SEX_REGEX_AGGR      = regex(@"\{aggr\?([^:}]*):([^}]*)\}", "g")
+var/global/regex/SEX_REGEX_BIGBREAST = regex(@"\{bigbreast\?([^:}]*):([^}]*)\}", "g")
+
 GLOBAL_LIST_INIT(sex_panel_actions, build_sex_panel_actions())
 
 #define SEX_PANEL_ACTION(sex_action_type) (GLOB.sex_panel_actions[sex_action_type])

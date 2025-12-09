@@ -6,9 +6,15 @@
 	armor_slot_init = BODY_ZONE_CHEST
 
 	affects_self_arousal	= 0.2
-	affects_arousal			= 0
 	affects_self_pain		= 0.01
-	affects_pain			= 0
+
+	actor_sex_hearts = TRUE
+	actor_make_fingering_sound = TRUE
+	can_be_custom = FALSE
+
+	message_on_start   = "{actor} хватает свою грудь и начинает вести к соскам."
+	message_on_perform = "{actor} {pose}, {force} и {speed} выжимает свою грудь."
+	message_on_finish  = "{actor} прекращает касаться груди."
 
 /datum/sex_panel_action/self/hands/milking_breasts/can_perform(mob/living/carbon/human/user, mob/living/carbon/human/target)
 	. = ..()
@@ -26,19 +32,12 @@
 
 	return FALSE
 
-/datum/sex_panel_action/self/hands/milking_breasts/get_start_message(mob/living/carbon/human/user, mob/living/carbon/human/target)
-	var/pose_state = get_pose_key(user, target)
-	return "[user] [get_pose_text(pose_state)] хватает свою грудь и начинает вести к соскам."
-
 /datum/sex_panel_action/self/hands/milking_breasts/get_perform_message(mob/living/carbon/human/user,mob/living/carbon/human/target)
 	var/pose_state = get_pose_key(user, target)
 	var/message = "[user] [get_pose_text(pose_state)], [get_force_text()] и [get_speed_text()] выжимает свою грудь."
 	show_sex_effects(user)
 	playsound(user, 'sound/misc/mat/fingering.ogg', 30, TRUE, -2, ignore_walls = FALSE)
 	return spanify_force(message)
-
-/datum/sex_panel_action/self/hands/milking_breasts/get_finish_message(mob/living/carbon/human/user,mob/living/carbon/human/target)
-	return "[user] прекращает касаться груди."
 
 /datum/sex_panel_action/self/hands/milking_breasts/handle_injection_feedback(mob/living/carbon/human/user, mob/living/carbon/human/target, moved)
 	to_chat(user, "Я чувствую, как молоко стекает из груди.")

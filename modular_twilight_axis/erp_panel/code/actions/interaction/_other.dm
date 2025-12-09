@@ -1,8 +1,6 @@
 /datum/sex_panel_action/other
 	abstract_type = TRUE
-
 	name = "Корневое действие на другого"
-
 	can_knot = FALSE
 	interaction_timer = 2 SECONDS
 	stamina_cost = 0.2
@@ -21,25 +19,3 @@
 		return FALSE
 
 	return TRUE
-
-/datum/sex_panel_action/other/on_perform(mob/living/carbon/human/user, mob/living/carbon/human/target)
-	. = ..()
-
-/datum/sex_panel_action/other/proc/is_big_boobs(mob/living/carbon/human/target)
-	if(!target)
-		return FALSE
-
-	var/obj/item/organ/breasts/breast_item = target.getorganslot(ORGAN_SLOT_BREASTS)
-	if(!breast_item)
-		return FALSE
-
-	var/size = breast_item.breast_size
-
-	if(isnull(size))
-		return FALSE
-
-	if(size >= BREAST_SIZE_LARGE)
-		return TRUE
-
-	return FALSE
-	

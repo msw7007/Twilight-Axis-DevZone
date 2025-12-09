@@ -86,9 +86,11 @@
 		to_chat(user, "<span class='warning'>[src] dosn't wish to be touched. (Their ERP preference under options)</span>")
 		to_chat(src, "<span class='warning'>[user] failed to touch you. (Your ERP preference under options)</span>")
 		return
-
-	if(!user.start_sex_session_tgui(target)) // TWILIGHT AXIS EDITION - new ERP system
-		to_chat(user, "<span class='warning'>I'm already sexing.</span>")
+	
+	// TWILIGHT AXIS EDITION START - new ERP system
+	if(!user.start_sex_session_tgui(target)) 
+		to_chat(user, "<span class='warning'>Blocked by combat mode or Leprosy.</span>")
+	// TWILIGHT AXIS EDITION END- new ERP system
 		return
 
 /proc/get_sex_session(mob/giver, mob/taker)

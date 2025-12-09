@@ -13,6 +13,18 @@
 	affects_pain			= 0.03
 	can_knot = TRUE
 
+	actor_sex_hearts = TRUE
+	actor_make_sound = TRUE
+	actor_do_onomatopoeia = TRUE
+	actor_do_thrust = TRUE
+	can_be_custom = FALSE
+
+	message_on_start   = "{actor} {pose} приставляет свои члены сразу к обоим дырочкам {partner}."
+	message_on_perform = "{actor} {pose}, {force} и {speed} трахает {partner} сразу в киску и зад{knot}."
+	message_on_finish  = "{actor} вытаскивает члены из дырок {partner}."
+	message_on_climax_actor  = "{actor} кончает одновременно в киску и зад {partner}."
+	message_on_climax_target = "{partner} кончает под себя!"
+
 /datum/sex_panel_action/other/penis/hemi/dp_vag_anal/get_filter_target_organ_types()
 	return list(required_target, required_target_second)
 
@@ -125,25 +137,8 @@
 
 	return orgs
 
-/datum/sex_panel_action/other/penis/hemi/dp_vag_anal/get_start_message(mob/living/carbon/human/user, mob/living/carbon/human/target)
-	var/pose_state = get_pose_key(user, target)
-	return "[user] [get_pose_text(pose_state)] приставляет свои члены сразу к обоим дырочкам [target]."
-
-/datum/sex_panel_action/other/penis/hemi/dp_vag_anal/get_perform_message(mob/living/carbon/human/user, mob/living/carbon/human/target)
-	var/pose_state = get_pose_key(user, target)
-	var/msg = "[user] [get_pose_text(pose_state)], [get_force_text()] и [get_speed_text()] трахает [target] сразу в киску и зад [get_knot_action()]."
-	do_onomatopoeia(user)
-	show_sex_effects(user)
-	do_thrust_animate(user, target)
-	do_sound_effect(user)
-	return spanify_force(msg)
-
-/datum/sex_panel_action/other/penis/hemi/dp_vag_anal/get_finish_message(mob/living/carbon/human/user, mob/living/carbon/human/target)
-	return "[user] вытаскивает члены из дырок [target]."
-
 /datum/sex_panel_action/other/penis/hemi/dp_vag_anal/handle_climax_message(mob/living/carbon/human/user, mob/living/carbon/human/target, is_active = TRUE)
-	var/message = is_active ? "[user] кончает одновременно в киску и зад [target]" : "[target] кончает под себя!"
-	user.visible_message(span_love(message))
+	. = ..()
 	return "into"
 
 /datum/sex_panel_action/other/penis/hemi/dp_vag_anal/get_reserved_target_organ_types()

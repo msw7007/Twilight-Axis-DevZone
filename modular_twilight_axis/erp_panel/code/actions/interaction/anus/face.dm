@@ -1,30 +1,26 @@
 /datum/sex_panel_action/other/anus/face
 	abstract_type = FALSE
 	name = "Сесть на лицо"
+
 	required_target = SEX_ORGAN_MOUTH
 	armor_slot_target = BODY_ZONE_PRECISE_MOUTH
+
 	stamina_cost = 0.1
-	affects_self_arousal	= 0.09
-	affects_arousal			= 0.12
-	affects_self_pain		= 0.01
-	affects_pain			= 0.03
+	affects_self_arousal = 0.09
+	affects_arousal = 0.12
+	affects_self_pain = 0.01
+	affects_pain = 0.03
 
-/datum/sex_panel_action/other/anus/face/get_start_message(mob/living/carbon/human/user, mob/living/carbon/human/target)
-	var/pose_state = get_pose_key(user, target)
-	return "[user] [get_pose_text(pose_state)] прижимается анусом к лицу [target?.is_dullahan_head_partner() ? "отделенной головы " : ""][target], раздвигая ягодицы."
+	actor_sex_hearts = TRUE
+	target_suck_sound = TRUE
+	actor_do_thrust = TRUE
 
-/datum/sex_panel_action/other/anus/face/get_perform_message(mob/living/carbon/human/user, mob/living/carbon/human/target)
-	var/pose_state = get_pose_key(user, target)
-	var/message = "[user] [get_pose_text(pose_state)], [get_force_text()] и [get_speed_text()] елозит [is_agressive_tier() ? "задницей" : "ягодицами"] по лицу [target?.is_dullahan_head_partner() ? "отделенной головы " : ""][target]."
-	show_sex_effects(user)
-	do_thrust_animate(user, target)
-	target.make_sucking_noise()
-	return spanify_force(message)
-
-/datum/sex_panel_action/other/anus/face/get_finish_message(mob/living/carbon/human/user, mob/living/carbon/human/target)
-	return "[user] соскальзывает попкой с лица [target?.is_dullahan_head_partner() ? "отделенной головы " : ""][target]."
+	message_on_start   = "{actor} {pose} прижимается анусом к лицу {dullahan?отделенной головы :}{partner}, раздвигая ягодицы.."
+	message_on_perform = "{actor} {pose}, {force} и {speed} елозит {aggr?задницей:ягодицами} по лицу {dullahan?отделенной головы :}{partner}."
+	message_on_finish  = "{actor} соскальзывает попкой с лица {dullahan?отделенной головы :}{partner}."
+	message_on_climax_actor  = "{actor}  кончает под себя."
+	message_on_climax_target = "{partner} кончает под себя."
 
 /datum/sex_panel_action/other/anus/face/handle_climax_message(mob/living/carbon/human/user, mob/living/carbon/human/target, is_active = TRUE)
-	var/message = is_active ? "[user] кончает под себя" : "[target] кончает под себя"
-	user.visible_message(span_love(message))
+	. = ..()
 	return "self"

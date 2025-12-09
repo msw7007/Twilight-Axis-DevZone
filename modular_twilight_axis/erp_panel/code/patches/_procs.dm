@@ -5,8 +5,17 @@
 	if(!ishuman(src) || !ishuman(target_mob))
 		return
 
-	var/datum/sex_session_tgui/session_object = get_sex_session_tgui(src, target_mob)
+	var/mob/living/carbon/human/Hsrc = src
+	var/mob/living/carbon/human/Htgt = target_mob
 
+	if(Hsrc.is_erp_blocked_as_target())
+		return
+
+	if(Htgt.is_erp_blocked_as_target())
+		return
+
+	var/datum/sex_session_tgui/session_object = get_sex_session_tgui(src, target_mob)
+	
 	if(session_object)
 		if(istype(target_mob, /mob/living/carbon/human))
 			var/mob/living/carbon/human/human_object = target_mob
@@ -69,10 +78,10 @@
 	return sessions
 
 /proc/create_dullahan_head_partner(obj/item/bodypart/head/dullahan/head_dullahan)
-    var/mob/living/carbon/human/erp_proxy/proxy_object = new()
-    proxy_object.source_part = head_dullahan
-    proxy_object.name = "Голова [head_dullahan.original_owner.name]"
-    return proxy_object
+	var/mob/living/carbon/human/erp_proxy/proxy_object = new()
+	proxy_object.source_part = head_dullahan
+	proxy_object.name = "[head_dullahan.original_owner.name]"
+	return proxy_object
 
 /proc/sex_organ_to_zone(organ_type)
 	switch(organ_type)
@@ -138,32 +147,32 @@
 	return /obj/item/organ/penis
 
 /proc/erp_filter_to_body_zone(organ_id)
-    if(!organ_id)
-        return BODY_ZONE_CHEST
+	if(!organ_id)
+		return BODY_ZONE_CHEST
 
-    switch(organ_id)
-        if(SEX_ORGAN_FILTER_MOUTH)
-            return BODY_ZONE_HEAD
+	switch(organ_id)
+		if(SEX_ORGAN_FILTER_MOUTH)
+			return BODY_ZONE_HEAD
 
-        if(SEX_ORGAN_FILTER_LHAND)
-            return BODY_ZONE_L_ARM
+		if(SEX_ORGAN_FILTER_LHAND)
+			return BODY_ZONE_L_ARM
 
-        if(SEX_ORGAN_FILTER_RHAND)
-            return BODY_ZONE_R_ARM
+		if(SEX_ORGAN_FILTER_RHAND)
+			return BODY_ZONE_R_ARM
 
-        if(SEX_ORGAN_FILTER_LEGS)
-            return BODY_ZONE_R_LEG
+		if(SEX_ORGAN_FILTER_LEGS)
+			return BODY_ZONE_R_LEG
 
-        if(SEX_ORGAN_FILTER_TAIL)
-            return BODY_ZONE_CHEST
+		if(SEX_ORGAN_FILTER_TAIL)
+			return BODY_ZONE_CHEST
 
-        if(SEX_ORGAN_FILTER_BREASTS)
-            return BODY_ZONE_CHEST
+		if(SEX_ORGAN_FILTER_BREASTS)
+			return BODY_ZONE_CHEST
 
-        if(SEX_ORGAN_FILTER_VAGINA, SEX_ORGAN_FILTER_PENIS, SEX_ORGAN_FILTER_ANUS)
-            return BODY_ZONE_CHEST
+		if(SEX_ORGAN_FILTER_VAGINA, SEX_ORGAN_FILTER_PENIS, SEX_ORGAN_FILTER_ANUS)
+			return BODY_ZONE_CHEST
 
-    return BODY_ZONE_CHEST
+	return BODY_ZONE_CHEST
 
 /proc/erp_body_zone_to_organs(zone)
 	var/list/types = list()

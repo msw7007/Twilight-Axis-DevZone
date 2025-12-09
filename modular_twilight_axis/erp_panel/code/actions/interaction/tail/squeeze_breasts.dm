@@ -9,21 +9,15 @@
 	affects_self_pain		= 0
 	affects_pain			= 0.01
 
-/datum/sex_panel_action/other/tail/squeeze_breasts/get_start_message(mob/living/carbon/human/user, mob/living/carbon/human/target)
-	var/pose_state = get_pose_key(user, target)
-	return "[user] [get_pose_text(pose_state)] обвивает хвостом грудь [target]."
+	actor_sex_hearts = TRUE
+	actor_make_fingering_sound = TRUE
 
-/datum/sex_panel_action/other/tail/squeeze_breasts/get_perform_message(mob/living/carbon/human/user, mob/living/carbon/human/target)
-	var/pose_state = get_pose_key(user, target)
-	var/message = "[user] [get_pose_text(pose_state)], [get_force_text()] и [get_speed_text()] сжимает хвостом грудь [target]."
-	show_sex_effects(user)
-	playsound(user, 'sound/misc/mat/fingering.ogg', 30, TRUE, -2, ignore_walls = FALSE)
-	return spanify_force(message)
-
-/datum/sex_panel_action/other/tail/squeeze_breasts/get_finish_message(mob/living/carbon/human/user, mob/living/carbon/human/target)
-	return "[user] уводит хвост от [target]."
+	message_on_start   = "{actor} {pose} обвивает хвостом грудь {partner}."
+	message_on_perform = "{actor} {pose}, {force} и {speed} сжимает хвостом грудь {partner}."
+	message_on_finish  = "{actor} уводит хвост от {partner}."
+	message_on_climax_actor  = "{actor} кончает под себя."
+	message_on_climax_target = "{partner} кончает под себя."
 
 /datum/sex_panel_action/other/tail/squeeze_breasts/handle_climax_message(mob/living/carbon/human/user, mob/living/carbon/human/target, is_active = TRUE)
-	var/message = is_active ? "[user] кончает под себя" : "[target] кончает под себя!"
-	user.visible_message(span_love(message))
+	. = ..()
 	return "self"
