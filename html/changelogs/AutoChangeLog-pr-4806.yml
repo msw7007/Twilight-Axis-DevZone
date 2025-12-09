@@ -1,0 +1,4 @@
+author: "hazelrat"
+delete-after: True
+changes:
+  - rscadd: "Wall-mounted shelves no longer offset your character. Large shelves now have density."
