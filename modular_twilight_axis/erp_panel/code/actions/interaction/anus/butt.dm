@@ -18,7 +18,4 @@
 	message_on_finish  = "{actor} отводит круп от члена {partner}."
 	message_on_climax_actor  = "{actor} кончает под себя."
 	message_on_climax_target = "{partner} кончает на ягодицы {actor}."
-
-/datum/sex_panel_action/other/anus/butt/handle_climax_message(mob/living/carbon/human/user, mob/living/carbon/human/target, is_active = TRUE)
-	. = ..()
-	return "onto"
+	climax_liquid_mode = "onto"

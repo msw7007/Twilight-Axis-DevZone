@@ -24,6 +24,7 @@
 	message_on_finish  = "{actor} вытаскивает члены из дырок {partner}."
 	message_on_climax_actor  = "{actor} кончает одновременно в киску и зад {partner}."
 	message_on_climax_target = "{partner} кончает под себя!"
+	climax_liquid_mode = "into"
 
 /datum/sex_panel_action/other/penis/hemi/dp_vag_anal/get_filter_target_organ_types()
 	return list(required_target, required_target_second)
@@ -136,10 +137,6 @@
 			return FALSE
 
 	return orgs
-
-/datum/sex_panel_action/other/penis/hemi/dp_vag_anal/handle_climax_message(mob/living/carbon/human/user, mob/living/carbon/human/target, is_active = TRUE)
-	. = ..()
-	return "into"
 
 /datum/sex_panel_action/other/penis/hemi/dp_vag_anal/get_reserved_target_organ_types()
 	if(!reserve_target_for_session)

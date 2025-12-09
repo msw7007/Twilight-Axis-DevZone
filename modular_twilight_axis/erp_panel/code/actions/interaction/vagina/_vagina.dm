@@ -5,3 +5,4 @@
 	armor_slot_init = BODY_ZONE_PRECISE_GROIN
 	stamina_cost = 0.3
 	check_same_tile = TRUE
+	climax_liquid_mode = "onto"

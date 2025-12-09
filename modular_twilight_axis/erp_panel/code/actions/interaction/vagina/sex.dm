@@ -18,7 +18,5 @@
 	message_on_finish  = "{actor} соскальзывает вагиной с члена {partner}."
 	message_on_climax_actor  = "{actor} кончает, киской сжимая член {partner}."
 	message_on_climax_target = "{partner} кончает в лоно {actor}."
+	climax_liquid_mode = "into"
 
-/datum/sex_panel_action/other/mouth/rimming/handle_climax_message(mob/living/carbon/human/user, mob/living/carbon/human/target, is_active = TRUE)
-	. = ..()
-	return "into"

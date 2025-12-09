@@ -16,12 +16,9 @@
 	message_on_finish  = "{actor} убирает хвост от попки {partner}."
 	message_on_climax_actor  = "{actor} кончает под себя."
 	message_on_climax_target = "{partner} кончает под себя."
+	climax_liquid_mode = "self"
 
 /datum/sex_panel_action/other/tail/spanking/get_perform_message(mob/living/carbon/human/user, mob/living/carbon/human/target)
 	var/sound = pick('sound/foley/slap.ogg', 'sound/foley/smackspecial.ogg')
 	playsound(user, sound, 50, TRUE, -2, ignore_walls = FALSE)
 	. = ..()
-
-/datum/sex_panel_action/other/tail/spanking/handle_climax_message(mob/living/carbon/human/user, mob/living/carbon/human/target, is_active = TRUE)
-	. = ..()
-	return "self"

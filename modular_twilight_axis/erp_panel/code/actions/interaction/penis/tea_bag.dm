@@ -30,6 +30,7 @@
 	message_on_finish  = "{actor} убирает тестикулы от лица {dullahan?отделенной головы :}{partner}."
 	message_on_climax_actor  = "{actor} кончает на лицо  {dullahan?отделенной головы :}{partner}."
 	message_on_climax_target = "{partner} кончает под себя."
+	climax_liquid_mode = "onto"
 
 /datum/sex_panel_action/other/penis/tea_bag/can_perform(mob/living/carbon/human/user, mob/living/carbon/human/target)
 	. = ..()
@@ -40,7 +41,3 @@
 	var/obj/item/organ/testicles/testicles = user.getorganslot(ORGAN_SLOT_TESTICLES)
 	if(!testicles)
 		return
-
-/datum/sex_panel_action/other/penis/tea_bag/handle_climax_message(mob/living/carbon/human/user, mob/living/carbon/human/target, is_active = TRUE)
-	. = ..()
-	return "onto"

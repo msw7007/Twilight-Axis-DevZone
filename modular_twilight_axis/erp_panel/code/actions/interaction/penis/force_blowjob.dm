@@ -17,11 +17,8 @@
 	message_on_climax_actor		= "{actor} кончает в рот {dullahan?отделенной головы :}{partner}."
 	message_on_climax_target	= "{partner} кончает под себя!"
 
-	actor_do_onomatopoeia	= TRUE
-	actor_sex_hearts		= TRUE
-	actor_make_sound		= TRUE
-	target_suck_sound		= TRUE
-
-/datum/sex_panel_action/other/penis/force_blowjob/handle_climax_message(...)
-    . = ..()
-    return "into"
+	actor_do_onomatopoeia = TRUE
+	actor_sex_hearts = TRUE
+	actor_make_sound = TRUE
+	target_suck_sound = TRUE
+	climax_liquid_mode = "into"

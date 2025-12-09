@@ -21,6 +21,7 @@
 	message_on_finish  = "{actor}  вытаскивает члены из влагалища {partner}."
 	message_on_climax_actor  = "{actor} кончает в лоно {partner}."
 	message_on_climax_target = "{partner} кончает сжимая киску вокруг члена {actor}."
+	climax_liquid_mode = "into"
 
 /datum/sex_panel_action/other/penis/hemi/vaginal_double/get_knot_count()
 	return 1

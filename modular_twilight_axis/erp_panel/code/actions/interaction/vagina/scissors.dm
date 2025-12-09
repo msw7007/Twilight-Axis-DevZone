@@ -19,6 +19,3 @@
 	message_on_climax_actor  = "{actor} кончает на промежность {partner}."
 	message_on_climax_target = "{partner} кончает на промежность {actor}."
 
-/datum/sex_panel_action/other/vagina/scissors/handle_climax_message(mob/living/carbon/human/user, mob/living/carbon/human/target, is_active = TRUE)
-	. = ..()
-	return "onto"

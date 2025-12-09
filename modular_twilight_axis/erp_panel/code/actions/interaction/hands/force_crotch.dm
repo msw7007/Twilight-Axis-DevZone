@@ -11,18 +11,8 @@
 	require_grab = TRUE
 
 	actor_sex_hearts = TRUE
-	target_sex_hearts = TRUE
-	actor_make_sound = TRUE
-	target_make_sound = TRUE
-	actor_suck_sound = TRUE
 	target_suck_sound = TRUE
 	actor_make_fingering_sound = TRUE
-	target_make_fingering_sound = TRUE
-	actor_do_onomatopoeia = TRUE
-	target_do_onomatopoeia = TRUE
-	actor_do_thrust = TRUE
-	target_do_thrust = TRUE
-	can_be_custom = FALSE
 
 	message_on_start   = "{actor} {pose} хватает {dullahan?отделенную :}головы {partner}, прижимая к своей промежности."
 	message_on_perform = "{actor} {pose}, {force} и {speed} водит лицом {dullahan?отделенной головы :}{partner} по своей промежности."

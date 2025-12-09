@@ -22,15 +22,4 @@
 	message_on_finish  = "{actor} убирает член от члена {partner}."
 	message_on_climax_actor  = "{actor} кончает на {partner}."
 	message_on_climax_target = "{partner} кончает на {actor}."
-
-/datum/sex_panel_action/other/penis/sword_fight/get_perform_message(mob/living/carbon/human/user, mob/living/carbon/human/target)
-	var/pose_state = get_pose_key(user, target)
-	var/message = "[user] [get_pose_text(pose_state)], [get_force_text()] и [get_speed_text()][target]."
-	do_onomatopoeia(user)
-	show_sex_effects(user)
-	playsound(user, 'sound/misc/mat/fingering.ogg', 30, TRUE, -2, ignore_walls = FALSE)
-	return spanify_force(message)
-
-/datum/sex_panel_action/other/penis/sword_fight/handle_climax_message(mob/living/carbon/human/user, mob/living/carbon/human/target, is_active = TRUE)
-	. = ..()
-	return "onto"
+	climax_liquid_mode = "onto"

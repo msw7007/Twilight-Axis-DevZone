@@ -16,7 +16,5 @@
 	message_on_finish  = "{actor} отводит хвост от {partner}."
 	message_on_climax_actor  = "{actor} кончает под себя {partner}."
 	message_on_climax_target = "{partner} кончает под себя {actor}."
+	climax_liquid_mode = "self"
 
-/datum/sex_panel_action/other/tail/penis/handle_climax_message(mob/living/carbon/human/user, mob/living/carbon/human/target, is_active = TRUE)
-	. = ..()
-	return "self"

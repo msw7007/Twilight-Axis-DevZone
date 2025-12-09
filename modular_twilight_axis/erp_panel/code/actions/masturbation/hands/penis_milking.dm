@@ -15,6 +15,7 @@
 	message_on_start   = "{actor} {pose} берёт свой член в руку."
 	message_on_perform = "{actor} {pose} мастурбирует рукой свой член."
 	message_on_finish  = "{actor} ослабляет хватку и останавливается."
+	climax_liquid_mode = "self"
 
 /datum/sex_panel_action/self/hands/penis_milking/can_perform(mob/living/carbon/human/user, mob/living/carbon/human/target)
 	. = ..()
@@ -32,7 +33,6 @@
 	return FALSE
 
 /datum/sex_panel_action/self/hands/penis_milking/handle_climax_message(mob/living/carbon/human/user, mob/living/carbon/human/target, is_active = TRUE)
-	. = ..()
 	var/datum/sex_session_tgui/session_object = get_or_create_sex_session_tgui(user, target)
 	if(session_object)
 		var/datum/sex_organ/organ_object = session_object.resolve_organ_datum(user, SEX_ORGAN_FILTER_PENIS)
@@ -40,4 +40,4 @@
 			var/obj/item/container = find_best_container(user, target, organ_object)
 			organ_object.inject_liquid(container, user)
 			to_chat(user, "Я чувствую, как семя выплескивается наружу!")
-	return "self"
+	. = ..()

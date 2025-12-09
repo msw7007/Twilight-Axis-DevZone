@@ -18,8 +18,3 @@
 	message_on_finish  = "{actor} выводит хвост из вагины {partner}."
 	message_on_climax_actor  = "{actor} кончает под себя."
 	message_on_climax_target = "{partner} кончает, сжимая киской хвост {actor}."
-
-
-/datum/sex_panel_action/other/tail/penis/handle_climax_message(mob/living/carbon/human/user, mob/living/carbon/human/target, is_active = TRUE)
-	. = ..()
-	return "onto"

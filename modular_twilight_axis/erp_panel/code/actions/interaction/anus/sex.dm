@@ -18,7 +18,3 @@
 	message_on_finish  = "{actor} соскальзывает попкой с члена {partner}."
 	message_on_climax_actor  = "{actor} кончает, сжимая попкой член {partner}."
 	message_on_climax_target = "{partner} кончает в попку {actor}."
-
-/datum/sex_panel_action/other/anus/rubbing/handle_climax_message(mob/living/carbon/human/user, mob/living/carbon/human/target, is_active = TRUE)
-	. = ..()
-	return "self"

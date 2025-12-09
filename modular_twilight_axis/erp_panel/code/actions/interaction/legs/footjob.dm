@@ -16,11 +16,3 @@
 	message_on_start   = "{actor} {pose} зажимает член {partner} ступнями.."
 	message_on_perform = "{actor} {pose}, {force} и {speed} водит ступнями по члену {partner}."
 	message_on_finish  = "{actor} убирает ножки от члена {partner}."
-
-/datum/sex_panel_action/other/legs/footjob/get_perform_message(mob/living/carbon/human/user, mob/living/carbon/human/target)
-	var/pose_state = get_pose_key(user, target)
-	var/message = "[user] [get_pose_text(pose_state)], [get_force_text()] и [get_speed_text()] водит ножками по члену [target]."
-	show_sex_effects(user)
-	do_thrust_animate(user, target)
-	playsound(user, 'sound/misc/mat/fingering.ogg', 30, TRUE, -2, ignore_walls = FALSE)
-	return spanify_force(message)

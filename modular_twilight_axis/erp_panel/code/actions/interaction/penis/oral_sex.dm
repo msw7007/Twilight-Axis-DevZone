@@ -20,10 +20,7 @@
 	message_on_finish  = "{actor} {pose}, {force} и {speed} {aggr?задницей:ягодицами} {dullahan?отделенной головы :}{partner}."
 	message_on_climax_actor  = "{actor}  кончает в рот {dullahan?отделенной головы :}{partner}."
 	message_on_climax_target = "{partner} кончает под себя!"
-
-/datum/sex_panel_action/other/penis/oral_sex/handle_climax_message(mob/living/carbon/human/user, mob/living/carbon/human/target, is_active = TRUE)
-	. = ..()
-	return "into"
+	climax_liquid_mode = "into"
 
 /datum/sex_panel_action/other/penis/oral_sex/get_knot_count()
 	return 1

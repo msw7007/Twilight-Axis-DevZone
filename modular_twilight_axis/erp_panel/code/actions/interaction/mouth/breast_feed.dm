@@ -19,6 +19,7 @@
 	message_on_finish  = "{actor} убирает губы от груди {partner}."
 	message_on_climax_actor  = "{actor} оставлят под собой беспорядок."
 	message_on_climax_target = "{partner} оставлят под собой беспорядок."
+	climax_liquid_mode = "self"
 
 /datum/sex_panel_action/other/mouth/breast_feed/on_perform(mob/living/carbon/human/user, mob/living/carbon/human/target)
 	. = ..()

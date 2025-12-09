@@ -20,3 +20,4 @@
 	message_on_finish  = "{actor} вытаскивает из рта член {partner}."
 	message_on_climax_actor  = "{actor} кончает под себя."
 	message_on_climax_target = "{partner} кончает в рот {actor}."
+	climax_liquid_mode = "self"

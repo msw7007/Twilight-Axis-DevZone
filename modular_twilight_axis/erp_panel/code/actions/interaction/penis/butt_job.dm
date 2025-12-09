@@ -20,11 +20,4 @@
 	message_on_finish  = "{actor} убирает член от попки {partner}."
 	message_on_climax_actor  = "{actor} кончает на ягодицы {partner}."
 	message_on_climax_target = "{partner} кончает под себя!"
-
-/datum/sex_panel_action/other/penis/butt_job/get_start_message(mob/living/carbon/human/user, mob/living/carbon/human/target)
-	var/pose_state = get_pose_key(user, target)
-	return "[user] [get_pose_text(pose_state)] приставляет свой член между ягодиц [target]."
-
-/datum/sex_panel_action/other/penis/butt_job/handle_climax_message(mob/living/carbon/human/user, mob/living/carbon/human/target, is_active = TRUE)
-	. = ..()
-	return "onto"
+	climax_liquid_mode = "onto"

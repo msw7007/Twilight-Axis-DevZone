@@ -17,9 +17,9 @@
 	message_on_start   = "{actor} {pose} кладет руки на член {partner}."
 	message_on_perform = "{actor} {pose}, {force} и {speed} водит руками по члену {partner}."
 	message_on_finish  = "{actor} убирает руки от члена {partner}."
+	climax_liquid_mode = "onto"
 
 /datum/sex_panel_action/other/penis/vaginal_sex/handle_climax_message(mob/living/carbon/human/user, mob/living/carbon/human/target, is_active = TRUE)
-	. = ..()
 	var/datum/sex_session_tgui/SS = get_or_create_sex_session_tgui(user, target)
 	if(SS)
 		var/datum/sex_organ/organ_object = SS.resolve_organ_datum(target, SEX_ORGAN_FILTER_PENIS)
@@ -28,5 +28,4 @@
 			organ_object.inject_liquid(container, target)
 			to_chat(user, "Я чувствую, как семя [target] выплескивается наружу!")
 			to_chat(target, "Я чувствую, как семя выплескивается наружу!")
-
-	return "onto"
+	. = ..()
