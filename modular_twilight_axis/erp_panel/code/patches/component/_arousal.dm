@@ -366,7 +366,7 @@
 					var/need_to_boost = max(0, (NYMPHO_AROUSAL_SOFT_CAP - arousal))
 					if(need_to_boost > 0)
 						set_arousal(parent, need_to_boost)
-				return
+					return
 
 	if(!can_lose_arousal())
 		return
