@@ -5,6 +5,7 @@
 #include "code\sex_session.dm"
 #include "code\stress.dm"
 #include "code\status_effects.dm"
+#include "code\subsystem.dm"
 #include "code\patches\_mob.dm"
 #include "code\patches\_procs.dm"
 #include "code\patches\component\_arousal.dm"

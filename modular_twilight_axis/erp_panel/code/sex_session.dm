@@ -28,9 +28,9 @@
 	var/current_partner_ref = null
 
 	var/yield_to_partner = FALSE
-	var/broadcast_timer_id
-
 	var/arousal_frozen = FALSE
+
+	var/next_broadcast_time = 0
 
 /datum/sex_session_tgui/New(mob/living/carbon/human/U, mob/living/carbon/human/T)
 	. = ..()
@@ -56,10 +56,10 @@
 		RegisterSignal(target, COMSIG_SEX_AROUSAL_CHANGED, PROC_REF(on_arousal_changed))
 		RegisterSignal(target, COMSIG_MOVABLE_MOVED, PROC_REF(on_moved))
 
+	START_PROCESSING(SSerp_sytem, src)
+
 /datum/sex_session_tgui/Destroy()
-	if(broadcast_timer_id)
-		deltimer(broadcast_timer_id)
-		broadcast_timer_id = null
+	STOP_PROCESSING(SSerp_sytem, src)
 	if(user)
 		user.set_sex_surrender_to(null)
 		UnregisterSignal(user, list(COMSIG_SEX_CLIMAX, COMSIG_SEX_AROUSAL_CHANGED, COMSIG_MOVABLE_MOVED))
@@ -1090,23 +1090,28 @@
 	return null
 
 /datum/sex_session_tgui/proc/start_broadcast_loop()
-	if(broadcast_timer_id)
+	if(next_broadcast_time)
 		return
-	broadcast_timer_id = addtimer(CALLBACK(src, PROC_REF(broadcast_tick)), 1 SECONDS, TIMER_STOPPABLE)
+	next_broadcast_time = world.time + 1 SECONDS
 
 /datum/sex_session_tgui/proc/stop_broadcast_loop()
-	if(!broadcast_timer_id)
-		return
-	deltimer(broadcast_timer_id)
-	broadcast_timer_id = null
+	next_broadcast_time = 0
 
-/datum/sex_session_tgui/proc/broadcast_tick()
+/datum/sex_session_tgui/process(delta_time)
+	if(!next_broadcast_time)
+		return
+	if(world.time < next_broadcast_time)
+		return
+
+	broadcast_step()
+
+/datum/sex_session_tgui/proc/broadcast_step()
 	if(QDELETED(src))
-		broadcast_timer_id = null
+		next_broadcast_time = 0
 		return
 
 	if(!length(current_actions))
-		broadcast_timer_id = null
+		next_broadcast_time = 0
 		return
 	
 	for(var/id in current_actions)
@@ -1134,7 +1139,7 @@
 		else
 			qdel(src)
 
-		broadcast_timer_id = null
+		next_broadcast_time = 0
 		return
 
 	var/list/candidates = list()
@@ -1150,7 +1155,7 @@
 		candidates += A
 
 	if(!length(candidates))
-		broadcast_timer_id = null
+		next_broadcast_time = 0
 		return
 
 	var/datum/sex_action_session/choice = pick(candidates)
@@ -1175,7 +1180,7 @@
 	if(next_delay < 1 SECONDS)
 		next_delay = 1 SECONDS
 
-	broadcast_timer_id = addtimer(CALLBACK(src, PROC_REF(broadcast_tick)), next_delay, TIMER_STOPPABLE)
+	next_broadcast_time = world.time + next_delay
 
 /datum/sex_session_tgui/proc/can_continue_action_session(datum/sex_action_session/I)
 	if(!I || !I.action)

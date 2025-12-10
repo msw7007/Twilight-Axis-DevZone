@@ -13,11 +13,13 @@
 	var/speed = SEX_SPEED_MID
 	var/force = SEX_FORCE_MID
 
-	var/timer_id
+	var/next_tick_time = 0
 
 /datum/sex_action_session/New(datum/sex_session_tgui/S, datum/sex_panel_action/A, actor_node, partner_node)
 	. = ..()
 	session = S
+
+	START_PROCESSING(SSerp_sytem, src)
 
 	if(A)
 		var/datum/sex_panel_action/new_action = new A.type
@@ -72,9 +74,7 @@
 	partner = p
 
 /datum/sex_action_session/Destroy()
-	if(timer_id)
-		deltimer(timer_id)
-		timer_id = null
+	STOP_PROCESSING(SSerp_sytem, src)
 
 	var/datum/sex_organ/src_org = session?.resolve_organ_datum(actor, actor_node_id)
 	if(src_org)
@@ -93,24 +93,30 @@
 		src_org.bind_with(tgt_org)
 
 	action.on_start(actor, partner, src)
-	loop_tick()
+	next_tick_time = world.time
 
-/datum/sex_action_session/proc/loop_tick()
+/datum/sex_action_session/process(delta_time)
+	if(next_tick_time && world.time < next_tick_time)
+		return
+
 	if(QDELETED(session))
 		return
 
 	if(QDELETED(actor) || QDELETED(partner))
-		return session.stop_instance(instance_id)
+		session.stop_instance(instance_id)
+		return
 
 	var/datum/sex_action_session/I = session.current_actions?[instance_id]
 	if(!I || I != src)
 		return
 
 	if(isnull(partner))
-		return session.stop_instance(instance_id)
+		session.stop_instance(instance_id)
+		return
 
 	if(!session.can_continue_action_session(src))
-		return session.stop_instance(instance_id)
+		session.stop_instance(instance_id)
+		return
 
 	var/do_time = action.interaction_timer / get_speed_multiplier(speed)
 	if(do_time < world.tick_lag)
@@ -123,7 +129,8 @@
 			var/success = U.stamina_add(action.stamina_cost * get_stamina_cost_multiplier(force))
 			U.sex_procs_active = FALSE
 			if(!success)
-				return session.stop_instance(instance_id)
+				session.stop_instance(instance_id)
+				return
 
 	var/delta = calc_delta()
 	var/list/pain_deltas = update_organ_response(delta)
@@ -134,8 +141,7 @@
 
 	session.sync_arousal_ui()
 	SStgui.update_uis(session)
-
-	timer_id = addtimer(CALLBACK(src, PROC_REF(loop_tick)), do_time, TIMER_STOPPABLE)
+	next_tick_time = world.time + do_time
 
 /datum/sex_action_session/proc/update_organ_response(delta = 0)
 	if(!session || !action)
