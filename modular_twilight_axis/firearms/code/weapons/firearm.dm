@@ -801,6 +801,30 @@
 	damfactor = 0.7
 	critfactor = 0.7
 
+/obj/item/gun/ballistic/twilight_firearm/axtgonne
+	name = "axtbüchse"
+	desc = "Кустарный образец огнестрельного оружия первого поколения, который приобрел популярность среди егерей Грензельхофта во время Сумеречной войны. К стволу оружия приделано лезвие топора."
+	icon = 'modular_twilight_axis/firearms/icons/axtbuchse/axtbuchse.dmi'
+	advanced_icon = 'modular_twilight_axis/firearms/icons/axtbuchse/axtbuchse.dmi'
+	advanced_icon_norod	= 'modular_twilight_axis/firearms/icons/axtbuchse/axtbuchse_norod.dmi'
+	icon_state = "axegun"
+	item_state = "axegun"
+	damfactor = 0.9
+	possible_item_intents = list(/datum/intent/axe/cut, /datum/intent/axe/chop)
+	gripped_intents = list(/datum/intent/shoot/twilight_firearm, /datum/intent/arc/twilight_firearm, /datum/intent/axe/cut/battle/greataxe, /datum/intent/axe/chop/battle/greataxe)
+	associated_skill = /datum/skill/combat/axes
+
+/obj/item/gun/ballistic/twilight_firearm/axtgonne/getonmobprop(tag)
+	. = ..()
+	if(tag)
+		switch(tag)
+			if("gen")
+				return list("shrink" = 0.6,"sx" = -7,"sy" = 0,"nx" = 7,"ny" = 0,"wx" = -2,"wy" = 0,"ex" = 1,"ey" = 0,"northabove" = 0,"southabove" = 1,"eastabove" = 1,"westabove" = 0,"nturn" = -93,"sturn" = -93,"wturn" = 90,"eturn" = 90, "nflip" = 0, "sflip" = 8,"wflip" = 8,"eflip" = 0)
+			if("wielded")
+				return list("shrink" = 0.6,"sx" = 5,"sy" = -2,"nx" = -5,"ny" = -1,"wx" = -8,"wy" = -2,"ex" = 8,"ey" = -2,"northabove" = 0,"southabove" = 1,"eastabove" = 1,"westabove" = 1,"nturn" = -15,"sturn" = 15,"wturn" = -15,"eturn" = 15,"nflip" = 8,"sflip" = 0,"wflip" = 8,"eflip" = 0)
+			if("onback")
+				return list("shrink" = 0.6,"sx" = -1,"sy" = 0,"nx" = 0,"ny" = 0,"wx" = 2,"wy" = 0,"ex" = 0,"ey" = 0,"nturn" = 45,"sturn" = -45,"wturn" = 45,"eturn" = -45,"nflip" = 1,"sflip" = 1,"wflip" = 1,"eflip" = 1,"northabove" = 1,"southabove" = 0,"eastabove" = 0,"westabove" = 0)
+
 /datum/intent/shoot/twilight_firearm/flintgonne/get_chargetime()
 	if(mastermob && chargetime)
 		var/newtime = chargetime
