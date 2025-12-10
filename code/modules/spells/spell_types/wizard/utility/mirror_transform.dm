@@ -371,7 +371,7 @@
 					should_update = TRUE
 
 		if("penis")
-			// TWILIGHT AXIS EDITION START - new ERP panel
+			// TWILIGHT AXIS EDITION START - new ERP SYSTEM
 			// var/list/valid_penis_types = list("none")
 			// for(var/penis_path in subtypesof(/datum/sprite_accessory/penis))
 			// 	var/datum/sprite_accessory/penis/penis = new penis_path()
@@ -437,7 +437,7 @@
 
 					H.update_body()
 					should_update = TRUE
-			// TWILIGHT AXIS EDITION END - new ERP panel
+			// TWILIGHT AXIS EDITION END - new ERP SYSTEM
 
 		if("testicles")
 			var/list/valid_testicle_types = list("none")

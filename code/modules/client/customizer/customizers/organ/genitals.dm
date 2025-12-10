@@ -11,7 +11,11 @@
 /datum/customizer_choice/organ/penis
 	abstract_type = /datum/customizer_choice/organ/penis
 	name = "Penis"
-	organ_type = /obj/item/organ/penis
+	//TWILIGHT AXIS EDIT START - new ERP SYSTEM
+	//organ_type = /obj/item/organ/penis
+	organ_type = /obj/item/organ/penis/human // AP edit
+	sprite_accessories = list(/datum/sprite_accessory/penis/human)
+	//TWILIGHT AXIS EDIT END - new ERP SYSTEM
 	organ_slot = ORGAN_SLOT_PENIS
 	organ_dna_type = /datum/organ_dna/penis
 	customizer_entry_type = /datum/customizer_entry/organ/penis

@@ -184,3 +184,16 @@
 		return
 
 	user.start_sex_session_with_dullahan_head(src)
+
+/obj/item/organ/penis/human
+	name = "human penis"
+	penis_type = PENIS_TYPE_PLAIN
+	sheath_type = SHEATH_TYPE_NONE
+
+/datum/customizer_choice/organ/penis/human_anthro
+	name = "Plain Penis"
+	organ_type = /obj/item/organ/penis
+	sprite_accessories = list(/datum/sprite_accessory/penis/human)
+	organ_type = /obj/item/organ/penis/human // AP edit
+	sprite_accessories = list(/datum/sprite_accessory/penis/human) // AP edit
+	allows_accessory_color_customization = TRUE
