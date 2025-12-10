@@ -1,6 +1,12 @@
 /datum/component/knotting
 	var/movement_timer_id
 
+/datum/component/knotting/apply_knot(mob/living/carbon/human/user, mob/living/carbon/human/target, force_level, knot_count_param = 1)
+	. = ..()
+	if(!islupian(target))
+		record_round_statistic(STATS_KNOTTED_NOT_LUPIANS)
+	record_round_statistic(STATS_KNOTTED)
+
 /datum/component/knotting/should_remove_knot_on_movement(mob/living/carbon/human/top, mob/living/carbon/human/btm)
 	var/list/arousal_data = list()
 	SEND_SIGNAL(top, COMSIG_SEX_GET_AROUSAL, arousal_data)
