@@ -244,6 +244,7 @@
 	)
 
 /datum/component/arousal/handle_climax(climax_type, mob/living/carbon/human/user, mob/living/carbon/human/target)
+	record_round_statistic(STATS_PLEASURES)
 	switch(climax_type)
 		if("onto")
 			log_combat(user, target, "Came onto the target")
