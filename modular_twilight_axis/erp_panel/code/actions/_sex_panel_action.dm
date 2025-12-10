@@ -323,7 +323,7 @@
 	var/action_force = session.force
 	switch(action_force)
 		if(SEX_FORCE_LOW)
-			return pick(list("нежно", "заботливо", "ласково", "мягко", "осторожно", "неторопливо"))
+			return pick(list("нежно", "заботливо", "ласково", "мягко", "осторожно"))
 		if(SEX_FORCE_MID)
 			return pick(list("решительно", "энергично", "страстно", "уверенно", "увлеченно"))
 		if(SEX_FORCE_HIGH)
