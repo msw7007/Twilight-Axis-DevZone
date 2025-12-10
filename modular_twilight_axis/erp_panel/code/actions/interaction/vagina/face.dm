@@ -14,7 +14,7 @@
 	target_suck_sound = TRUE
 
 	message_on_start   = "{actor} {pose}, {force} и {speed} прижимается вагиной к лицу {dullahan?отделенной головы :}{partner}, раздвигая ноги."
-	message_on_perform = "{actor} {pose}, {force} и {speed} {aggr?задницей:ягодицами} {dullahan?отделенной головы :}{partner}."
+	message_on_perform = "{actor} {pose}, {force} и {speed} водит промежностью по лицу {dullahan?отделенной головы :}{partner}."
 	message_on_finish  = "{actor}  убирает лоно с лица {dullahan?отделенной головы :}{partner}."
 	message_on_climax_actor  = "{actor} кончает на лицо {dullahan?отделенной головы :}{partner}."
 	message_on_climax_target = "{partner} кончает под себя."

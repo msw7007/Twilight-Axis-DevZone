@@ -18,5 +18,5 @@
 	message_on_start   = "{actor} {pose}, {force} и {speed} проникает хвостом в рот {dullahan?отделенной головы :}{partner}."
 	message_on_perform = "{actor} {pose}, {force} и {speed} сношает хвостом рот {dullahan?отделенной головы :}{partner}."
 	message_on_finish  = "{actor} {pose}, {force} и {speed} выводит хвост из рта {dullahan?отделенной головы :}{partner}."
-	message_on_climax_actor  = "{actor} {pose}, {force} и {speed} {aggr?задницей:ягодицами} {dullahan?отделенной головы :}{partner}."
-	message_on_climax_target = "{partner} {pose} {force} {speed} {aggr?задницей:ягодицами} {dullahan?отделенной головы :}{actor}."
+	message_on_climax_actor  = "{actor} кончает под себя."
+	message_on_climax_target = "{partner} кончает под себя."

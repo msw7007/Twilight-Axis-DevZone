@@ -17,7 +17,7 @@
 
 	message_on_start   = "{actor} {pose} приставляет свой член к лицу {dullahan?отделенной головы :}{partner}."
 	message_on_perform = "{actor} {pose}, {force} и {speed} трахает в рот {dullahan?отделенной головы :}{partner}{knot}."
-	message_on_finish  = "{actor} {pose}, {force} и {speed} {aggr?задницей:ягодицами} {dullahan?отделенной головы :}{partner}."
+	message_on_finish  = "{actor} выводит член из рта {dullahan?отделенной головы :}{partner}."
 	message_on_climax_actor  = "{actor}  кончает в рот {dullahan?отделенной головы :}{partner}."
 	message_on_climax_target = "{partner} кончает под себя!"
 	climax_liquid_mode = "into"
