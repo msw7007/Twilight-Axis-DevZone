@@ -45,7 +45,7 @@
 			continue
 
 		arousal_object.chain_orgasm_lock = TRUE
-		SEND_SIGNAL(mob_object, COMSIG_SEX_SET_AROUSAL, bonus)
+		SEND_SIGNAL(mob_object, COMSIG_SEX_ADJUST_AROUSAL, bonus)
 
 /datum/component/arousal/after_ejaculation(intimate = FALSE, mob/living/carbon/human/user, mob/living/carbon/human/target)
 	var/do_spread = !chain_orgasm_lock
