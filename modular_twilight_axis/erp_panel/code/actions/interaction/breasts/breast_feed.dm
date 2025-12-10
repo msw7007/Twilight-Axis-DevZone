@@ -1,6 +1,6 @@
 /datum/sex_panel_action/other/breasts/breast_feed
 	abstract_type = FALSE
-	name = "Насильное кормпление"
+	name = "Насильное кормление"
 	required_target = SEX_ORGAN_MOUTH
 	stamina_cost = 0.05
 	affects_self_arousal = 0.12
