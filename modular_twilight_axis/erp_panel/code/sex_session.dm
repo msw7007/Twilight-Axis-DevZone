@@ -48,6 +48,8 @@
 
 	update_knotted_penis_flag()
 
+	var/datum/component/arousal/arousal_object = user.GetComponent(/datum/component/arousal)
+	arousal_object.update_info()
 	if(user)
 		RegisterSignal(user, COMSIG_SEX_CLIMAX, PROC_REF(on_resolution_event))
 		RegisterSignal(user, COMSIG_SEX_AROUSAL_CHANGED, PROC_REF(on_arousal_changed))
@@ -107,7 +109,16 @@
 /datum/sex_session_tgui/proc/get_partner_display_name(mob/living/carbon/human/M)
 	if(partner_bodypart_override && M && M == target)
 		if(istype(partner_bodypart_override, /obj/item/bodypart/head/dullahan))
-			return "[M.name]"
+			var/obj/item/bodypart/head/dullahan/D = partner_bodypart_override
+
+			var/name = D.original_owner?.real_name
+			if(!name)
+				name = D.original_owner?.name
+			if(!name)
+				name = D.name
+
+			return "[name]"
+
 		return "[partner_bodypart_override.name] ([M.name])"
 
 	return M?.name || "—"
@@ -468,6 +479,8 @@
 	D["frozen"] = arousal_frozen
 	var/charge_u = ad_user["charge"] || 0
 	D["actor_charge"] = round(charge_u)
+	D["actor_charge_max"] = ad_user["charge_max"]
+	D["actor_charge_for_climax"] = ad_user["charge_for_climax"]
 	
 	D["do_until_finished"] = do_until_finished
 	var/can_knot_now = FALSE
@@ -653,7 +666,8 @@
 					current_partner_ref = ref
 					if(M != user)
 						target = M
-					partner_bodypart_override = null
+					if(!partner_bodypart_override || !istype(partner_bodypart_override, /obj/item/bodypart/head/dullahan))
+						partner_bodypart_override = null
 					SStgui.update_uis(src)
 					return TRUE
 
@@ -807,6 +821,11 @@
 	return FALSE
 
 /datum/sex_session_tgui/proc/update_partners_proximity()
+	if(partner_bodypart_override && istype(partner_bodypart_override, /obj/item/bodypart/head/dullahan))
+		for(var/mob/living/carbon/human/erp_proxy/proxy in world)
+			if(proxy.source_part == partner_bodypart_override && !(proxy in partners))
+				partners += proxy
+				
 	if(QDELETED(user))
 		return
 
@@ -1378,6 +1397,13 @@
 	if(body_override)
 		session.set_partner_bodypart_override(body_override)
 
+		if(istype(body_override, /obj/item/bodypart/head/dullahan))
+			for(var/mob/living/carbon/human/erp_proxy/proxy in world)
+				if(proxy.source_part == body_override)
+					session.add_partner(proxy)
+					session.current_partner_ref = REF(proxy)
+					session.target = proxy
+
 	session.update_knotted_penis_flag()
 	return session
 
@@ -1601,6 +1627,12 @@
 		if(A.ckey)
 			continue
 
+		var/base_kind = "generic"
+		if(istype(A, /datum/sex_panel_action/self))
+			base_kind = "self"
+		else if(istype(A, /datum/sex_panel_action/other))
+			base_kind = "other"
+
 		out += list(list(
 			"type" = key,
 			"name" = A.name,
@@ -1615,6 +1647,8 @@
 			"required_init" = organ_type_to_filter_id(A.required_init),
 			"required_target" = organ_type_to_filter_id(A.required_target),
 			"reserve_target_for_session" = A.reserve_target_for_session,
+			"check_same_tile" = A.check_same_tile,
+			"break_on_move" = A.break_on_move,
 
 			"actor_sex_hearts" = A.actor_sex_hearts,
 			"target_sex_hearts" = A.target_sex_hearts,
@@ -1634,9 +1668,12 @@
 			"message_on_finish" = A.message_on_finish,
 			"message_on_climax_actor" = A.message_on_climax_actor,
 			"message_on_climax_target" = A.message_on_climax_target,
+
+			"base_kind" = base_kind,
 		))
 
 	return out
+
 
 /datum/sex_session_tgui/proc/build_custom_actions_for_ui()
 	var/list/out = list()
@@ -1650,6 +1687,12 @@
 			continue
 		if(A.ckey != ck)
 			continue
+		
+		var/base_kind = "generic"
+		if(istype(A, /datum/sex_panel_action/self))
+			base_kind = "self"
+		else if(istype(A, /datum/sex_panel_action/other))
+			base_kind = "other"
 
 		out += list(list(
 			"type" = A.custom_key,
@@ -1665,6 +1708,9 @@
 			"required_init" = organ_type_to_filter_id(A.required_init),
 			"required_target" = organ_type_to_filter_id(A.required_target),
 			"reserve_target_for_session" = A.reserve_target_for_session,
+			"check_same_tile" = A.check_same_tile,
+			"break_on_move" = A.break_on_move,
+			"base_kind" = base_kind,
 
 			"actor_sex_hearts" = A.actor_sex_hearts,
 			"target_sex_hearts" = A.target_sex_hearts,
@@ -1724,6 +1770,11 @@
 
 	if("can_knot" in params)
 		custom.can_knot = !!params["can_knot"]
+
+	if("check_same_tile" in params)
+		custom.check_same_tile = !!params["check_same_tile"]
+	if("break_on_move" in params)
+		custom.break_on_move = !!params["break_on_move"]
 
 	if("actor_sex_hearts" in params)
 		custom.actor_sex_hearts = !!params["actor_sex_hearts"]
@@ -1808,6 +1859,11 @@
 		A.reserve_target_for_session = !!params["reserve_target_for_session"]
 	if("can_knot" in params)
 		A.can_knot = !!params["can_knot"]
+
+	if("check_same_tile" in params)
+		A.check_same_tile = !!params["check_same_tile"]
+	if("break_on_move" in params)
+		A.break_on_move = !!params["break_on_move"]
 
 	if("actor_sex_hearts" in params)
 		A.actor_sex_hearts = !!params["actor_sex_hearts"]

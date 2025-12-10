@@ -14,47 +14,19 @@
 	if(Htgt.is_erp_blocked_as_target())
 		return
 
-	var/datum/sex_session_tgui/session_object = get_sex_session_tgui(src, target_mob)
-	
-	if(session_object)
-		if(istype(target_mob, /mob/living/carbon/human))
-			var/mob/living/carbon/human/human_object = target_mob
-			session_object.add_partner(human_object)
-			session_object.target = human_object
-			session_object.current_partner_ref = REF(human_object)
+	var/datum/sex_session_tgui/session_object = get_any_sex_session_tgui_for(Hsrc)
 
-		session_object.ui_interact(src)
-		return session_object
+	if(!session_object)
+		session_object = new /datum/sex_session_tgui(Hsrc, Htgt)
+		LAZYADD(GLOB.sex_sessions, session_object)
+	else
+		session_object.add_partner(Htgt)
+		session_object.target = Htgt
+		session_object.current_partner_ref = REF(Htgt)
+		session_object.partner_bodypart_override = null
 
-	session_object = get_any_sex_session_tgui_for(src)
-
-	if(session_object)
-		if(istype(target_mob, /mob/living/carbon/human))
-			var/mob/living/carbon/human/human_object2 = target_mob
-			session_object.add_partner(human_object2)
-			session_object.current_partner_ref = REF(human_object2)
-		session_object.ui_interact(src)
-		return session_object
-
-	session_object = new(src, target_mob)
-	LAZYADD(GLOB.sex_sessions, session_object)
-
-	if(istype(target_mob, /mob/living/carbon/human))
-		session_object.add_partner(target_mob)
-
-	session_object.ui_interact(src)
+	session_object.ui_interact(Hsrc)
 	return session_object
-
-/proc/get_sex_session_tgui(mob/giver, mob/taker)
-	for (var/datum/datum_candidate in GLOB.sex_sessions)
-		if (istype(datum_candidate, /datum/sex_session_tgui))
-			var/datum/sex_session_tgui/session_object = datum_candidate
-			if(QDELETED(session_object))
-				continue
-
-			if (session_object.user == giver && session_object.target == taker)
-				return session_object
-	return null
 
 /proc/get_any_sex_session_tgui_for(mob/living/carbon/human/user)
 	if(!user)
@@ -78,10 +50,26 @@
 	return sessions
 
 /proc/create_dullahan_head_partner(obj/item/bodypart/head/dullahan/head_dullahan)
-	var/mob/living/carbon/human/erp_proxy/proxy_object = new()
-	proxy_object.source_part = head_dullahan
-	proxy_object.name = "[head_dullahan.original_owner.name]"
-	return proxy_object
+	if(!head_dullahan)
+		return null
+
+	for(var/mob/living/carbon/human/erp_proxy/proxy_object in world)
+		if(proxy_object.source_part == head_dullahan)
+			return proxy_object
+
+	var/mob/living/carbon/human/erp_proxy/new_proxy = new()
+	new_proxy.source_part = head_dullahan
+
+	var/name = head_dullahan.original_owner?.real_name
+	if(!name)
+		name = head_dullahan.original_owner?.name
+	if(!name)
+		name = head_dullahan.name
+
+	new_proxy.name = "[name]"
+
+	return new_proxy
+
 
 /proc/sex_organ_to_zone(organ_type)
 	switch(organ_type)

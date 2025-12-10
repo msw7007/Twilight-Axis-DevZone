@@ -11,6 +11,7 @@
 	actor_sex_hearts = TRUE
 	actor_make_fingering_sound = TRUE
 	actor_do_onomatopoeia = TRUE
+	can_be_custom = FALSE
 
 	message_on_start   = "{actor} {pose} берет игрушку в руку и подносит к своему лону."
 	message_on_perform = "{actor} {pose}, {force} и {speed} водит игрушкой внутри себя."

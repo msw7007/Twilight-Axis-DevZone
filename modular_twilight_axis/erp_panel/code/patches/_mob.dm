@@ -249,14 +249,15 @@
 /mob/living/proc/start_sex_session_with_dullahan_head(obj/item/bodypart/head/dullahan/head_dullahan)
 	var/mob/living/carbon/human/erp_proxy/proxy_object = create_dullahan_head_partner(head_dullahan)
 
-	var/datum/sex_session_tgui/session_object = new(src, proxy_object)
-	session_object.set_partner_bodypart_override(head_dullahan)
-
+	var/datum/sex_session_tgui/session_object = get_or_create_sex_session_tgui_with_bodypart(src, head_dullahan.original_owner, head_dullahan)
+	session_object.add_partner(proxy_object)
 	session_object.current_partner_ref = REF(proxy_object)
-	session_object.partners = list(proxy_object)
+	session_object.target = proxy_object
+	session_object.set_partner_bodypart_override(head_dullahan)
 
 	session_object.ui_interact(src)
 	return session_object
+
 
 /mob/living/carbon/human/proc/apply_soft_arousal(delta = 0.25)
 	if(delta <= 0)

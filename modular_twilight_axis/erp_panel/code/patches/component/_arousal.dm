@@ -3,6 +3,17 @@
 	var/last_ejaculation_world_time = -1
 	var/tmp/last_nympho_boost_time = 0
 	charge = CHARGE_FOR_CLIMAX
+	var/charge_max = SEX_MAX_CHARGE
+	var/charge_for_climax = CHARGE_FOR_CLIMAX
+
+/datum/component/arousal/set_charge(amount)
+	var/empty = (charge < charge_for_climax)
+	charge = clamp(amount, 0, charge_max)
+	var/after_empty = (charge < charge_for_climax)
+	if(empty && !after_empty)
+		to_chat(parent, span_notice("I feel like I'm not so spent anymore"))
+	if(!empty && after_empty)
+		to_chat(parent, span_notice("I'm spent!"))
 
 /datum/component/arousal/proc/spread_climax_to_partners(mob/living/carbon/human/source)
 	if(!source)
@@ -38,7 +49,9 @@
 			continue
 
 		var/is_nympho = mob_object.has_flaw(/datum/charflaw/addiction/lovefiend)
+		var/is_fabled = HAS_TRAIT(source, TRAIT_GOODLOVER)
 		var/bonus = is_nympho ? 20 : 10
+		bonus *= is_fabled ? 2 : 1
 
 		var/datum/component/arousal/arousal_object = mob_object.GetComponent(/datum/component/arousal)
 		if(!arousal_object)
@@ -54,10 +67,13 @@
 	if(do_spread)
 		spread_climax_to_partners(user)
 
-	SEND_SIGNAL(user, COMSIG_SEX_SET_AROUSAL, 20)
+	var/after_climax_value = 20
+	if(user.has_flaw(/datum/charflaw/addiction/lovefiend))
+		after_climax_value = 30
+	SEND_SIGNAL(user, COMSIG_SEX_SET_AROUSAL, after_climax_value)
 	SEND_SIGNAL(user, COMSIG_SEX_CLIMAX)
 
-	adjust_charge(-CHARGE_FOR_CLIMAX)
+	adjust_charge(-charge_for_climax)
 
 	user.add_stress(/datum/stressevent/cumok)
 	if(user.has_flaw(/datum/charflaw/addiction/lovefiend))
@@ -240,7 +256,9 @@
 		"last_increase" = last_arousal_increase_time,
 		"arousal_multiplier" = arousal_multiplier,
 		"is_spent" = is_spent(),
-		"charge" = charge
+		"charge" = charge,
+		"charge_max" = charge_max,
+		"charge_for_climax" = charge_for_climax
 	)
 
 /datum/component/arousal/handle_climax(climax_type, mob/living/carbon/human/user, mob/living/carbon/human/target)
@@ -309,7 +327,7 @@
 			if(penis_object.has_storage())
 				var/min_needed = max(penis_object.stored_liquid_max * PENIS_MIN_EJAC_FRACTION, PENIS_MIN_EJAC_ABSOLUTE)
 				var/vol = penis_object.total_volume()
-				if(vol >= min_needed && charge < CHARGE_FOR_CLIMAX)
+				if(vol >= min_needed && charge < charge_for_climax)
 					var/fullness = vol / max(1, penis_object.stored_liquid_max) // 0..1
 					var/gain = dt * PENIS_VOLUME_CHARGE_RATE * fullness
 					adjust_charge(gain)
@@ -338,12 +356,12 @@
 				if(current >= min_needed)
 					return FALSE
 
-				if(charge < CHARGE_FOR_CLIMAX)
+				if(charge < charge_for_climax)
 					return TRUE
 
 				return FALSE
 
-	if(charge < CHARGE_FOR_CLIMAX)
+	if(charge < charge_for_climax)
 		return TRUE
 
 	return FALSE
@@ -355,7 +373,7 @@
 	if(istype(human_object))
 		human_object.process_sex_organs()
 		if(human_object.has_flaw(/datum/charflaw/addiction/lovefiend))
-			if(charge >= SEX_MAX_CHARGE && !(is_in_sex_scene()))
+			if(charge >= charge_max && !(is_in_sex_scene()))
 				if(arousal < NYMPHO_AROUSAL_SOFT_CAP)
 					var/need_to_boost = NYMPHO_AROUSAL_SOFT_CAP - arousal
 					if(need_to_boost > 0)
@@ -485,3 +503,10 @@
 				return TRUE
 
 	return FALSE
+
+/datum/component/arousal/proc/update_info()
+	var/mob/living/carbon/human/source = parent
+	if(istype(source.patron, /datum/patron/inhumen/baotha))
+		charge_max = BAOTHA_SEX_CHARGE_MAX
+	if(source.has_flaw(/datum/charflaw/addiction/lovefiend))
+		charge_for_climax = NIMPHO_SEX_CHARGE_FOR_CLIMAX

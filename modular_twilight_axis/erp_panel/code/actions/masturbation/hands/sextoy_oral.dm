@@ -10,6 +10,7 @@
 	actor_sex_hearts = TRUE
 	actor_make_fingering_sound = TRUE
 	actor_do_onomatopoeia = TRUE
+	can_be_custom = FALSE
 
 	message_on_start   = "{actor} {pose}, {force} и {speed} подносит игрушку ближе к лицу {dullahan?своей отделенной головы:}."
 	message_on_perform = "{actor} {pose}, {force} и {speed} играет с игрушкой во рту {dullahan?своей отделенной головы:}."
