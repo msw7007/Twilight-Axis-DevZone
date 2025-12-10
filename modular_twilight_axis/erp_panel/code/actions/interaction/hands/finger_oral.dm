@@ -15,5 +15,5 @@
 	actor_do_thrust = TRUE
 
 	message_on_start   = "{actor} {pose} проникает пальцами в рот {dullahan?отделенной головы :}{partner}."
-	message_on_perform = "{actor} {pose}, {force} и {speed} {aggr?задницей:ягодицами} {dullahan?отделенной головы :}{partner}."
+	message_on_perform = "{actor} {pose}, {force} и {speed} водит пальцами во рту {dullahan?отделенной головы :}{partner}."
 	message_on_finish  = "{actor} убирает пальцы из рта {dullahan?отделенной головы :}{partner}."
