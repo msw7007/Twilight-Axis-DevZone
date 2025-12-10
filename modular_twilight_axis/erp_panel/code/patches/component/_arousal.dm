@@ -127,28 +127,19 @@
 
 	if(session_object.actor == source)
 		is_active = TRUE
-		if(istype(session_object.partner, /mob/living/carbon/human))
-			partner = session_object.partner
-	else if(session_object.partner == source)
-		is_active = FALSE
-		if(istype(session_object.actor, /mob/living/carbon/human))
-			partner = session_object.actor
-	else
-		is_active = TRUE
-		partner = null
-
-	if(istype(session_object.partner, /mob/living/carbon/human))
 		partner = session_object.partner
-
-	if(partner == source)
-		partner = null
+	else
+		is_active = FALSE
+		partner = session_object.actor
 
 	if(partner == source)
 		partner = null
 
 	do_ejac_inject_from_session(source, session_object)
 	var/datum/sex_panel_action/action_object = session_object.action
-	var/return_type = action_object.handle_climax_message(source, partner, is_active)
+	var/mob/living/carbon/human/link_actor = session_object.actor
+	var/mob/living/carbon/human/link_partner = session_object.partner
+	var/return_type = action_object.handle_climax_message(link_actor, link_partner, is_active)
 	if(!return_type)
 		do_ejac_inject_from_session(source, null)
 		var/turf/turf2 = get_turf(mob)
