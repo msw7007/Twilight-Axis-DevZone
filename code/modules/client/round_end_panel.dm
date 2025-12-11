@@ -167,11 +167,6 @@
 	data += "<font color='#af2323'><span class='bold'>Organs Eaten:</span></font> [GLOB.azure_round_stats[STATS_ORGANS_EATEN]]<br>"
 	data += "<font color='#afa623'><span class='bold'>Locks Picked:</span></font> [GLOB.azure_round_stats[STATS_LOCKS_PICKED]]<br>"
 	data += "<font color='#af2379'><span class='bold'>Kisses Made:</span></font> [GLOB.azure_round_stats[STATS_KISSES_MADE]]<br>"
-	// TWIGHLIGHT AXIS ADDITION START - new ERP SYSTEM
-	data += "<font color='#b204c2'><span class='bold'>Pleasures Made:</span></font> [GLOB.azure_round_stats[STATS_PLEASURES]]<br>"
-	data += "<font color='#b31313'><span class='bold'>Knotted Made:</span></font> [GLOB.azure_round_stats[STATS_KNOTTED]]<br>"
-	data += "<font color='#ff5353'><span class='bold'>Knotted by non Lupians: Made:</span></font> [GLOB.azure_round_stats[STATS_KNOTTED_NOT_LUPIANS]]<br>"
-	// TWIGHLIGHT AXIS ADDITION END - new ERP SYSTEM
 	data += "</div>"
 	data += "</div></div>"
 	data += "</div>"
