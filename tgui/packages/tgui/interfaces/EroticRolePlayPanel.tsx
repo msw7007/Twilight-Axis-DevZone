@@ -91,6 +91,14 @@ export type SexSessionData = {
   active_links?: ActiveLink[];
   passive_links?: ActiveLink[];
   actor_charge?: number;
+  actor_charge_max?: number;
+  actor_charge_for_climax?: number;
+
+  custom_templates?: SexCustomTemplate[];
+  custom_actions?: SexCustomAction[];
+
+  climax_modes?: { id: string; name: string }[];
+  organ_type_options?: { id: string; name: string }[];
 };
 
 const fmt2 = (value?: number) =>
@@ -114,22 +122,40 @@ const Pill: React.FC<{
   disabled?: boolean;
   onClick?: () => void;
   children?: ReactNode;
-}> = ({ selected, disabled, onClick, children }) => (
-  <Button
-    inline
-    compact
-    disabled={disabled}
-    selected={!!selected}
-    style={{
-      borderRadius: 9999,
-      padding: '2px 10px',
-      margin: 2,
-    }}
-    onClick={onClick}
-  >
-    {children}
-  </Button>
-);
+}> = ({ selected, disabled, onClick, children }) => {
+  const isSelected = !!selected;
+
+  const style: CSSProperties = {
+    borderRadius: 9999,
+    padding: '2px 10px',
+    margin: 2,
+    // Чёткая разница между on/off
+    background: isSelected
+      ? 'var(--button-background-selected)'
+      : 'rgba(255,255,255,0.05)',
+    color: isSelected ? 'var(--color-text)' : 'var(--color-label)',
+    boxShadow: isSelected
+      ? '0 0 6px var(--button-background-selected)'
+      : 'none',
+    border: isSelected
+      ? '1px solid var(--button-border-color)'
+      : '1px solid rgba(255,255,255,0.15)',
+  };
+
+  return (
+    <Button
+      inline
+      compact
+      disabled={disabled}
+      selected={isSelected}
+      color="transparent"
+      style={style}
+      onClick={onClick}
+    >
+      {children}
+    </Button>
+  );
+};
 
 const OrganList: React.FC<{
   title: string;
@@ -981,19 +1007,29 @@ export const EroticRolePlayPanel: React.FC = () => {
   const actorOrgansBase = data.actor_organs ?? [];
   const partnerOrgans = data.partner_organs ?? [];
   const statusOrgans = data.status_organs ?? [];
+
   const actions = data.actions ?? [];
   const canPerform = data.can_perform ?? [];
   const availableTags = data.available_tags ?? [];
   const organFilteredTypes = data.organ_filtered ?? [];
   const actorCharge = data.actor_charge ?? 0;
+  const actorCharge_max = data.actor_charge_max ?? 0;
+  const actorCharge_for_climax = data.actor_charge_for_climax ?? 0;
 
   const [searchText, setSearchText] = useState('');
   const [activeTags, setActiveTags] = useState<string[]>([]);
-  const [activeTab, setActiveTab] = useState<'status' | 'actions'>('actions');
+  const [activeTab, setActiveTab] = useState<'status' | 'actions' | 'editor'>('actions');
 
   const [editContext, setEditContext] = useState<EditContext | null>(null);
   const [editTitle, setEditTitle] = useState('');
   const [editValue, setEditValue] = useState('');
+
+  const penisStatusOrg = useMemo(
+    () => statusOrgans.find((o) => o.id === 'genital_p'),
+    [statusOrgans],
+  );
+
+  const penisMode = getErectModeForOrg(penisStatusOrg);
 
   const toggleTag = (tag: string) => {
     setActiveTags((prev) =>
@@ -1155,6 +1191,67 @@ export const EroticRolePlayPanel: React.FC = () => {
             />
           </Stack.Item>
 
+          {penisStatusOrg && (
+            <Stack.Item>
+              <Section title="Состояние члена">
+                <Stack justify="center" wrap>
+                  <Stack.Item>
+                    <Pill
+                      selected={penisMode === 'auto'}
+                      onClick={() =>
+                        act('toggle_erect', {
+                          id: penisStatusOrg.id,
+                          state: 'auto',
+                        })
+                      }
+                    >
+                      АВТО
+                    </Pill>
+                  </Stack.Item>
+                  <Stack.Item>
+                    <Pill
+                      selected={penisMode === 'none'}
+                      onClick={() =>
+                        act('toggle_erect', {
+                          id: penisStatusOrg.id,
+                          state: 'none',
+                        })
+                      }
+                    >
+                      МЯГКИЙ
+                    </Pill>
+                  </Stack.Item>
+                  <Stack.Item>
+                    <Pill
+                      selected={penisMode === 'partial'}
+                      onClick={() =>
+                        act('toggle_erect', {
+                          id: penisStatusOrg.id,
+                          state: 'partial',
+                        })
+                      }
+                    >
+                      ВОЗБУЖДЁН
+                    </Pill>
+                  </Stack.Item>
+                  <Stack.Item>
+                    <Pill
+                      selected={penisMode === 'hard'}
+                      onClick={() =>
+                        act('toggle_erect', {
+                          id: penisStatusOrg.id,
+                          state: 'hard',
+                        })
+                      }
+                    >
+                      КРЕПКИЙ
+                    </Pill>
+                  </Stack.Item>
+                </Stack>
+              </Section>
+            </Stack.Item>
+          )}
+
           <Stack.Item>
             <ArousalBars
               actorName={data.actor_name}
@@ -1185,17 +1282,24 @@ export const EroticRolePlayPanel: React.FC = () => {
                     ДЕЙСТВИЯ
                   </Button>
                 </Stack.Item>
+                <Stack.Item style={{ marginInline: 4 }}>
+                  <Button
+                    selected={activeTab === 'editor'}
+                    onClick={() => setActiveTab('editor')}
+                  >
+                    РЕДАКТОР
+                  </Button>
+                </Stack.Item>
               </Stack>
             </Section>
           </Stack.Item>
-
 
           {activeTab === 'status' && (
             <Stack.Item grow>
               <Stack.Item>
                 <Section>
                   <Box textAlign="center" color="label">
-                    Заряд: {Math.round(actorCharge)} (100 для оргазма, 300 максимум)
+                    Заряд: {Math.round(actorCharge)} ({actorCharge_for_climax} для оргазма, {actorCharge_max} максимум)
                   </Box>
                 </Section>
               </Stack.Item>
@@ -1302,6 +1406,12 @@ export const EroticRolePlayPanel: React.FC = () => {
               </Stack.Item>
             </>
           )}
+
+          {activeTab === 'editor' && (
+            <Stack.Item grow>
+              <CustomActionsEditor data={data} act={act} />
+            </Stack.Item>
+          )}
         </Stack>
         <Divider />
       </Window.Content>
@@ -1322,6 +1432,681 @@ export const EroticRolePlayPanel: React.FC = () => {
         </Modal>
       )}
     </Window>
+  );
+};
+
+export type SexCustomTemplate = {
+  type: string;
+  name: string;
+  stamina_cost: number;
+  affects_self_arousal: number;
+  affects_arousal: number;
+  affects_self_pain: number;
+  affects_pain: number;
+  can_knot?: boolean;
+  climax_liquid_mode?: string;
+
+  required_init?: string;
+  required_target?: string;
+  reserve_target_for_session?: boolean;
+  base_kind?: 'self' | 'other';
+  check_same_tile?: boolean;
+  break_on_move?: boolean;
+
+  actor_sex_hearts?: boolean;
+  target_sex_hearts?: boolean;
+  actor_suck_sound?: boolean;
+  target_suck_sound?: boolean;
+  actor_make_sound?: boolean;
+  target_make_sound?: boolean;
+  actor_make_fingering_sound?: boolean;
+  target_make_fingering_sound?: boolean;
+  actor_do_onomatopoeia?: boolean;
+  target_do_onomatopoeia?: boolean;
+  actor_do_thrust?: boolean;
+  target_do_thrust?: boolean;
+
+  message_on_start?: string;
+  message_on_perform?: string;
+  message_on_finish?: string;
+  message_on_climax_actor?: string;
+  message_on_climax_target?: string;
+};
+
+export type SexCustomAction = SexCustomTemplate & {};
+
+type CustomActionsEditorProps = {
+  data: SexSessionData;
+  act: (verb: string, args?: any) => void;
+};
+
+const CustomActionsEditor: React.FC<CustomActionsEditorProps> = ({ data, act }) => {
+  const templates = data.custom_templates ?? [];
+  const customs = data.custom_actions ?? [];
+  const climaxModes = data.climax_modes ?? [];
+  const organTypeOptions = data.organ_type_options ?? [];
+
+  const [selectedTemplate, setSelectedTemplate] = useState<string | null>(null);
+  const [selectedCustom, setSelectedCustom] = useState<string | null>(null);
+
+  const [form, setForm] = useState<Partial<SexCustomAction>>({});
+
+  const applyTemplate = (tpl: SexCustomTemplate) => {
+    setForm({
+      ...tpl,
+    });
+  };
+
+  const currentKind = (() => {
+    let src: SexCustomTemplate | SexCustomAction | undefined;
+
+    if (selectedCustom) {
+      src = customs.find((c) => c.type === selectedCustom);
+    } else if (selectedTemplate) {
+      src = templates.find((t) => t.type === selectedTemplate);
+    }
+
+    return src?.base_kind;
+  })();
+
+  const currentKindLabel =
+    currentKind === 'self'
+      ? 'Действие для себя'
+      : currentKind === 'other'
+        ? 'Действие для партнёра'
+        : null;
+
+  const applyCustom = (ca: SexCustomAction) => {
+    setForm({
+      ...ca,
+    });
+  };
+
+  const onSelectTemplate = (type: string) => {
+    setSelectedTemplate(type);
+    setSelectedCustom(null);
+    const tpl = templates.find((t) => t.type === type);
+    if (tpl) applyTemplate(tpl);
+  };
+
+  const onSelectCustom = (type: string) => {
+    setSelectedCustom(type);
+    setSelectedTemplate(null);
+    const ca = customs.find((c) => c.type === type);
+    if (ca) applyCustom(ca);
+  };
+
+  const updateField = (field: keyof SexCustomAction, value: any) => {
+    setForm((prev) => ({
+      ...prev,
+      [field]: value,
+    }));
+  };
+
+  const submitCreate = () => {
+    if (!selectedTemplate) return;
+    act('custom_create', {
+      template_type: selectedTemplate,
+      name: form.name,
+      stamina_cost: form.stamina_cost,
+      affects_self_arousal: form.affects_self_arousal,
+      affects_arousal: form.affects_arousal,
+      affects_self_pain: form.affects_self_pain,
+      affects_pain: form.affects_pain,
+      climax_liquid_mode: form.climax_liquid_mode,
+      message_on_start: form.message_on_start,
+      message_on_perform: form.message_on_perform,
+      message_on_finish: form.message_on_finish,
+      message_on_climax_actor: form.message_on_climax_actor,
+      message_on_climax_target: form.message_on_climax_target,
+      required_init: form.required_init,
+      required_target: form.required_target,
+      reserve_target_for_session: form.reserve_target_for_session,
+      can_knot: form.can_knot,
+      check_same_tile: form.check_same_tile,
+      break_on_move: form.break_on_move,
+      actor_sex_hearts: form.actor_sex_hearts,
+      target_sex_hearts: form.target_sex_hearts,
+      actor_suck_sound: form.actor_suck_sound,
+      target_suck_sound: form.target_suck_sound,
+      actor_make_sound: form.actor_make_sound,
+      target_make_sound: form.target_make_sound,
+      actor_make_fingering_sound: form.actor_make_fingering_sound,
+      target_make_fingering_sound: form.target_make_fingering_sound,
+      actor_do_onomatopoeia: form.actor_do_onomatopoeia,
+      target_do_onomatopoeia: form.target_do_onomatopoeia,
+      actor_do_thrust: form.actor_do_thrust,
+      target_do_thrust: form.target_do_thrust,
+    });
+  };
+
+  const submitUpdate = () => {
+    if (!selectedCustom) return;
+    act('custom_update', {
+      type: selectedCustom,
+      name: form.name,
+      stamina_cost: form.stamina_cost,
+      affects_self_arousal: form.affects_self_arousal,
+      affects_arousal: form.affects_arousal,
+      affects_self_pain: form.affects_self_pain,
+      affects_pain: form.affects_pain,
+      climax_liquid_mode: form.climax_liquid_mode,
+      message_on_start: form.message_on_start,
+      message_on_perform: form.message_on_perform,
+      message_on_finish: form.message_on_finish,
+      message_on_climax_actor: form.message_on_climax_actor,
+      message_on_climax_target: form.message_on_climax_target,
+      required_init: form.required_init,
+      required_target: form.required_target,
+      reserve_target_for_session: form.reserve_target_for_session,
+      can_knot: form.can_knot,
+      check_same_tile: form.check_same_tile,
+      break_on_move: form.break_on_move,
+      actor_sex_hearts: form.actor_sex_hearts,
+      target_sex_hearts: form.target_sex_hearts,
+      actor_suck_sound: form.actor_suck_sound,
+      target_suck_sound: form.target_suck_sound,
+      actor_make_sound: form.actor_make_sound,
+      target_make_sound: form.target_make_sound,
+      actor_make_fingering_sound: form.actor_make_fingering_sound,
+      target_make_fingering_sound: form.target_make_fingering_sound,
+      actor_do_onomatopoeia: form.actor_do_onomatopoeia,
+      target_do_onomatopoeia: form.target_do_onomatopoeia,
+      actor_do_thrust: form.actor_do_thrust,
+      target_do_thrust: form.target_do_thrust,
+    });
+  };
+
+  const submitDelete = () => {
+    if (!selectedCustom) return;
+    act('custom_delete', { type: selectedCustom });
+  };
+
+  const hasSource = !!(selectedTemplate || selectedCustom);
+
+  return (
+    <Section title="Редактор действий" fill scrollable>
+      <Stack fill>
+        <Stack.Item basis="30%">
+          <Section title="Шаблоны">
+            {templates.length === 0 ? (
+              <Box color="label">Нет доступных шаблонов.</Box>
+            ) : (
+              <Stack vertical>
+                {templates.map((tpl) => (
+                  <Stack.Item key={tpl.type}>
+                    <Button
+                      fluid
+                      compact
+                      selected={selectedTemplate === tpl.type}
+                      onClick={() => onSelectTemplate(tpl.type)}
+                    >
+                      {tpl.name}
+                    </Button>
+                  </Stack.Item>
+                ))}
+              </Stack>
+            )}
+          </Section>
+
+          <Section title="Мои кастомные">
+            {customs.length === 0 ? (
+              <Box color="label">Вы ещё не создали ни одного действия.</Box>
+            ) : (
+              <Stack vertical>
+                {customs.map((ca) => (
+                  <Stack.Item key={ca.type}>
+                    <Button
+                      fluid
+                      compact
+                      selected={selectedCustom === ca.type}
+                      onClick={() => onSelectCustom(ca.type)}
+                    >
+                      {ca.name}
+                    </Button>
+                  </Stack.Item>
+                ))}
+              </Stack>
+            )}
+          </Section>
+        </Stack.Item>
+
+        <Stack.Item grow basis="70%">
+          <Section title="Параметры">
+          {!hasSource ? (
+              <NoticeBox info>
+                Сначала выбери слева шаблон или одно из своих кастомных действий.
+                После этого здесь появятся настраиваемые поля.
+              </NoticeBox>
+            ) : (
+            <Stack vertical>
+              {currentKindLabel && (
+                <Stack.Item>
+                  <Box
+                    mb={0.5}
+                    textAlign="center"
+                    color="label"
+                    style={{ fontSize: 11, textTransform: 'uppercase' }}
+                  >
+                    {currentKindLabel}
+                  </Box>
+                </Stack.Item>
+              )}
+              <Stack.Item>
+                <Box mb={0.25} color="label" style={{ fontSize: 11 }}>
+                  Название действия
+                </Box>
+                <Input
+                  fluid
+                  value={form.name ?? ''}
+                  placeholder="Например: Тереться щечкой"
+                  onChange={(value) => updateField('name', value)}
+                />
+              </Stack.Item>
+              
+              <Stack.Item>
+                <Box mb={0.25} color="label" style={{ fontSize: 11 }}>
+                  Орган инициатора (откуда)
+                </Box>
+                <Stack wrap>
+                  {organTypeOptions.map((opt) => (
+                    <Stack.Item key={`init-${opt.id}`} style={{ margin: 2 }}>
+                      <Pill
+                        selected={form.required_init === opt.id}
+                        onClick={() =>
+                          updateField('required_init', opt.id === form.required_init ? undefined : opt.id)
+                        }
+                      >
+                        {opt.name}
+                      </Pill>
+                    </Stack.Item>
+                  ))}
+                </Stack>
+              </Stack.Item>
+
+              <Stack.Item>
+                <Box mb={0.25} color="label" style={{ fontSize: 11 }}>
+                  Орган партнёра (куда)
+                </Box>
+                <Stack wrap>
+                  {organTypeOptions.map((opt) => (
+                    <Stack.Item key={`tgt-${opt.id}`} style={{ margin: 2 }}>
+                      <Pill
+                        selected={form.required_target === opt.id}
+                        onClick={() =>
+                          updateField('required_target', opt.id === form.required_target ? undefined : opt.id)
+                        }
+                      >
+                        {opt.name}
+                      </Pill>
+                    </Stack.Item>
+                  ))}
+                </Stack>
+              </Stack.Item>
+
+              <Stack.Item>
+                <Stack>
+                  <Stack.Item grow>
+                    <Box mb={0.25} color="label" style={{ fontSize: 11 }}>
+                      Стоимость выносливости (0.1–5.0)
+                    </Box>
+                    <Input
+                      fluid
+                      value={String(form.stamina_cost ?? '')}
+                      placeholder="По умолчанию как у шаблона"
+                      onChange={(value) =>
+                        updateField('stamina_cost', Number(value) || 0)
+                      }
+                    />
+                  </Stack.Item>
+                  <Stack.Item grow>
+                    <Box mb={0.25} color="label" style={{ fontSize: 11 }}>
+                      Свое возбуждение
+                    </Box>
+                    <Input
+                      fluid
+                      value={String(form.affects_self_arousal ?? '')}
+                      placeholder="Сколько тебе добавит"
+                      onChange={(value) =>
+                        updateField('affects_self_arousal', Number(value) || 0)
+                      }
+                    />
+                  </Stack.Item>
+                </Stack>
+              </Stack.Item>
+
+              <Stack.Item>
+                <Stack>
+                  <Stack.Item grow>
+                    <Box mb={0.25} color="label" style={{ fontSize: 11 }}>
+                      Возбуждение партнера
+                    </Box>
+                    <Input
+                      fluid
+                      placeholder="Возбуждение партнёра"
+                      value={String(form.affects_arousal ?? '')}
+                      onChange={(value) =>
+                        updateField('affects_arousal', Number(value) || 0)
+                      }
+                    />
+                  </Stack.Item>
+                  <Stack.Item grow>
+                    <Box mb={0.25} color="label" style={{ fontSize: 11 }}>
+                      Своя боль
+                    </Box>
+                    <Input
+                      fluid
+                      placeholder="Боль себе"
+                      value={String(form.affects_self_pain ?? '')}
+                      onChange={(value) =>
+                        updateField('affects_self_pain', Number(value) || 0)
+                      }
+                    />
+                  </Stack.Item>
+                  <Stack.Item grow>
+                    <Box mb={0.25} color="label" style={{ fontSize: 11 }}>
+                      Боль партнеру
+                    </Box>
+                    <Input
+                      fluid
+                      placeholder="Боль партнёру"
+                      value={String(form.affects_pain ?? '')}
+                      onChange={(value) =>
+                        updateField('affects_pain', Number(value) || 0)
+                      }
+                    />
+                  </Stack.Item>
+                </Stack>
+              </Stack.Item>
+
+              <Stack.Item>
+                <Box mb={0.25} color="label" style={{ fontSize: 11 }}>
+                  Режим климакса (куда летит жидкость)
+                </Box>
+                <Stack wrap>
+                  {climaxModes.map((m) => (
+                    <Stack.Item key={m.id} style={{ margin: 2 }}>
+                      <Pill
+                        selected={form.climax_liquid_mode === m.id}
+                        onClick={() => updateField('climax_liquid_mode', m.id)}
+                      >
+                        {m.name}
+                      </Pill>
+                    </Stack.Item>
+                  ))}
+                </Stack>
+              </Stack.Item>
+
+              <Stack.Item>
+                <Box color="label">Сообщения (можно использовать: {`{actor}`}, {`{partner}`}, {`{pose}`}, {`{force}`}, {`{speed}`}, {`{zone}`}, {`{knot}`}):</Box>
+              </Stack.Item>
+
+              <Stack.Item>
+                <Box mb={0.25} color="label" style={{ fontSize: 11 }}>
+                  На старте действия
+                </Box>
+                <Input
+                  fluid
+                  value={form.message_on_start ?? ''}
+                  placeholder="Текст, который произойдёт при начале действия"
+                  onChange={(value) => updateField('message_on_start', value)}
+                />
+              </Stack.Item>
+
+              <Stack.Item>
+                <Box mb={0.25} color="label" style={{ fontSize: 11 }}>
+                  Во время действия
+                </Box>
+                <Input
+                  fluid
+                  value={form.message_on_perform ?? ''}
+                  placeholder="Текст, который произойдёт при действии"
+                  onChange={(value) =>
+                    updateField('message_on_perform', value)
+                  }
+                />
+              </Stack.Item>
+
+              <Stack.Item>
+                <Box mb={0.25} color="label" style={{ fontSize: 11 }}>
+                  На завершении действия
+                </Box>
+                <Input
+                  fluid
+                  value={form.message_on_finish ?? ''}
+                  placeholder="Текст, который произойдёт при завершении действия"
+                  onChange={(value) =>
+                    updateField('message_on_finish', value)
+                  }
+                />
+              </Stack.Item>
+
+              <Stack.Item>
+                <Box mb={0.25} color="label" style={{ fontSize: 11 }}>
+                  Оргазм актёра
+                </Box>
+                <Input
+                  fluid
+                  value={form.message_on_climax_actor ?? ''}
+                  placeholder="Текст, который произойдёт при оргазме инициатора"
+                  onChange={(value) =>
+                    updateField('message_on_climax_actor', value)
+                  }
+                />
+              </Stack.Item>
+
+              <Stack.Item>
+                <Box mb={0.25} color="label" style={{ fontSize: 11 }}>
+                  Оргазм партнёра
+                </Box>
+                <Input
+                  fluid
+                  value={form.message_on_climax_target ?? ''}
+                  placeholder="Текст, который произойдёт при оргазме партнера"
+                  onChange={(value) =>
+                    updateField('message_on_climax_target', value)
+                  }
+                />
+              </Stack.Item>
+              <Stack.Item>
+                <Box mb={0.25} color="label" style={{ fontSize: 11 }}>
+                  Особые эффекты:
+                </Box>
+                <Stack wrap>
+                  <Stack.Item style={{ margin: 2 }}>
+                    <Pill
+                      selected={!!form.reserve_target_for_session}
+                      onClick={() =>
+                        updateField('reserve_target_for_session', !form.reserve_target_for_session)
+                      }
+                    >
+                      БЛОКИРУЕТ ОРГАН ЦЕЛИ
+                    </Pill>
+                  </Stack.Item>
+                  <Stack.Item style={{ margin: 2 }}>
+                    <Pill
+                      selected={!!form.can_knot}
+                      onClick={() => updateField('can_knot', !form.can_knot)}
+                    >
+                      ВОЗМОЖЕН УЗЕЛ (АКТЕР)
+                    </Pill>
+                  </Stack.Item>
+                  <Stack.Item style={{ margin: 2 }}>
+                    <Pill
+                      selected={!!form.check_same_tile}
+                      onClick={() =>
+                        updateField('check_same_tile', !form.check_same_tile)
+                      }
+                    >
+                      ТОЛЬКО С ОДНОГО ТАЙЛА
+                    </Pill>
+                  </Stack.Item>
+                  <Stack.Item style={{ margin: 2 }}>
+                    <Pill
+                      selected={!!form.break_on_move}
+                      onClick={() =>
+                        updateField('break_on_move', !form.break_on_move)
+                      }
+                    >
+                      ПРЕРЫВАЕТСЯ ПРИ ДВИЖЕНИИ
+                    </Pill>
+                  </Stack.Item>
+                </Stack>
+
+                <Box mt={0.5} mb={0.25} color="label" style={{ fontSize: 11 }}>
+                  Визуал и звуки
+                </Box>
+                <Stack wrap>
+                  <Stack.Item style={{ margin: 2 }}>
+                    <Pill
+                      selected={!!form.actor_sex_hearts}
+                      onClick={() => updateField('actor_sex_hearts', !form.actor_sex_hearts)}
+                    >
+                      Pop-up Сердца (актер)
+                    </Pill>
+                  </Stack.Item>
+                  <Stack.Item style={{ margin: 2 }}>
+                    <Pill
+                      selected={!!form.target_sex_hearts}
+                      onClick={() => updateField('target_sex_hearts', !form.target_sex_hearts)}
+                    >
+                      Pop-up Сердца (партнёр)
+                    </Pill>
+                  </Stack.Item>
+                </Stack>
+
+                <Stack wrap>          
+                  <Stack.Item style={{ margin: 2 }}>
+                    <Pill
+                      selected={!!form.actor_suck_sound}
+                      onClick={() => updateField('actor_suck_sound', !form.actor_suck_sound)}
+                    >
+                      Звук сосания (актер)
+                    </Pill>
+                  </Stack.Item>
+                  <Stack.Item style={{ margin: 2 }}>
+                    <Pill
+                      selected={!!form.target_suck_sound}
+                      onClick={() => updateField('target_suck_sound', !form.target_suck_sound)}
+                    >
+                      Звук сосания (партнёр)
+                    </Pill>
+                  </Stack.Item>
+                </Stack>
+
+                <Stack wrap>  
+                  <Stack.Item style={{ margin: 2 }}>
+                    <Pill
+                      selected={!!form.actor_make_sound}
+                      onClick={() => updateField('actor_make_sound', !form.actor_make_sound)}
+                    >
+                      Звук стонов (актер)
+                    </Pill>
+                  </Stack.Item>
+                  <Stack.Item style={{ margin: 2 }}>
+                    <Pill
+                      selected={!!form.target_make_sound}
+                      onClick={() => updateField('target_make_sound', !form.target_make_sound)}
+                    >
+                      Звук стонов (партнёр)
+                    </Pill>
+                  </Stack.Item>
+                </Stack>
+
+                <Stack wrap>  
+                  <Stack.Item style={{ margin: 2 }}>
+                    <Pill
+                      selected={!!form.actor_make_fingering_sound}
+                      onClick={() =>
+                        updateField('actor_make_fingering_sound', !form.actor_make_fingering_sound)
+                      }
+                    >
+                      Звук хлюпов (актер)
+                    </Pill>
+                  </Stack.Item>
+                  <Stack.Item style={{ margin: 2 }}>
+                    <Pill
+                      selected={!!form.target_make_fingering_sound}
+                      onClick={() =>
+                        updateField('target_make_fingering_sound', !form.target_make_fingering_sound)
+                      }
+                    >
+                      Звук хлюпов (партнёр)
+                    </Pill>
+                  </Stack.Item>
+                </Stack>
+
+                <Stack wrap>  
+                  <Stack.Item style={{ margin: 2 }}>
+                    <Pill
+                      selected={!!form.actor_do_onomatopoeia}
+                      onClick={() =>
+                        updateField('actor_do_onomatopoeia', !form.actor_do_onomatopoeia)
+                      }
+                    >
+                      Pop-up текст (актер)
+                    </Pill>
+                  </Stack.Item>
+                  <Stack.Item style={{ margin: 2 }}>
+                    <Pill
+                      selected={!!form.target_do_onomatopoeia}
+                      onClick={() =>
+                        updateField('target_do_onomatopoeia', !form.target_do_onomatopoeia)
+                      }
+                    >
+                      Pop-up текст (партнёр)
+                    </Pill>
+                  </Stack.Item>
+                </Stack>
+
+                <Stack wrap>  
+                  <Stack.Item style={{ margin: 2 }}>
+                    <Pill
+                      selected={!!form.actor_do_thrust}
+                      onClick={() => updateField('actor_do_thrust', !form.actor_do_thrust)}
+                    >
+                      Толчки куклы (актер)
+                    </Pill>
+                  </Stack.Item>
+                  <Stack.Item style={{ margin: 2 }}>
+                    <Pill
+                      selected={!!form.target_do_thrust}
+                      onClick={() => updateField('target_do_thrust', !form.target_do_thrust)}
+                    >
+                      Толчки куклы (партнёр)
+                    </Pill>
+                  </Stack.Item>
+                </Stack>
+              </Stack.Item>
+              <Stack.Item>
+                <Box mt={1} textAlign="right">
+                  <Button
+                    disabled={!selectedTemplate}
+                    onClick={submitCreate}
+                  >
+                    СОЗДАТЬ КАСТОМ
+                  </Button>{' '}
+                  <Button
+                    disabled={!selectedCustom}
+                    onClick={submitUpdate}
+                  >
+                    СОХРАНИТЬ ИЗМЕНЕНИЯ
+                  </Button>{' '}
+                  <Button
+                    disabled={!selectedCustom}
+                    color="bad"
+                    onClick={submitDelete}
+                  >
+                    УДАЛИТЬ
+                  </Button>
+                </Box>
+              </Stack.Item>
+            </Stack>
+            )}ф
+          </Section>
+        </Stack.Item>
+      </Stack>
+    </Section>
   );
 };
 
