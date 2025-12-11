@@ -156,6 +156,7 @@
 	var/mob/living/carbon/human/link_actor = session_object.actor
 	var/mob/living/carbon/human/link_partner = session_object.partner
 	var/return_type = action_object.handle_climax_message(link_actor, link_partner, is_active)
+	record_round_statistic(STATS_PLEASURES)
 	if(!return_type)
 		do_ejac_inject_from_session(source, null)
 		var/turf/turf2 = get_turf(mob)
@@ -262,7 +263,6 @@
 	)
 
 /datum/component/arousal/handle_climax(climax_type, mob/living/carbon/human/user, mob/living/carbon/human/target)
-	record_round_statistic(STATS_PLEASURES)
 	switch(climax_type)
 		if("onto")
 			log_combat(user, target, "Came onto the target")
