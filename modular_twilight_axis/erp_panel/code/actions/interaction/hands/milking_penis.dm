@@ -5,7 +5,7 @@
 	armor_slot_target = BODY_ZONE_PRECISE_GROIN
 	stamina_cost = 0.05
 	affects_self_arousal = 0
-	affects_arousal = 0.2
+	affects_arousal = 1.5
 	affects_self_pain = 0
 	affects_pain = 0.05
 
@@ -17,7 +17,8 @@
 	message_on_start   = "{actor} {pose} кладет руки на член {partner}."
 	message_on_perform = "{actor} {pose}, {force} и {speed} водит руками по члену {partner}."
 	message_on_finish  = "{actor} убирает руки от члена {partner}."
-	climax_liquid_mode = "onto"
+	message_on_climax_target = "{partner} кончает в руках {actor}."
+	climax_liquid_mode_passive = "self"
 
 /datum/sex_panel_action/other/penis/vaginal_sex/handle_climax_message(mob/living/carbon/human/user, mob/living/carbon/human/target, is_active = TRUE)
 	var/datum/sex_session_tgui/SS = get_or_create_sex_session_tgui(user, target)

@@ -6,7 +6,7 @@
 	can_knot = FALSE
 	check_same_tile = FALSE
 
-	affects_self_arousal	= 0.12
+	affects_self_arousal	= 1.0
 	affects_arousal			= 0
 	affects_self_pain		= 0.03
 	affects_pain			= 0
@@ -19,6 +19,5 @@
 	message_on_perform = "{actor} {pose}, {force} и {speed} водит рукой по своему члена, направляя его на {partner}."
 	message_on_finish  = "{actor} убирает руки от своего члена."
 	message_on_climax_actor  = "{actor} кончает на {partner}."
-	message_on_climax_target = "{partner} кончает под себя!"
-	climax_liquid_mode = "onto"
+	climax_liquid_mode_active = "onto"
 

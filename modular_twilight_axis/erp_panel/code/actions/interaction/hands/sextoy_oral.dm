@@ -6,7 +6,7 @@
 	check_same_tile = FALSE
 
 	affects_self_arousal = 0
-	affects_arousal = 0.12
+	affects_arousal = 1.0
 	affects_self_pain = 0
 	affects_pain = 0.01
 

@@ -4,8 +4,8 @@
 	required_target = SEX_ORGAN_MOUTH
 	armor_slot_target = BODY_ZONE_PRECISE_MOUTH
 	stamina_cost = 0.06
-	affects_self_arousal	= 0.03
-	affects_arousal			= 0.12
+	affects_self_arousal	= 0.25
+	affects_arousal			= 1.0
 	affects_self_pain		= 0
 	affects_pain			= 0.01
 
@@ -18,5 +18,3 @@
 	message_on_start   = "{actor} {pose}, {force} и {speed} проникает хвостом в рот {dullahan?отделенной головы :}{partner}."
 	message_on_perform = "{actor} {pose}, {force} и {speed} сношает хвостом рот {dullahan?отделенной головы :}{partner}."
 	message_on_finish  = "{actor} {pose}, {force} и {speed} выводит хвост из рта {dullahan?отделенной головы :}{partner}."
-	message_on_climax_actor  = "{actor} кончает под себя."
-	message_on_climax_target = "{partner} кончает под себя."

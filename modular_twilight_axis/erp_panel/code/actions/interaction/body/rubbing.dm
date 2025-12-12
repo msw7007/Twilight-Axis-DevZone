@@ -3,8 +3,8 @@
 	name = "Тереться телом"
 	required_target = null
 	stamina_cost = 0.05
-	affects_self_arousal	= 0.04
-	affects_arousal			= 0.04
+	affects_self_arousal	= 0.25
+	affects_arousal			= 0.25
 	affects_self_pain		= 0
 	affects_pain			= 0
 

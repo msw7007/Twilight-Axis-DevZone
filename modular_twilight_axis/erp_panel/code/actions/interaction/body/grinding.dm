@@ -3,8 +3,8 @@
 	name = "Уткнуться лицом"
 	required_target = null
 	stamina_cost = 0.06
-	affects_self_arousal	= 0.09
-	affects_arousal			= 0.09
+	affects_self_arousal	= 0.5
+	affects_arousal			= 0.5
 	affects_self_pain		= 0
 	affects_pain			= 0
 

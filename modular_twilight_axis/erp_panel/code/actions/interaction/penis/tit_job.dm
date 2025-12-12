@@ -6,8 +6,8 @@
 	armor_slot_target = BODY_ZONE_CHEST
 	can_knot = FALSE
 	
-	affects_self_arousal	= 0.03
-	affects_arousal			= 0.12
+	affects_self_arousal	= 0.75
+	affects_arousal			= 0.25
 	affects_self_pain		= 0.01
 	affects_pain			= 0.03
 
@@ -21,5 +21,4 @@
 	message_on_perform = "{actor} {pose}, {force} и {speed} водит членом между грудей {partner}."
 	message_on_finish  = "{actor} убирает член от груди {partner}."
 	message_on_climax_actor  = "{actor} кончает на грудь {partner}."
-	message_on_climax_target = "{partner} кончает под себя!"
-	climax_liquid_mode = "onto"
+	climax_liquid_mode_active = "onto"

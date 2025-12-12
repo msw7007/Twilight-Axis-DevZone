@@ -55,9 +55,6 @@
 	next_pain_decay_time = 0
 	return ..()
 
-/datum/sex_organ/proc/pleasure_bonus(datum/sex_organ/organ)
-	return clamp(sensivity, 0, SEX_SENSITIVITY_MAX) - clamp(pain, 0, SEX_PAIN_MAX)
-
 /datum/sex_organ/proc/has_storage()
 	return stored_liquid && stored_liquid_max > 0
 

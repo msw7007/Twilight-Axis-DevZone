@@ -3,8 +3,8 @@
 	name = "Седлать анусом"
 	required_target = SEX_ORGAN_PENIS
 	stamina_cost = 0.06
-	affects_self_arousal = 0.03
-	affects_arousal = 0.03
+	affects_self_arousal = 0.25
+	affects_arousal = 0.25
 	affects_self_pain = 0.01
 	affects_pain = 0
 
@@ -18,3 +18,4 @@
 	message_on_finish  = "{actor} соскальзывает попкой с члена {partner}."
 	message_on_climax_actor  = "{actor} кончает, сжимая попкой член {partner}."
 	message_on_climax_target = "{partner} кончает в попку {actor}."
+	climax_liquid_mode_passive = "into"

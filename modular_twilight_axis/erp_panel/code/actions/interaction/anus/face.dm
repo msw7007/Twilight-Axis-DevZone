@@ -6,8 +6,8 @@
 	armor_slot_target = BODY_ZONE_PRECISE_MOUTH
 
 	stamina_cost = 0.1
-	affects_self_arousal = 0.09
-	affects_arousal = 0.12
+	affects_self_arousal = 0.75
+	affects_arousal = 1.0
 	affects_self_pain = 0.01
 	affects_pain = 0.03
 

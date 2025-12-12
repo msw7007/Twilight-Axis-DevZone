@@ -5,8 +5,8 @@
 	required_target = SEX_ORGAN_BREASTS
 	armor_slot_init = BODY_ZONE_CHEST
 
-	affects_self_arousal = 0.1
-	affects_arousal = 0.04
+	affects_self_arousal = 0.5
+	affects_arousal = 1.0
 	affects_self_pain = 0
 	affects_pain = 0.01
 

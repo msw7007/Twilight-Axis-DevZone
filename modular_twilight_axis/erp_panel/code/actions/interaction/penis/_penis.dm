@@ -8,6 +8,9 @@
 	stamina_cost = 0.3
 	check_same_tile = TRUE
 	var/active_knot = FALSE
+	climax_liquid_mode_active = "onto"
+	message_on_climax_actor		= "{actor} кончает под себя!"
+	message_on_climax_target	= "{partner} кончает под себя!"
 
 /datum/sex_panel_action/other/penis/get_pose_text(pose_state)
 	switch(pose_state)

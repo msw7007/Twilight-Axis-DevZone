@@ -424,7 +424,8 @@
 	D["has_knotted_penis"] = has_knotted_penis
 
 	D["climax_modes"] = list(
-		list("id" = "none", "name" = "Без перелива"),
+		list("id" = "none", "name" = "Не задано"),
+		list("id" = "self", "name" = "Под себя"),
 		list("id" = "into", "name" = "Внутрь"),
 		list("id" = "onto", "name" = "Снаружи"),
 	)
@@ -432,7 +433,7 @@
 	D["organ_type_options"] = list(
 		list("id" = ORG_KEY_NONE,              "name" = "Не важно"),
 		list("id" = SEX_ORGAN_FILTER_MOUTH,    "name" = "Рот"),
-		list("id" = "hands",                   "name" = "Руки"),
+		list("id" = SEX_ORGAN_FILTER_HANDS,    "name" = "Руки"),
 		list("id" = SEX_ORGAN_FILTER_LEGS,     "name" = "Ноги"),
 		list("id" = SEX_ORGAN_FILTER_TAIL,     "name" = "Хвост"),
 		list("id" = SEX_ORGAN_FILTER_BREASTS,  "name" = "Грудь"),
@@ -1322,18 +1323,6 @@
 
 	return FALSE
 
-/datum/sex_session_tgui/proc/is_maso_or_nympho(mob/living/carbon/human/M)
-	if(!M)
-		return FALSE
-
-	if(M.has_flaw(/datum/charflaw/addiction/lovefiend))
-		return TRUE
-
-	if(M.has_flaw(/datum/charflaw/addiction/masochist))
-		return TRUE
-
-	return FALSE
-
 /datum/sex_session_tgui/proc/on_moved(atom/movable/mover, atom/oldloc, direction)
 	SIGNAL_HANDLER
 
@@ -1642,7 +1631,8 @@
 			"affects_self_pain" = A.affects_self_pain,
 			"affects_pain" = A.affects_pain,
 			"can_knot" = A.can_knot,
-			"climax_liquid_mode" = A.climax_liquid_mode,
+			"climax_liquid_mode_active" = A.climax_liquid_mode_active,
+			"climax_liquid_mode_passive" = A.climax_liquid_mode_passive,
 
 			"required_init" = organ_type_to_filter_id(A.required_init),
 			"required_target" = organ_type_to_filter_id(A.required_target),
@@ -1703,7 +1693,8 @@
 			"affects_self_pain" = A.affects_self_pain,
 			"affects_pain" = A.affects_pain,
 			"can_knot" = A.can_knot,
-			"climax_liquid_mode" = A.climax_liquid_mode,
+			"climax_liquid_mode_active" = A.climax_liquid_mode_active,
+			"climax_liquid_mode_passive" = A.climax_liquid_mode_passive,
 
 			"required_init" = organ_type_to_filter_id(A.required_init),
 			"required_target" = organ_type_to_filter_id(A.required_target),
@@ -1814,7 +1805,8 @@
 	custom.affects_self_pain = text2num(params["affects_self_pain"] || "[base.affects_self_pain]")
 	custom.affects_pain = text2num(params["affects_pain"] || "[base.affects_pain]")
 
-	custom.climax_liquid_mode = params["climax_liquid_mode"] || base.climax_liquid_mode
+	custom.climax_liquid_mode_active = params["climax_liquid_mode_active"] || base.climax_liquid_mode_active
+	custom.climax_liquid_mode_passive = params["climax_liquid_mode_passive"] || base.climax_liquid_mode_passive
 
 	custom.message_on_start   = params["message_on_start"]   || base.message_on_start
 	custom.message_on_perform = params["message_on_perform"] || base.message_on_perform
@@ -1895,8 +1887,10 @@
 	if("target_do_thrust" in params)
 		A.target_do_thrust = !!params["target_do_thrust"]
 
-	if(params["climax_liquid_mode"])
-		A.climax_liquid_mode = params["climax_liquid_mode"]
+	if(params["climax_liquid_mode_active"])
+		A.climax_liquid_mode_active = params["climax_liquid_mode_active"]
+	if(params["climax_liquid_mode_passive"])
+		A.climax_liquid_mode_passive = params["climax_liquid_mode_passive"]
 
 	if(params["message_on_start"])
 		A.message_on_start = params["message_on_start"]

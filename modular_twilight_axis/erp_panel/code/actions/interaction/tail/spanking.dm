@@ -4,7 +4,7 @@
 	required_target = null
 	stamina_cost = 0.06
 	affects_self_arousal	= 0
-	affects_arousal			= 0.12
+	affects_arousal			= 1.25
 	affects_self_pain		= 0
 	affects_pain			= 0.04
 
@@ -14,9 +14,6 @@
 	message_on_start   = "{actor} {pose} прикладывает хвост к попе {partner}."
 	message_on_perform = "{actor} {pose}, {force} и {speed} шлепает хвостом по заднице {partner}."
 	message_on_finish  = "{actor} убирает хвост от попки {partner}."
-	message_on_climax_actor  = "{actor} кончает под себя."
-	message_on_climax_target = "{partner} кончает под себя."
-	climax_liquid_mode = "self"
 
 /datum/sex_panel_action/other/tail/spanking/get_perform_message(mob/living/carbon/human/user, mob/living/carbon/human/target)
 	var/sound = pick('sound/foley/slap.ogg', 'sound/foley/smackspecial.ogg')

@@ -276,3 +276,15 @@
 			return SEX_ORGAN_FILTER_ANUS
 
 	return ORG_KEY_NONE
+	
+/proc/is_maso(mob/living/carbon/human/M)
+	if(!M)
+		return FALSE
+
+	return M.has_flaw(/datum/charflaw/addiction/masochist)
+
+/proc/is_nympho(mob/living/carbon/human/M)
+	if(!M)
+		return FALSE
+
+	return M.has_flaw(/datum/charflaw/addiction/lovefiend)

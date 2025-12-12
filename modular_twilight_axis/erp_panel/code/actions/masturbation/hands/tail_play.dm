@@ -4,7 +4,7 @@
 	name = "Ласкать хвост"
 	required_target = SEX_ORGAN_TAIL
 
-	affects_self_arousal	= 0.01
+	affects_self_arousal	= 0.2
 
 	actor_sex_hearts = TRUE
 

@@ -7,8 +7,8 @@
 	armor_slot_target = BODY_ZONE_PRECISE_GROIN
 	reserve_target_for_session = TRUE
 
-	affects_self_arousal	= 0.20
-	affects_arousal			= 0.12
+	affects_self_arousal	= 2.25
+	affects_arousal			= 1.25
 	affects_self_pain		= 0.05
 	affects_pain			= 0.03
 	can_knot = TRUE
@@ -24,7 +24,8 @@
 	message_on_finish  = "{actor} вытаскивает члены из дырок {partner}."
 	message_on_climax_actor  = "{actor} кончает одновременно в киску и зад {partner}."
 	message_on_climax_target = "{partner} кончает под себя!"
-	climax_liquid_mode = "into"
+	climax_liquid_mode_active = "into"
+	climax_liquid_mode_passive = "onto"
 
 /datum/sex_panel_action/other/penis/hemi/dp_vag_anal/get_filter_target_organ_types()
 	return list(required_target, required_target_second)

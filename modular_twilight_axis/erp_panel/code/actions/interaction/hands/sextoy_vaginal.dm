@@ -7,7 +7,7 @@
 	check_same_tile = FALSE
 
 	affects_self_arousal = 0
-	affects_arousal = 0.18
+	affects_arousal = 1.5
 	affects_self_pain = 0
 	affects_pain = 0.02
 
@@ -20,6 +20,8 @@
 	message_on_start   = "{actor} {pose} подносит игрушку к лону {partner}."
 	message_on_perform = "{actor} {pose}, {force} и {speed} водит игрушкой внутри лона {partner}."
 	message_on_finish  = "{actor} отстраняет игрушку от {partner}."
+	message_on_climax_target = "{partner} кончает, сжимая киской игрушку {actor}."
+	climax_liquid_mode_passive = "onto"
 
 /datum/sex_panel_action/other/hands/toy_vaginal/can_perform(mob/living/carbon/human/user, mob/living/carbon/human/target)
 	. = ..()

@@ -5,7 +5,7 @@
 	required_target = SEX_ORGAN_BREASTS
 	armor_slot_init = BODY_ZONE_CHEST
 
-	affects_self_arousal	= 0.2
+	affects_self_arousal	= 0.5
 	affects_self_pain		= 0.01
 
 	actor_sex_hearts = TRUE

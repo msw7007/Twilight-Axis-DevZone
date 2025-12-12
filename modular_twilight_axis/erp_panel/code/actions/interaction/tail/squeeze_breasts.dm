@@ -4,8 +4,8 @@
 	required_target = SEX_ORGAN_BREASTS
 	armor_slot_target = BODY_ZONE_CHEST
 	stamina_cost = 0.06
-	affects_self_arousal	= 0.03
-	affects_arousal			= 0.12
+	affects_self_arousal	= 0.25
+	affects_arousal			= 1.0
 	affects_self_pain		= 0
 	affects_pain			= 0.01
 
@@ -15,6 +15,3 @@
 	message_on_start   = "{actor} {pose} обвивает хвостом грудь {partner}."
 	message_on_perform = "{actor} {pose}, {force} и {speed} сжимает хвостом грудь {partner}."
 	message_on_finish  = "{actor} уводит хвост от {partner}."
-	message_on_climax_actor  = "{actor} кончает под себя."
-	message_on_climax_target = "{partner} кончает под себя."
-	climax_liquid_mode = "self"

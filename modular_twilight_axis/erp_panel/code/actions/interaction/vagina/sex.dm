@@ -3,8 +3,8 @@
 	name = "Седлать вагиной"
 	required_target = SEX_ORGAN_PENIS
 	stamina_cost = 0.06
-	affects_self_arousal	= 0.12
-	affects_arousal			= 0.12
+	affects_self_arousal	= 1.0
+	affects_arousal			= 1.0
 	affects_self_pain		= 0.01
 	affects_pain			= 0.01
 
@@ -18,5 +18,6 @@
 	message_on_finish  = "{actor} соскальзывает вагиной с члена {partner}."
 	message_on_climax_actor  = "{actor} кончает, киской сжимая член {partner}."
 	message_on_climax_target = "{partner} кончает в лоно {actor}."
-	climax_liquid_mode = "into"
+	climax_liquid_mode_active = "onto"
+	climax_liquid_mode_passive = "into"
 

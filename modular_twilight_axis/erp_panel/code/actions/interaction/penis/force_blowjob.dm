@@ -6,8 +6,8 @@
 	armor_slot_target = null
 	can_knot = FALSE
 	
-	affects_self_arousal	= 0.03
-	affects_arousal			= 0.12
+	affects_self_arousal	= 0.25
+	affects_arousal			= 1.0
 	affects_self_pain		= 0.01
 	affects_pain			= 0.03
 
@@ -16,9 +16,9 @@
 	message_on_finish			= "{actor} вытаскивает член из рта {dullahan?отделенной головы :}{partner}."
 	message_on_climax_actor		= "{actor} кончает в рот {dullahan?отделенной головы :}{partner}."
 	message_on_climax_target	= "{partner} кончает под себя!"
+	climax_liquid_mode_active = "into"
 
 	actor_do_onomatopoeia = TRUE
 	actor_sex_hearts = TRUE
 	actor_make_sound = TRUE
 	target_suck_sound = TRUE
-	climax_liquid_mode = "into"

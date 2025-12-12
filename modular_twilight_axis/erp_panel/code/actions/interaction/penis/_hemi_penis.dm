@@ -1,5 +1,6 @@
 /datum/sex_panel_action/other/penis/hemi
 	abstract_type = TRUE
+	stamina_cost = 0.4
 	name = "Корневое действие гемипенисом"
 
 /datum/sex_panel_action/other/penis/hemi/proc/has_hemi_penis(mob/living/carbon/human/human_object)

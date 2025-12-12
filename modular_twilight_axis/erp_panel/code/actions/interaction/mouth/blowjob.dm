@@ -4,8 +4,8 @@
 	required_target = SEX_ORGAN_PENIS
 	armor_slot_target = BODY_ZONE_PRECISE_GROIN
 	stamina_cost = 0.03
-	affects_self_arousal = 0.04
-	affects_arousal = 0.12
+	affects_self_arousal = 0.25
+	affects_arousal = 1.0
 	affects_self_pain = 0
 	affects_pain = 0.04
 
@@ -18,6 +18,5 @@
 	message_on_start   = "{actor} {pose} касается губами члена {partner} и помещает его себе в рот."
 	message_on_perform = "{actor} {pose}, {force} и {speed} сосёт член {partner}."
 	message_on_finish  = "{actor} вытаскивает из рта член {partner}."
-	message_on_climax_actor  = "{actor} кончает под себя."
 	message_on_climax_target = "{partner} кончает в рот {actor}."
-	climax_liquid_mode = "self"
+	climax_liquid_mode_passive = "into"

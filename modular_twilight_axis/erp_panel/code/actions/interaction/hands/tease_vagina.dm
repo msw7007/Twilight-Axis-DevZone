@@ -6,7 +6,7 @@
 	break_on_move = FALSE
 	stamina_cost = 0.05
 	affects_self_arousal	= 0
-	affects_arousal			= 0.15
+	affects_arousal			= 1.25
 	affects_self_pain		= 0
 	affects_pain			= 0.04
 

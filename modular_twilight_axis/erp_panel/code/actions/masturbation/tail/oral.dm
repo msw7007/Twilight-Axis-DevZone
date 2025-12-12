@@ -5,7 +5,7 @@
 	required_init = SEX_ORGAN_TAIL
 	required_target = SEX_ORGAN_MOUTH
 
-	affects_self_arousal	= 0.1
+	affects_self_arousal	= 0.5
 
 	actor_sex_hearts = TRUE
 	actor_suck_sound = TRUE

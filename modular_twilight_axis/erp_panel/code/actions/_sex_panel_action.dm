@@ -31,6 +31,9 @@
 	message_on_climax_actor  = "{actor} {pose}, {force} и {speed} {aggr?задницей:ягодицами} {dullahan?отделенной головы :}{partner}."
 	message_on_climax_target = "{partner} {pose} {force} {speed} {aggr?задницей:ягодицами} {dullahan?отделенной головы :}{actor}."
 
+	climax_liquid_mode_active = "self"
+	climax_liquid_mode_passive = "self"
+
 	. = ..()
 */
 
@@ -103,7 +106,8 @@
 	/// Available for custom
 	var/can_be_custom = TRUE
 	var/list/compiled_messages = null
-	var/climax_liquid_mode
+	var/climax_liquid_mode_active = "self"
+	var/climax_liquid_mode_passive = "self"
 
 /datum/sex_panel_action/proc/shows_on_menu(mob/living/carbon/human/user, mob/living/carbon/human/target)
 	if(abstract_type)
@@ -212,16 +216,16 @@
 
 /datum/sex_panel_action/proc/handle_climax_message(mob/living/carbon/human/user, target, is_active = TRUE)
 	var/key = is_active ? "climax_a" : "climax_t"
-
+	var/result_mode = is_active ? climax_liquid_mode_active : climax_liquid_mode_passive
 	var/msg_template = compiled_messages?[key]
 	if(!msg_template)
-		return climax_liquid_mode
+		return result_mode
 
 	var/msg = finalize_message(msg_template, user, target)
 	if(msg)
 		user.visible_message(span_love(msg))
 
-	return climax_liquid_mode
+	return result_mode
 
 /datum/sex_panel_action/proc/get_knot_count()
 	return 0

@@ -1444,8 +1444,8 @@ export type SexCustomTemplate = {
   affects_self_pain: number;
   affects_pain: number;
   can_knot?: boolean;
-  climax_liquid_mode?: string;
-
+  climax_liquid_mode_active?: string;
+  climax_liquid_mode_passive?: string;
   required_init?: string;
   required_target?: string;
   reserve_target_for_session?: boolean;
@@ -1553,7 +1553,8 @@ const CustomActionsEditor: React.FC<CustomActionsEditorProps> = ({ data, act }) 
       affects_arousal: form.affects_arousal,
       affects_self_pain: form.affects_self_pain,
       affects_pain: form.affects_pain,
-      climax_liquid_mode: form.climax_liquid_mode,
+      climax_liquid_mode_active: form.climax_liquid_mode_active,
+      climax_liquid_mode_passive: form.climax_liquid_mode_passive,
       message_on_start: form.message_on_start,
       message_on_perform: form.message_on_perform,
       message_on_finish: form.message_on_finish,
@@ -1590,7 +1591,8 @@ const CustomActionsEditor: React.FC<CustomActionsEditorProps> = ({ data, act }) 
       affects_arousal: form.affects_arousal,
       affects_self_pain: form.affects_self_pain,
       affects_pain: form.affects_pain,
-      climax_liquid_mode: form.climax_liquid_mode,
+      climax_liquid_mode_active: form.climax_liquid_mode_active,
+      climax_liquid_mode_passive: form.climax_liquid_mode_passive,
       message_on_start: form.message_on_start,
       message_on_perform: form.message_on_perform,
       message_on_finish: form.message_on_finish,
@@ -1821,14 +1823,32 @@ const CustomActionsEditor: React.FC<CustomActionsEditorProps> = ({ data, act }) 
 
               <Stack.Item>
                 <Box mb={0.25} color="label" style={{ fontSize: 11 }}>
-                  Режим климакса (куда летит жидкость)
+                  Режим климакса (куда летит жидкость) если оргазмирует актер
                 </Box>
                 <Stack wrap>
                   {climaxModes.map((m) => (
                     <Stack.Item key={m.id} style={{ margin: 2 }}>
                       <Pill
-                        selected={form.climax_liquid_mode === m.id}
-                        onClick={() => updateField('climax_liquid_mode', m.id)}
+                        selected={form.climax_liquid_mode_active === m.id}
+                        onClick={() => updateField('climax_liquid_mode_active', m.id)}
+                      >
+                        {m.name}
+                      </Pill>
+                    </Stack.Item>
+                  ))}
+                </Stack>
+              </Stack.Item>
+
+              <Stack.Item>
+                <Box mb={0.25} color="label" style={{ fontSize: 11 }}>
+                  Режим климакса (куда летит жидкость) если оргазмирует партнер
+                </Box>
+                <Stack wrap>
+                  {climaxModes.map((m) => (
+                    <Stack.Item key={m.id} style={{ margin: 2 }}>
+                      <Pill
+                        selected={form.climax_liquid_mode_passive === m.id}
+                        onClick={() => updateField('climax_liquid_mode_passive', m.id)}
                       >
                         {m.name}
                       </Pill>
@@ -2102,7 +2122,7 @@ const CustomActionsEditor: React.FC<CustomActionsEditorProps> = ({ data, act }) 
                 </Box>
               </Stack.Item>
             </Stack>
-            )}ф
+            )}
           </Section>
         </Stack.Item>
       </Stack>

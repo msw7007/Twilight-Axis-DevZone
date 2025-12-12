@@ -5,7 +5,7 @@
 	required_target = SEX_ORGAN_VAGINA
 	armor_slot_init = BODY_ZONE_PRECISE_GROIN
 
-	affects_self_arousal	= 0.15
+	affects_self_arousal	= 1.25
 	affects_self_pain		= 0.02
 
 	actor_sex_hearts = TRUE

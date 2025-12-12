@@ -5,7 +5,7 @@
 	required_init = SEX_ORGAN_TAIL
 	required_target = SEX_ORGAN_BREASTS
 
-	affects_self_arousal	= 0.1
+	affects_self_arousal	= 0.75
 	affects_self_pain		= 0.0
 
 	actor_sex_hearts = TRUE

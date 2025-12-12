@@ -3,7 +3,7 @@
 	name = "Тереться грудью"
 	required_target = null
 	stamina_cost = 0.05
-	affects_self_arousal = 0.12
+	affects_self_arousal = 1.0
 	affects_arousal = 0
 	affects_self_pain = 0.02
 	affects_pain = 0

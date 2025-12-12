@@ -5,8 +5,8 @@
 	required_target = SEX_ORGAN_MOUTH
 	armor_slot_target = BODY_ZONE_PRECISE_MOUTH
 
-	affects_self_arousal	= 0.12
-	affects_arousal			= 0.04
+	affects_self_arousal	= 1.0
+	affects_arousal			= 0.5
 	affects_self_pain		= 0.01
 	affects_pain			= 0.02
 
@@ -20,7 +20,8 @@
 	message_on_finish  = "{actor} выводит член из рта {dullahan?отделенной головы :}{partner}."
 	message_on_climax_actor  = "{actor}  кончает в рот {dullahan?отделенной головы :}{partner}."
 	message_on_climax_target = "{partner} кончает под себя!"
-	climax_liquid_mode = "into"
+	climax_liquid_mode_active = "into"
+	climax_liquid_mode_passive = "self"
 
 /datum/sex_panel_action/other/penis/oral_sex/get_knot_count()
 	return 1

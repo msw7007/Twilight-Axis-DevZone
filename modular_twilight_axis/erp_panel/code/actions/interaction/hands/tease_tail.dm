@@ -4,7 +4,7 @@
 	required_target = SEX_ORGAN_TAIL
 	stamina_cost = 0.05
 	affects_self_arousal = 0
-	affects_arousal = 0.05
+	affects_arousal = 0.5
 	affects_self_pain = 0
 	affects_pain = 0.04
 	break_on_move = FALSE

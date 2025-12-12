@@ -6,7 +6,7 @@
 	armor_slot_target = BODY_ZONE_CHEST
 	stamina_cost = 0.05
 	affects_self_arousal = 0
-	affects_arousal = 0.06
+	affects_arousal = 0.5
 	affects_self_pain = 0
 	affects_pain = 0.02
 

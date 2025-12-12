@@ -5,7 +5,7 @@
 	required_target = SEX_ORGAN_PENIS
 	armor_slot_init = BODY_ZONE_PRECISE_GROIN
 
-	affects_self_arousal 	= 0.22
+	affects_self_arousal 	= 1.5
 	affects_self_pain 		= 0.01
 
 	actor_sex_hearts = TRUE
@@ -15,7 +15,6 @@
 	message_on_start   = "{actor} {pose} берёт свой член в руку."
 	message_on_perform = "{actor} {pose} мастурбирует рукой свой член."
 	message_on_finish  = "{actor} ослабляет хватку и останавливается."
-	climax_liquid_mode = "self"
 
 /datum/sex_panel_action/self/hands/penis_milking/can_perform(mob/living/carbon/human/user, mob/living/carbon/human/target)
 	. = ..()

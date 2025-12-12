@@ -4,7 +4,7 @@
 	name = "Секс-игрушка оральная"
 	required_target = SEX_ORGAN_MOUTH
 
-	affects_self_arousal	= 0.15
+	affects_self_arousal	= 0.75
 
 	actor_suck_sound = TRUE
 	actor_sex_hearts = TRUE

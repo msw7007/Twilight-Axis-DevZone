@@ -6,7 +6,7 @@
 	armor_slot_init = BODY_ZONE_PRECISE_GROIN
 	check_same_tile = FALSE
 
-	affects_self_arousal	= 0.12
+	affects_self_arousal	= 1.0
 	affects_arousal			= 0
 	affects_self_pain		= 0.03
 	affects_pain			= 0
@@ -19,5 +19,3 @@
 	message_on_perform = "{actor} {pose}, {force} и {speed} водит рукой по своему клитору, направляя пах на {partner}."
 	message_on_finish  = "{actor} убирает руки от своего лона."
 	message_on_climax_actor  = "{actor} кончает на {partner}."
-	message_on_climax_target = "{partner} кончает под себя."
-

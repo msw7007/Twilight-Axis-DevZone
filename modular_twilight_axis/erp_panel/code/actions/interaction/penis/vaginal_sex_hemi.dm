@@ -5,8 +5,8 @@
 	required_target = SEX_ORGAN_VAGINA
 	armor_slot_target = BODY_ZONE_PRECISE_GROIN
 
-	affects_self_arousal	= 0.18
-	affects_arousal			= 0.06
+	affects_self_arousal	= 2.0
+	affects_arousal			= 1.5
 	affects_self_pain		= 0.04
 	affects_pain			= 0.01
 
@@ -21,7 +21,8 @@
 	message_on_finish  = "{actor}  вытаскивает члены из влагалища {partner}."
 	message_on_climax_actor  = "{actor} кончает в лоно {partner}."
 	message_on_climax_target = "{partner} кончает сжимая киску вокруг члена {actor}."
-	climax_liquid_mode = "into"
+	climax_liquid_mode_active = "into"
+	climax_liquid_mode_passive = "onto"
 
 /datum/sex_panel_action/other/penis/hemi/vaginal_double/get_knot_count()
 	return 1

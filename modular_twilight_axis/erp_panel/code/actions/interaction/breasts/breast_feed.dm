@@ -3,8 +3,8 @@
 	name = "Насильное кормление"
 	required_target = SEX_ORGAN_MOUTH
 	stamina_cost = 0.05
-	affects_self_arousal = 0.12
-	affects_arousal = 0.08
+	affects_self_arousal = 1.0
+	affects_arousal = 0.75
 	affects_self_pain = 0.01
 	affects_pain = 0
 	require_grab = TRUE
@@ -17,6 +17,8 @@
 	message_on_start   = "{actor} {pose} прижимает лицо {dullahan?отделенной головы :}{partner} к своей груди."
 	message_on_perform = "{actor} {pose}, {force} и {speed} водит {dullahan?отделенной :}головой {partner} по своей груди."
 	message_on_finish  = "{actor} убирает {dullahan?отделенную :}голову {partner} от своей груди."
+	message_on_climax_actor  = "{actor} кончает на лицо {dullahan?отделенной головы :}{partner}."
+	climax_liquid_mode_active = "onto"
 
 /datum/sex_panel_action/other/breasts/breast_feed/can_perform(mob/living/carbon/human/user, mob/living/carbon/human/target)
 	. = ..()

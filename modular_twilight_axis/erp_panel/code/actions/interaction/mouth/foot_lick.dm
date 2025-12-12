@@ -4,8 +4,8 @@
 	required_target = SEX_ORGAN_LEGS
 	armor_slot_target = BODY_ZONE_PRECISE_GROIN
 	stamina_cost = 0.01
-	affects_self_arousal	= 0.04
-	affects_arousal			= 0.12
+	affects_self_arousal	= 0.25
+	affects_arousal			= 1.0
 	affects_self_pain		= 0.01
 	affects_pain			= 0.03
 	check_same_tile = FALSE
@@ -16,6 +16,3 @@
 	message_on_start   = "{actor} {pose} припадает губами к ногам {partner}."
 	message_on_perform = "{actor} {pose}, {force} и {speed} лижет ножки {partner}."
 	message_on_finish  = "{actor} убирает лицо с ножек {partner}."
-	message_on_climax_actor  = "{actor} кончает под себя."
-	message_on_climax_target = "{partner} кончает под себя."
-	climax_liquid_mode = "self"

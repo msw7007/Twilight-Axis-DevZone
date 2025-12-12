@@ -10,7 +10,6 @@
 	require_grab = FALSE
 	required_grab_state = null
 	message_on_climax_actor  = "{actor} оставляет под собой беспорядок."
-	climax_liquid_mode = "self"
 
 /datum/sex_panel_action/self/shows_on_menu(mob/living/carbon/human/user, mob/living/carbon/human/target)
 	. = ..()

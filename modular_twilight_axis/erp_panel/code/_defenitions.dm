@@ -41,6 +41,7 @@
 #define SEX_ORGAN_FILTER_MOUTH "mouth"
 #define SEX_ORGAN_FILTER_LHAND "left_hand"
 #define SEX_ORGAN_FILTER_RHAND "right_hand"
+#define SEX_ORGAN_FILTER_HANDS "hands"
 #define SEX_ORGAN_FILTER_LEGS "legs"
 #define SEX_ORGAN_FILTER_TAIL "tail"
 #define SEX_ORGAN_FILTER_BREASTS "breasts"

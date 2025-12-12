@@ -7,4 +7,3 @@
 
 	message_on_climax_actor  = "{actor} кончает под себя."
 	message_on_climax_target = "{partner} кончает под себя."
-	climax_liquid_mode = "self"

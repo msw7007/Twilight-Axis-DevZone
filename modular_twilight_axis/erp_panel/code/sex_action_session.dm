@@ -37,7 +37,8 @@
 		new_action.armor_slot_target      = A.armor_slot_target
 		new_action.can_knot               = A.can_knot
 		new_action.reserve_target_for_session = A.reserve_target_for_session
-		new_action.climax_liquid_mode     = A.climax_liquid_mode
+		new_action.climax_liquid_mode_active  = A.climax_liquid_mode_active
+		new_action.climax_liquid_mode_passive = A.climax_liquid_mode_passive
 
 		new_action.message_on_start        = A.message_on_start
 		new_action.message_on_perform      = A.message_on_perform
@@ -132,103 +133,48 @@
 				session.stop_instance(instance_id)
 				return
 
-	var/delta = calc_delta()
-	var/list/pain_deltas = update_organ_response(delta)
-	var/self_pain_delta = pain_deltas?["self"] || 0
-	var/target_pain_delta = pain_deltas?["target"] || 0
+	var/mob/living/carbon/human/A = actor
+	var/mob/living/carbon/human/T = partner
 
-	apply_arousal_delta(delta, self_pain_delta, target_pain_delta)
+	var/datum/sex_organ/src_org = session.resolve_organ_datum(A, actor_node_id)
+	var/datum/sex_organ/tgt_org = session.resolve_organ_datum(T, partner_node_id)
+
+	var/self_pleasure_base   = action.affects_self_arousal
+	var/target_pleasure_base = action.affects_arousal
+
+	var/self_pain_base   = action.affects_self_pain
+	var/target_pain_base = action.affects_pain
+
+	var/list/force_mults = get_force_multipliers(force, A)
+	var/pain_mult     = force_mults["pain"]
+	var/pleasure_mult = force_mults["pleasure"]
+			
+	var/self_pleasure_delta   = self_pleasure_base * pleasure_mult
+	var/target_pleasure_delta = target_pleasure_base * pleasure_mult
+
+	var/total_pain_mult = pain_mult * ORG_PAIN_GAIN_RATE
+
+	var/self_pain_delta   = self_pain_base   * total_pain_mult
+	var/target_pain_delta = target_pain_base * total_pain_mult
+
+	if(A && T)
+		var/datum/component/knotting/K = A.GetComponent(/datum/component/knotting)
+		if(K && K.knotted_status == KNOTTED_AS_TOP && K.knotted_recipient == T)
+			target_pain_delta += 0.25
+
+	if(src_org && self_pain_delta > 0)
+		src_org.adjust_pain(self_pain_delta)
+	if(tgt_org && target_pain_delta > 0)
+		tgt_org.adjust_pain(target_pain_delta)
+
+	apply_arousal_delta(self_pleasure_delta, target_pleasure_delta, self_pain_delta, target_pain_delta)
 
 	session.sync_arousal_ui()
 	SStgui.update_uis(session)
 	next_tick_time = world.time + do_time
 
-/datum/sex_action_session/proc/update_organ_response(delta = 0)
-	if(!session || !action)
-		return list("self" = 0, "target" = 0)
-
-	var/datum/sex_organ/src_org = session.resolve_organ_datum(actor, actor_node_id)
-	var/datum/sex_organ/tgt_org = session.resolve_organ_datum(partner, partner_node_id)
-
-	if(delta <= 0)
-		delta = 1
-
-	var/base_pain_self   = delta * 0.10
-	var/base_pain_target = delta * 0.10
-
-	var/self_pain_delta   = 0
-	var/target_pain_delta = 0
-	var/pain_mult = 0.0
-
-	switch(force)
-		if(SEX_FORCE_LOW)
-			pain_mult = 0.0
-		if(SEX_FORCE_MID)
-			pain_mult = 0.01
-		if(SEX_FORCE_HIGH)
-			pain_mult = 1.0
-		if(SEX_FORCE_EXTREME)
-			pain_mult = 1.25
-
-	self_pain_delta   = base_pain_self   * pain_mult
-	target_pain_delta = base_pain_target * pain_mult
-	var/speed_pain_mult = 1.0
-	switch(speed)
-		if(SEX_SPEED_LOW)
-			speed_pain_mult = 0.8
-		if(SEX_SPEED_MID)
-			speed_pain_mult = 1.0
-		if(SEX_SPEED_HIGH)
-			speed_pain_mult = 1.2
-		if(SEX_SPEED_EXTREME)
-			speed_pain_mult = 1.4
-
-	self_pain_delta   *= speed_pain_mult
-	target_pain_delta *= speed_pain_mult
-
-	self_pain_delta   *= ORG_PAIN_GAIN_RATE
-	target_pain_delta *= ORG_PAIN_GAIN_RATE
-
-	var/knot_pain_mult = 0
-	var/mob/living/carbon/human/U = actor
-	var/mob/living/carbon/human/T = partner
-	if(U && T)
-		var/datum/component/knotting/K = U.GetComponent(/datum/component/knotting)
-		if(K && K.knotted_status == KNOTTED_AS_TOP && K.knotted_recipient == T)
-			knot_pain_mult = 0.25
-
-	target_pain_delta += knot_pain_mult
-
-	if(src_org)
-		src_org.adjust_pain(self_pain_delta)
-
-	if(tgt_org)
-		tgt_org.adjust_pain(target_pain_delta)
-
-	return list(
-		"self"   = max(0, self_pain_delta),
-		"target" = max(0, target_pain_delta),
-	)
-
-/datum/sex_action_session/proc/calc_delta()
-	if(!session || !action)
-		return 0
-
-	var/datum/sex_organ/src_org = session.resolve_organ_datum(actor, actor_node_id)
-	var/datum/sex_organ/tgt_org = session.resolve_organ_datum(partner, partner_node_id)
-
-	var/base = 1
-	var/mult = 1
-
-	if(src_org && tgt_org)
-		var/bonus = src_org.pleasure_bonus(tgt_org)
-		if(isnum(bonus))
-			mult = 1 + bonus
-
-	return base * mult
-
-/datum/sex_action_session/proc/apply_arousal_delta(delta, self_pain_delta, target_pain_delta)
-	if(delta <= 0 && self_pain_delta <= 0 && target_pain_delta <= 0)
+/datum/sex_action_session/proc/apply_arousal_delta(self_delta, partner_delta, self_pain_delta, partner_pain_delta)
+	if(self_delta <= 0 && partner_delta <= 0 && self_pain_delta <= 0 && partner_pain_delta <= 0)
 		return
 
 	var/mob/living/carbon/human/U = actor
@@ -237,13 +183,8 @@
 	var/user_sources   = get_arousal_source_count_for(U)
 	var/target_sources = get_arousal_source_count_for(T)
 
-	var/user_delta   = 0
-	var/target_delta = 0
-
-	if(action.affects_self_arousal && delta > 0)
-		user_delta = delta
-	if(action.affects_arousal && delta > 0)
-		target_delta = delta
+	var/user_delta   = self_delta
+	var/target_delta = partner_delta
 
 	if(user_sources > 1 && user_delta)
 		user_delta /= user_sources
@@ -251,18 +192,18 @@
 		target_delta /= target_sources
 
 	if(self_pain_delta > 0 && U)
-		if(session?.is_maso_or_nympho(U))
+		if(is_maso(U) || is_nympho(U))
 			user_delta += self_pain_delta
 		else
 			user_delta -= self_pain_delta
 
-	if(target_pain_delta > 0 && T)
-		if(session?.is_maso_or_nympho(T))
-			target_delta += target_pain_delta
+	if(partner_pain_delta > 0 && T)
+		if(is_maso(T) || is_nympho(T))
+			target_delta += partner_pain_delta
 		else
-			target_delta -= target_pain_delta
+			target_delta -= partner_pain_delta
 
-	var/total_user_pain = 0
+	var/total_user_pain   = 0
 	var/total_target_pain = 0
 
 	if(U && actor_node_id && session)
@@ -270,12 +211,14 @@
 		if(user_org)
 			total_user_pain = max(0, user_org.pain)
 			user_delta *= user_org.sensivity
+			user_org.pain += self_pain_delta
 
 	if(T && partner_node_id && session)
 		var/datum/sex_organ/target_org = session.resolve_organ_datum(T, partner_node_id)
 		if(target_org)
 			total_target_pain = max(0, target_org.pain)
 			target_delta *= target_org.sensivity
+			target_org.pain += partner_pain_delta
 
 	if(U && (user_delta || total_user_pain))
 		SEND_SIGNAL(U, COMSIG_SEX_RECEIVE_ACTION, user_delta, total_user_pain, TRUE, force, speed, actor_node_id)
@@ -327,3 +270,32 @@
 		role_priority = 50
 
 	return organ_priority + role_priority
+
+/datum/sex_action_session/proc/get_force_multipliers(force, mob/living/carbon/human/unit)
+	var/pain_mult = 0.0
+	var/pleasure_mult = 1.0
+
+	switch(force)
+		if(SEX_FORCE_LOW)
+			pain_mult = 0.0
+			pleasure_mult = 0.5
+
+		if(SEX_FORCE_MID)
+			pain_mult = 0.0
+			pleasure_mult = 1.0
+
+		if(SEX_FORCE_HIGH)
+			pain_mult = 1.0
+			pleasure_mult = is_maso(unit) ? 1.5 : 1.25
+			pleasure_mult += is_nympho(unit) ? 0.05 : 0
+
+		if(SEX_FORCE_EXTREME)
+			pain_mult = is_maso(unit) ? 1.25 : 1.5
+			pleasure_mult = is_maso(unit) ? 2.0 : 1.5
+
+	pleasure_mult += is_nympho(unit) ? 0.25 : 0
+
+	return list(
+		"pain"     = pain_mult,
+		"pleasure" = pleasure_mult,
+	)

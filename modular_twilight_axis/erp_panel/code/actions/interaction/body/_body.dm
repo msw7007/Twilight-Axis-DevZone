@@ -4,4 +4,3 @@
 	required_init = null
 	stamina_cost = 0.3
 	check_same_tile = FALSE
-	climax_liquid_mode = "self"

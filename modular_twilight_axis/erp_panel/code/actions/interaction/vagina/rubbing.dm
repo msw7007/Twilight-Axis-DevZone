@@ -3,8 +3,8 @@
 	name = "Тереться вагиной"
 	required_target = null
 	stamina_cost = 0.06
-	affects_self_arousal	= 0.08
-	affects_arousal			= 0.12
+	affects_self_arousal	= 1.5
+	affects_arousal			= 0.5
 	affects_self_pain		= 0.01
 	affects_pain			= 0.01
 	check_same_tile = FALSE
@@ -15,6 +15,3 @@
 	message_on_start   = "{actor} {pose} прижимается вагиной к {partner}."
 	message_on_perform = "{actor} {pose}, {force} и {speed} трется вагиной об {zone} {partner}." 
 	message_on_finish  = "{actor} уводит таз от {partner}."
-	message_on_climax_actor  = "{actor} кончает под себя."
-	message_on_climax_target = "{partner} кончает под себя."
-
