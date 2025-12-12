@@ -532,8 +532,12 @@ BLIND     // can't see anything
 		chunkicon = "chunkfall3"
 		y_offset = 30
 	if(text)
-		new /obj/effect/temp_visual/armor_chunk(get_turf(src), 0.7 SECONDS, chunkcolor, chunkicon)
-		playsound(src, sfx, 100, TRUE)
+		if(isliving(loc))
+			var/mob/living/L = loc
+			if(L.last_integ_sound < world.time)
+				playsound(src, sfx, 100, TRUE)
+				L.last_integ_sound = world.time + INT_NOISE_DELAY
+			new /obj/effect/temp_visual/armor_chunk(get_turf(src), 0.7 SECONDS, chunkcolor, chunkicon)
 		filtered_balloon_alert(TRAIT_COMBAT_AWARE, text, -20, y_offset)
 	. = ..()
 
