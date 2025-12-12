@@ -283,9 +283,6 @@ const BarRow: React.FC<{
   if (!Number.isFinite(v)) {
     v = 0;
   }
-  if (v > 0 && v <= 1) {
-    v = v * 100;
-  }
 
   const clamped = Math.max(0, Math.min(100, v));
   const percentText = Math.round(clamped);
