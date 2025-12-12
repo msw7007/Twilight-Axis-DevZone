@@ -6,7 +6,7 @@
 	stamina_cost = 0.02
 	affects_self_arousal = 0
 	affects_arousal = 1.0
-	affects_self_pain = 0
+	affects_self_pain = 0.005
 	affects_pain = 0.02
 	check_same_tile = FALSE
 

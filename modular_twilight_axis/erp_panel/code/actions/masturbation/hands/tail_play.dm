@@ -5,6 +5,7 @@
 	required_target = SEX_ORGAN_TAIL
 
 	affects_self_arousal	= 0.2
+	affects_self_pain = 0.005
 
 	actor_sex_hearts = TRUE
 

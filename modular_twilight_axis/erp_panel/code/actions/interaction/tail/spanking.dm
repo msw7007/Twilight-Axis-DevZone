@@ -5,7 +5,7 @@
 	stamina_cost = 0.06
 	affects_self_arousal	= 0
 	affects_arousal			= 1.25
-	affects_self_pain		= 0
+	affects_self_pain		= 0.005
 	affects_pain			= 0.04
 
 	actor_sex_hearts = TRUE

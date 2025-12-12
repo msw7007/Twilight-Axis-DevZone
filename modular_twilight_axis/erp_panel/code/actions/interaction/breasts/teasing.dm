@@ -6,7 +6,8 @@
 	affects_self_arousal = 1.0
 	affects_arousal = 0
 	affects_self_pain = 0.02
-	affects_pain = 0
+	affects_pain = 0.005
+
 	check_same_tile = FALSE
 
 	actor_sex_hearts = TRUE

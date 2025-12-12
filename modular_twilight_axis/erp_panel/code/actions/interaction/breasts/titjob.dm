@@ -5,8 +5,9 @@
 	stamina_cost = 0.05
 	affects_self_arousal = 0.5
 	affects_arousal = 1.0
-	affects_self_pain = 0
+	affects_self_pain = 0.005
 	affects_pain = 0.01
+
 	require_grab = TRUE
 	check_same_tile = FALSE
 

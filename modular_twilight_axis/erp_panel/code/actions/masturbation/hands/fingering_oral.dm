@@ -6,7 +6,7 @@
 	armor_slot_init = BODY_ZONE_PRECISE_MOUTH
 
 	affects_self_arousal = 0.5
-	affects_self_pain = 0.00
+	affects_self_pain = 0.005
 
 	actor_sex_hearts = TRUE
 	actor_make_fingering_sound = TRUE

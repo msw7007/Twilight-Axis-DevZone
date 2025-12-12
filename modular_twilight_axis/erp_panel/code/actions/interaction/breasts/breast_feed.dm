@@ -6,7 +6,8 @@
 	affects_self_arousal = 1.0
 	affects_arousal = 0.75
 	affects_self_pain = 0.01
-	affects_pain = 0
+	affects_pain = 0.005
+
 	require_grab = TRUE
 	check_same_tile = FALSE
 
