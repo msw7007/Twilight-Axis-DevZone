@@ -1,0 +1,7 @@
+#include "code/class.dm"
+#include "code/soundbreaker_defines.dm"
+#include "code/soundbreaker_status.dm"
+#include "code/soundbreaker_core.dm"
+#include "code/soundbreaker_spells_base.dm"
+#include "code/soundbreaker_spells_notes.dm"
+#include "code/soundbreaker_spells_combos.dm"
