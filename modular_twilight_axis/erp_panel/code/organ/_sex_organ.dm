@@ -12,7 +12,7 @@
 	// max sensitivity
 	var/sensivity_max = 2
 	// max pain
-	var/pain_max = 5
+	var/pain_max = 2
 	// object that currently this organ stuffed in
 	var/datum/sex_organ/active_target = null
 	// list of objects that use this organ
@@ -422,7 +422,6 @@
 
 	return removed
 
-/// Жёстко выставить боль. reset_timer = TRUE, если это новое получение боли.
 /datum/sex_organ/proc/set_pain(new_pain, reset_timer = FALSE)
 	pain = clamp(new_pain, 0, pain_max)
 

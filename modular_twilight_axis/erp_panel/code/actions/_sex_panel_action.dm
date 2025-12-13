@@ -531,9 +531,6 @@
 	if(actor_sex_hearts && user)
 		show_sex_effects(user)
 
-	if(actor_make_sound && user)
-		do_sound_effect(user)
-
 	if(actor_suck_sound && user)
 		user.make_sucking_noise()
 
@@ -548,9 +545,6 @@
 
 	if(target && target_sex_hearts)
 		show_sex_effects(target)
-
-	if(target && target_make_sound)
-		do_sound_effect(target)
 
 	if(target && target_suck_sound)
 		target.make_sucking_noise()

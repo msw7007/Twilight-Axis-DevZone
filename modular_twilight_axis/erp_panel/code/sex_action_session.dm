@@ -220,11 +220,23 @@
 			target_delta *= target_org.sensivity
 			target_org.pain += partner_pain_delta
 
+	var/can_moan_user = TRUE
+	var/can_moan_target = TRUE
 	if(U && (user_delta || total_user_pain))
-		SEND_SIGNAL(U, COMSIG_SEX_RECEIVE_ACTION, user_delta, total_user_pain, TRUE, force, speed, actor_node_id)
+		if(action && !action.actor_make_sound)
+			can_moan_user = FALSE
+
+		if(session && !session.allow_user_moan && U == session.user)
+			can_moan_user = FALSE
+
+		if(action && !action.target_make_sound)
+			can_moan_target = FALSE
+
+	if(U && (user_delta || total_user_pain))
+		SEND_SIGNAL(U, COMSIG_SEX_RECEIVE_ACTION, user_delta, total_user_pain, TRUE, force, speed, actor_node_id, can_moan_user)
 
 	if(T && (target_delta || total_target_pain))
-		SEND_SIGNAL(T, COMSIG_SEX_RECEIVE_ACTION, target_delta, total_target_pain, FALSE, force, speed, partner_node_id)
+		SEND_SIGNAL(T, COMSIG_SEX_RECEIVE_ACTION, target_delta, total_target_pain, FALSE, force, speed, partner_node_id, can_moan_target)
 
 /datum/sex_action_session/proc/get_arousal_source_count_for(mob/living/carbon/human/M)
 	if(!M || !session || !length(session.current_actions))

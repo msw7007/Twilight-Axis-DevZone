@@ -174,7 +174,24 @@
 		if(penis_object && penis_object.have_knot)
 			action_object.try_knot_on_climax(source, partner)
 
-/datum/component/arousal/receive_sex_action(datum/source, arousal_amt, pain_amt, giving, applied_force, applied_speed, organ_id)
+	if(return_type == "into")
+		var/mob/living/carbon/human/mother = partner
+		var/mob/living/carbon/human/father = source
+		if(istype(mother) && istype(father))
+			var/obj/item/organ/vagina/vag = mother.getorganslot(ORGAN_SLOT_VAGINA)
+			if(vag && vag.sex_organ)
+				var/list/arousal_data = list()
+				SEND_SIGNAL(mother, COMSIG_SEX_GET_AROUSAL, arousal_data)
+				var/mother_arousal = arousal_data["arousal"] || 0
+				var/knot_bonus = 0
+				var/datum/component/knotting/knot_comp = father.GetComponent(/datum/component/knotting)
+				if(knot_comp)
+					knot_bonus = knot_comp.get_pregnancy_bonus(mother)
+
+				var/datum/sex_organ/vagina/vag_datum = vag.sex_organ
+				vag_datum.on_intimate_climax(father, mother_arousal, knot_bonus)
+
+/datum/component/arousal/receive_sex_action(datum/source, arousal_amt, pain_amt, giving, applied_force, applied_speed, organ_id, can_moan = TRUE)
 	var/mob/user = parent
 
 	arousal_amt *= get_force_pleasure_multiplier(applied_force, giving)
@@ -223,7 +240,7 @@
 		damage_from_pain(final_pain, organ_id)
 
 	try_do_pain_effect(final_pain, giving)
-	try_do_moan(arousal_amt, final_pain, applied_force, giving)
+	try_do_moan(arousal_amt, final_pain, applied_force, giving, can_moan)
 
 /datum/component/arousal/damage_from_pain(pain_amt, organ_id, applied_force)
 	var/mob/living/carbon/human/user = parent
@@ -510,3 +527,69 @@
 		charge_max = BAOTHA_SEX_CHARGE_MAX
 	if(source.has_flaw(/datum/charflaw/addiction/lovefiend))
 		charge_for_climax = NIMPHO_SEX_CHARGE_FOR_CLIMAX
+
+/datum/component/arousal/try_do_moan(arousal_amt, pain_amt, applied_force, giving)
+	var/mob/user = parent
+	if(!user)
+		return
+	if(arousal < 20)
+		return
+
+	if(user.stat != CONSCIOUS)
+		return
+
+	if(last_moan + MOAN_COOLDOWN >= world.time)
+		return
+
+	var/pain_level = clamp(pain_amt, 0, 2)
+	var/base_chance = 15
+
+	if(arousal >= 20)
+		base_chance += 15
+	if(arousal >= 50)
+		base_chance += 20
+	if(arousal >= 80)
+		base_chance += 30
+
+	base_chance += round(pain_level * 5)
+
+	base_chance = clamp(base_chance, 10, 80)
+
+	if(!prob(base_chance))
+		return
+
+	var/chosen_emote
+	if(arousal < 5)
+		chosen_emote = "sexmoanlight"
+	else
+		chosen_emote = "sexamoanhvy"
+
+	if(pain_level >= 0.5 && pain_level < 1)
+		if(giving)
+			if(prob(20))
+				chosen_emote = "groan"
+		else
+			if(prob(30))
+				chosen_emote = "painmoan"
+
+	else if(pain_level >= 1 && pain_level < 1.5)
+		if(giving)
+			if(prob(40))
+				chosen_emote = "groan"
+		else
+			if(prob(50))
+				chosen_emote = "painmoan"
+
+	else if(pain_level >= 1.5)
+		if(giving)
+			if(prob(60))
+				chosen_emote = "groan"
+		else
+			if(prob(70))
+				chosen_emote = "painmoan"
+
+	if(!chosen_emote)
+		return
+
+	last_moan = world.time
+	user.emote(chosen_emote)

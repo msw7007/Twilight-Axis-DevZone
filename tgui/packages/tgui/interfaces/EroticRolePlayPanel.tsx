@@ -79,6 +79,7 @@ export type SexSessionData = {
   has_knotted_penis?: boolean;
   can_knot_now?: boolean;
   yield_to_partner?: boolean;
+  allow_user_moan?: boolean;
 
   actions?: SexAction[];
   can_perform?: string[];
@@ -378,7 +379,7 @@ const ArousalBars: React.FC<{
         />
       </Stack.Item>
       {showPartnerBar && (
-        <Stack.Item mt={0.5}>
+        <Stack.Item mt={0.25}>
           <BarRow
             label="Партнёр"
             valuePercent={partnerArousal}
@@ -644,7 +645,14 @@ const ActiveLinksPanel: React.FC<{
         const forceIdx = Math.max(1, Math.min(4, link.force)) - 1;
 
         return (
-          <Section key={link.id}>
+          <Section 
+            key={link.id}
+            style={{
+            marginBottom: 1,
+            paddingTop: 1,
+            paddingBottom: 1,
+          }}  
+          >
             <Stack align="center" justify="space-between">
               <Stack.Item shrink>
                 <Box bold>
@@ -931,64 +939,60 @@ const ActionsList: React.FC<{
 const BottomControls: React.FC<{
   yieldToPartner?: boolean;
   frozen?: boolean;
+  suppressMoans?: boolean;
   onFlipPose: () => void;
   onStopAll: () => void;
   onToggleYield: () => void;
   onToggleFreeze: () => void;
+  onToggleMoans: () => void;
   compact?: boolean;
 }> = ({
   yieldToPartner,
   frozen,
+  suppressMoans,
   onFlipPose,
   onStopAll,
   onToggleYield,
   onToggleFreeze,
-  compact = false,
+  onToggleMoans,
 }) => (
   <Section>
-    {compact ? (
-      <Stack vertical align="center">
-        <Stack justify="center" wrap>
-          <Stack.Item style={{ marginInline: 4, marginBlock: 2 }}>
-            <Button onClick={onFlipPose}>ПЕРЕВЕРНУТЬСЯ</Button>
-          </Stack.Item>
-          <Stack.Item style={{ marginInline: 4, marginBlock: 2 }}>
-            <Button onClick={onStopAll}>ОСТАНОВИТЬСЯ</Button>
-          </Stack.Item>
-        </Stack>
-        <Stack justify="center" wrap>
-          <Stack.Item style={{ marginInline: 4, marginBlock: 2 }}>
-            <Button selected={!!yieldToPartner} onClick={onToggleYield}>
-              {yieldToPartner ? 'ПОДДАЕТСЯ' : 'НЕ ПОДДАЕТСЯ'}
-            </Button>
-          </Stack.Item>
-          <Stack.Item style={{ marginInline: 4, marginBlock: 2 }}>
-            <Button selected={!!frozen} onClick={onToggleFreeze}>
-              {frozen ? 'НЕ ВОЗБУЖДАЕТСЯ' : 'ВОЗБУЖДАЕТСЯ'}
-            </Button>
-          </Stack.Item>
-        </Stack>
-      </Stack>
-    ) : (
+    <Stack vertical align="center" justify="center">
       <Stack justify="center" wrap>
-        <Stack.Item style={{ marginInline: 4 }}>
-          <Button onClick={onFlipPose}>ПЕРЕВЕРНУТЬСЯ</Button>
-        </Stack.Item>
-        <Stack.Item style={{ marginInline: 4 }}>
-          <Button onClick={onStopAll}>ОСТАНОВИТЬСЯ</Button>
-        </Stack.Item>
-        <Stack.Item style={{ marginInline: 4 }}>
-          <Button selected={!!yieldToPartner} onClick={onToggleYield}>
-            {yieldToPartner ? 'ПОДДАЕТСЯ' : 'НЕ ПОДДАЕТСЯ'}
+        <Stack.Item style={{ marginInline: 2, marginBlock: 1 }}>
+          <Button
+            onClick={onFlipPose}
+          >
+            ПЕРЕВЕРНУТЬСЯ
           </Button>
         </Stack.Item>
-        <Stack.Item style={{ marginInline: 4 }}>
-          <Button selected={!!frozen} onClick={onToggleFreeze}>
-            {frozen ? 'НЕ ВОЗБУЖДАЕТСЯ' : 'ВОЗБУЖДАЕТСЯ'}
+        <Stack.Item style={{ marginInline: 2, marginBlock: 1 }}>
+          <Button
+            onClick={onStopAll}
+          >
+            ОСТАНОВИТЬСЯ
           </Button>
         </Stack.Item>
       </Stack>
-    )}
+
+      <Stack justify="center" wrap>
+        <Stack.Item style={{ marginInline: 2, marginBlock: 1 }}>
+          <Pill selected={!!frozen} onClick={onToggleFreeze}>
+            {frozen ? 'НЕ ВОЗБУЖДАЕТСЯ' : 'ВОЗБУЖДАЕТСЯ'}
+          </Pill>
+        </Stack.Item>
+        <Stack.Item style={{ marginInline: 2, marginBlock: 1 }}>
+          <Pill selected={!!yieldToPartner} onClick={onToggleYield}>
+            {yieldToPartner ? 'ПОДДАЕТСЯ' : 'НЕ ПОДДАЕТСЯ'}
+          </Pill>
+        </Stack.Item>
+        <Stack.Item style={{ marginInline: 2, marginBlock: 1 }}>
+          <Pill selected={!!suppressMoans} onClick={onToggleMoans}>
+            {suppressMoans ? 'НЕ СТОНЕТ' : 'СТОНЕТ'}
+          </Pill>
+        </Stack.Item>
+      </Stack>
+    </Stack>
   </Section>
 );
 
@@ -1020,13 +1024,6 @@ export const EroticRolePlayPanel: React.FC = () => {
   const [editContext, setEditContext] = useState<EditContext | null>(null);
   const [editTitle, setEditTitle] = useState('');
   const [editValue, setEditValue] = useState('');
-
-  const penisStatusOrg = useMemo(
-    () => statusOrgans.find((o) => o.id === 'genital_p'),
-    [statusOrgans],
-  );
-
-  const penisMode = getErectModeForOrg(penisStatusOrg);
 
   const toggleTag = (tag: string) => {
     setActiveTags((prev) =>
@@ -1180,114 +1177,44 @@ export const EroticRolePlayPanel: React.FC = () => {
       <Window.Content scrollable>
         <Stack vertical fill>
           <Stack.Item>
-            <PartnerSelector
-              actorName={data.actor_name}
-              partners={partners}
-              currentRef={data.current_partner_ref}
-              onChange={(ref) => act('set_partner', { ref })}
-            />
-          </Stack.Item>
+            <Section>
+              <ArousalBars
+                actorName={data.actor_name}
+                partnerLabel={currentPartner?.name || 'Партнёр'}
+                actorArousal={actorArousalWidth}
+                partnerArousal={partnerArousalWidth}
+                showPartnerBar={showPartnerBar}
+                onSetActor={startEditArousalActor}
+              />
 
-          {penisStatusOrg && (
-            <Stack.Item>
-              <Section title="Состояние члена">
-                <Stack justify="center" wrap>
-                  <Stack.Item>
-                    <Pill
-                      selected={penisMode === 'auto'}
-                      onClick={() =>
-                        act('toggle_erect', {
-                          id: penisStatusOrg.id,
-                          state: 'auto',
-                        })
-                      }
+              <Box mt={0.5}>
+                <Stack justify="center">
+                  <Stack.Item style={{ marginInline: 4 }}>
+                    <Button
+                      selected={activeTab === 'status'}
+                      onClick={() => setActiveTab('status')}
                     >
-                      АВТО
-                    </Pill>
+                      СТАТУС
+                    </Button>
                   </Stack.Item>
-                  <Stack.Item>
-                    <Pill
-                      selected={penisMode === 'none'}
-                      onClick={() =>
-                        act('toggle_erect', {
-                          id: penisStatusOrg.id,
-                          state: 'none',
-                        })
-                      }
+                  <Stack.Item style={{ marginInline: 4 }}>
+                    <Button
+                      selected={activeTab === 'actions'}
+                      onClick={() => setActiveTab('actions')}
                     >
-                      МЯГКИЙ
-                    </Pill>
+                      ДЕЙСТВИЯ
+                    </Button>
                   </Stack.Item>
-                  <Stack.Item>
-                    <Pill
-                      selected={penisMode === 'partial'}
-                      onClick={() =>
-                        act('toggle_erect', {
-                          id: penisStatusOrg.id,
-                          state: 'partial',
-                        })
-                      }
+                  <Stack.Item style={{ marginInline: 4 }}>
+                    <Button
+                      selected={activeTab === 'editor'}
+                      onClick={() => setActiveTab('editor')}
                     >
-                      ВОЗБУЖДЁН
-                    </Pill>
-                  </Stack.Item>
-                  <Stack.Item>
-                    <Pill
-                      selected={penisMode === 'hard'}
-                      onClick={() =>
-                        act('toggle_erect', {
-                          id: penisStatusOrg.id,
-                          state: 'hard',
-                        })
-                      }
-                    >
-                      КРЕПКИЙ
-                    </Pill>
+                      РЕДАКТОР
+                    </Button>
                   </Stack.Item>
                 </Stack>
-              </Section>
-            </Stack.Item>
-          )}
-
-          <Stack.Item>
-            <ArousalBars
-              actorName={data.actor_name}
-              partnerLabel={currentPartner?.name || 'Партнёр'}
-              actorArousal={actorArousalWidth}
-              partnerArousal={partnerArousalWidth}
-              showPartnerBar={showPartnerBar}
-              onSetActor={startEditArousalActor}
-            />
-          </Stack.Item>
-
-          <Stack.Item>
-            <Section>
-              <Stack justify="center">
-                <Stack.Item style={{ marginInline: 4 }}>
-                  <Button
-                    selected={activeTab === 'status'}
-                    onClick={() => setActiveTab('status')}
-                  >
-                    СТАТУС
-                  </Button>
-                </Stack.Item>
-                <Stack.Item style={{ marginInline: 4 }}>
-                  <Button
-                    selected={activeTab === 'actions'}
-                    onClick={() => setActiveTab('actions')}
-                  >
-                    ДЕЙСТВИЯ
-                  </Button>
-                </Stack.Item>
-                <Stack.Item style={{ marginInline: 4 }}>
-                  <Button
-                    selected={activeTab === 'editor'}
-                    onClick={() => setActiveTab('editor')}
-                  >
-                    РЕДАКТОР
-                  </Button>
-                </Stack.Item>
-              </Stack>
+              </Box>
             </Section>
           </Stack.Item>
 
@@ -1316,18 +1243,20 @@ export const EroticRolePlayPanel: React.FC = () => {
 
           {activeTab === 'actions' && (
             <>
-              <Stack.Item>
+              <Stack.Item style={{ marginTop: 4 }}>
                 <BottomControls
                   yieldToPartner={data.yield_to_partner}
                   frozen={data.frozen}
+                  suppressMoans={!data.allow_user_moan}
                   onFlipPose={() => act('flip', { dir: 1 })}
                   onStopAll={() => act('stop_all')}
                   onToggleYield={() => act('quick', { op: 'yield' })}
                   onToggleFreeze={() => act('freeze_arousal')}
+                  onToggleMoans={() => act('toggle_moan')}
                 />
               </Stack.Item>
 
-              <Stack.Item>
+              <Stack.Item style={{ marginTop: 4 }}>
                 <Section>
                   <Stack fill align="stretch">
                     <Stack.Item basis="18%">
@@ -1379,7 +1308,7 @@ export const EroticRolePlayPanel: React.FC = () => {
                 </Section>
               </Stack.Item>
 
-              <Stack.Item>
+              <Stack.Item style={{ marginTop: 4 }}>
                 <ActiveLinksPanel
                   data={data}
                   actorOrgans={actorOrgansBase}

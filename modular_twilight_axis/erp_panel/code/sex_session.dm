@@ -31,6 +31,7 @@
 	var/arousal_frozen = FALSE
 
 	var/next_broadcast_time = 0
+	var/allow_user_moan = TRUE
 
 /datum/sex_session_tgui/New(mob/living/carbon/human/U, mob/living/carbon/human/T)
 	. = ..()
@@ -588,6 +589,7 @@
 
 	D["custom_templates"] = build_custom_templates_for_ui()
 	D["custom_actions"] = build_custom_actions_for_ui()
+	D["allow_user_moan"] = allow_user_moan
 
 	return D
 
@@ -817,7 +819,12 @@
 		if("custom_delete")
 			handle_custom_delete(params)
 			SStgui.update_uis(src)
-			return TRUE	
+			return TRUE
+
+		if("toggle_moan")
+			allow_user_moan = !allow_user_moan
+			SStgui.update_uis(src)
+			return TRUE
 
 	return FALSE
 

@@ -159,3 +159,13 @@
 	if(knotted_status)
 		knot_exit()
 	. = ..()
+
+/datum/component/knotting/proc/get_pregnancy_bonus(mob/living/carbon/human/target)
+	if(knotted_status != KNOTTED_AS_TOP || knotted_recipient != target)
+		return 0
+
+	var/bonus = 15
+	if(knot_count > 1)
+		bonus += 5 * (knot_count - 1)
+
+	return bonus
