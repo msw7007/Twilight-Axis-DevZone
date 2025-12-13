@@ -170,7 +170,7 @@
 	var/powder_per_reload = 1
 	var/locktype = "Wheellock"
 	var/match_delay = 10
-	var/effective_range = 6
+	var/effective_range = 5
 	var/obj/item/twilight_ramrod/myrod = null
 
 	//Advanced icon stuff
@@ -768,6 +768,7 @@
 	advanced_icon_r = 'modular_twilight_axis/firearms/icons/umbra/pistol_r.dmi'
 	advanced_icon_norod	= 'modular_twilight_axis/firearms/icons/umbra/pistol_norod.dmi'
 	advanced_icon_r_norod = 'modular_twilight_axis/firearms/icons/umbra/pistol_r_norod.dmi'
+	effective_range = 5
 
 /obj/item/gun/ballistic/twilight_firearm/handgonne
 	name = "culverin"
@@ -783,7 +784,6 @@
 	advanced_icon_f	= 'modular_twilight_axis/firearms/icons/handgonne/handgonne_f.dmi'
 	advanced_icon_s = 'modular_twilight_axis/firearms/icons/handgonne/handgonne_s.dmi'
 	npcdamfactor = 1
-	effective_range = 5
 
 /obj/item/ammo_box/magazine/internal/twilight_firearm/handgonne
 	name = "handgonne internal magazine"
