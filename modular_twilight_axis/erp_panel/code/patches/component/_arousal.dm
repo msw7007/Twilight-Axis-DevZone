@@ -2,6 +2,7 @@
 	var/chain_orgasm_lock = FALSE
 	var/last_ejaculation_world_time = -1
 	var/tmp/last_nympho_boost_time = 0
+	var/tmp/accumulated_pain_for_vice = 0
 	charge = CHARGE_FOR_CLIMAX
 	var/charge_max = SEX_MAX_CHARGE
 	var/charge_for_climax = CHARGE_FOR_CLIMAX
@@ -239,8 +240,12 @@
 	if(do_damage && final_pain > 0)
 		damage_from_pain(final_pain, organ_id)
 
+	if(final_pain > 0)
+		accumulated_pain_for_vice = accumulated_pain_for_vice + final_pain
+
 	try_do_pain_effect(final_pain, giving)
 	try_do_moan(arousal_amt, final_pain, applied_force, giving, can_moan)
+	try_do_maso_vice_moan(can_moan)
 
 /datum/component/arousal/damage_from_pain(pain_amt, organ_id, applied_force)
 	var/mob/living/carbon/human/user = parent
@@ -593,3 +598,43 @@
 
 	last_moan = world.time
 	user.emote(chosen_emote)
+
+/datum/component/arousal/proc/try_do_maso_vice_moan(can_moan = TRUE)
+	var/mob/living/carbon/human/user = parent
+	if(!user)
+		return
+	if(!can_moan)
+		return
+	if(user.stat != CONSCIOUS)
+		return
+
+	if(accumulated_pain_for_vice < 1)
+		return
+
+	if(last_moan + MOAN_COOLDOWN >= world.time)
+		return
+
+	var/chance = clamp(round(accumulated_pain_for_vice * 5), 0, 100)
+	if(!prob(chance))
+		return
+
+	accumulated_pain_for_vice = 0
+
+	if(!user.has_flaw(/datum/charflaw/addiction/masochist))
+		return
+
+	user.emote("painmoan", forced = TRUE)
+	last_moan = world.time
+
+	satisfy_maso_sado_vices(user)
+
+/datum/component/arousal/proc/satisfy_maso_sado_vices(mob/living/carbon/human/source)
+	if(!source)
+		return
+
+	for(var/mob/living/carbon/human/H in view(2, source))
+		if(H.stat == DEAD)
+			continue
+
+		if(H.get_flaw(/datum/charflaw/addiction/sadist))
+			H.sate_addiction()
