@@ -533,9 +533,11 @@
 	if(source.has_flaw(/datum/charflaw/addiction/lovefiend))
 		charge_for_climax = NIMPHO_SEX_CHARGE_FOR_CLIMAX
 
-/datum/component/arousal/try_do_moan(arousal_amt, pain_amt, applied_force, giving)
+/datum/component/arousal/try_do_moan(arousal_amt, pain_amt, applied_force, giving, can_moan = TRUE)
 	var/mob/user = parent
 	if(!user)
+		return
+	if(!can_moan)
 		return
 	if(arousal < 20)
 		return
@@ -547,14 +549,10 @@
 		return
 
 	var/pain_level = clamp(pain_amt, 0, 2)
-	var/base_chance = 15
+	var/base_chance = 10
 
 	if(arousal >= 20)
-		base_chance += 15
-	if(arousal >= 50)
-		base_chance += 20
-	if(arousal >= 80)
-		base_chance += 30
+		base_chance += arousal - 20
 
 	base_chance += round(pain_level * 5)
 
@@ -564,10 +562,10 @@
 		return
 
 	var/chosen_emote
-	if(arousal < 5)
+	if(arousal < 85)
 		chosen_emote = "sexmoanlight"
 	else
-		chosen_emote = "sexamoanhvy"
+		chosen_emote = "sexmoanhvy"
 
 	if(pain_level >= 0.5 && pain_level < 1)
 		if(giving)

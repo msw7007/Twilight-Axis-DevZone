@@ -41,7 +41,7 @@
 	if(world.time < next_tgui_update_time)
 		return
 	next_tgui_update_time = world.time + 0.5 SECONDS
-	safe_update_tgui()
+	SStgui.update_uis(src)
 
 /datum/sex_session_tgui/New(mob/living/carbon/human/U, mob/living/carbon/human/T)
 	. = ..()
@@ -452,6 +452,8 @@
 		list("id" = SEX_ORGAN_FILTER_PENIS,    "name" = "Член"),
 		list("id" = SEX_ORGAN_FILTER_ANUS,     "name" = "Анус"),
 	)
+
+	D["custom_templates"] = build_custom_templates_for_ui()
 	return D
 
 /datum/sex_session_tgui/ui_data(mob/user)
@@ -597,7 +599,6 @@
 	else
 		D["passive_links"] = list()
 
-	D["custom_templates"] = build_custom_templates_for_ui()
 	D["custom_actions"] = build_custom_actions_for_ui()
 	D["allow_user_moan"] = allow_user_moan
 
