@@ -343,18 +343,18 @@
 	if(!user || damage_mult <= 0)
 		return 0
 
-	var/damage = 10
+	var/damage = 0
 
 	// --- СТАТЫ ---
 	var/str = user.get_stat(STATKEY_STR)
 	var/dex = user.get_stat(STATKEY_SPD)
 	var/con = user.get_stat(STATKEY_CON)
+	damage = str
 
 	// считаем 10 за базу, как “средний” человек
-	var/str_bonus = (str - 10) * 0.3  // ±30% за 1 STR
-	var/con_bonus = (con - 10) * 0.1  // ±10% за 1 CON
+	var/con_bonus = (con - 10) * 0.2  // ±20% за 1 CON
 	var/dex_bonus = (dex - 10) * 0.1  // ±10% за 1 DEX (чуть поменьше, как “точность/техника”)
-	damage += damage*str_bonus + damage*dex_bonus + damage*con_bonus
+	damage += damage*dex_bonus + damage*con_bonus 
 	damage *= damage_mult
 	
 	// --- НАВЫКИ ---
@@ -369,7 +369,7 @@
 			damage += weapon_force/2
 
 	// 25% за уровень безоружки, 15% за уровень музыки
-	var/skill_bonus = (unarmed_skill * 0.25) + (music_skill * 0.15)
+	var/skill_bonus = (unarmed_skill * 0.2) + (music_skill * 0.1)
 
 	skill_bonus = clamp(skill_bonus, SB_MIN_DAMAGE_MULT, SB_MAX_DAMAGE_MULT)
 
