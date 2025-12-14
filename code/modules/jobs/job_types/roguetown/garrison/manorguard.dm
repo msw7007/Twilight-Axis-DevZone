@@ -20,15 +20,17 @@
 	advclass_cat_rolls = list(CTAG_MENATARMS = 20)
 
 	give_bank_account = TRUE
-	min_pq = 3
+	min_pq = 5
 	max_pq = null
 	round_contrib_points = 2
+	same_job_respawn_delay = 30 MINUTES
 
 	cmode_music = 'sound/music/combat_ManAtArms.ogg'
 	job_subclasses = list(
 		/datum/advclass/manorguard/footsman,
 		/datum/advclass/manorguard/skirmisher,
-		/datum/advclass/manorguard/cavalry
+		/datum/advclass/manorguard/cavalry,
+		/datum/advclass/manorguard/twilight_grenadier
 	)
 
 /datum/outfit/job/roguetown/manorguard

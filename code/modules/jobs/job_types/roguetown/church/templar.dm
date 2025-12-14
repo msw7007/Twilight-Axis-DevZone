@@ -9,13 +9,14 @@
 	allowed_races = ACCEPTED_RACES
 	allowed_patrons = ALL_DIVINE_PATRONS
 	outfit = /datum/outfit/job/roguetown/templar
-	min_pq = 3 //Deus vult, but only according to the proper escalation rules
+	min_pq = 10 //Deus vult, but only according to the proper escalation rules
 	max_pq = null
 	round_contrib_points = 2
 	total_positions = 4
 	spawn_positions = 4
 	advclass_cat_rolls = list(CTAG_TEMPLAR = 20)
 	display_order = JDO_TEMPLAR
+	same_job_respawn_delay = 30 MINUTES
 
 	give_bank_account = TRUE
 	job_traits = list(TRAIT_RITUALIST, TRAIT_STEELHEARTED)
