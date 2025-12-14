@@ -33,6 +33,16 @@
 	var/next_broadcast_time = 0
 	var/allow_user_moan = TRUE
 
+	var/next_tgui_update_time = 0
+	var/last_sent_actor_arousal = -1
+	var/last_sent_partner_arousal = -1
+
+/datum/sex_session_tgui/proc/safe_update_tgui()
+	if(world.time < next_tgui_update_time)
+		return
+	next_tgui_update_time = world.time + 0.5 SECONDS
+	safe_update_tgui()
+
 /datum/sex_session_tgui/New(mob/living/carbon/human/U, mob/living/carbon/human/T)
 	. = ..()
 	if(U)
@@ -606,38 +616,38 @@
 				selected_actor_organ_id = id
 			else if(side == "partner")
 				selected_partner_organ_id = id
-			SStgui.update_uis(src)
+			safe_update_tgui()
 			return TRUE
 
 		if("set_speed")
 			global_speed = clamp(text2num(params["value"]), SEX_SPEED_MIN, SEX_SPEED_MAX)
-			SStgui.update_uis(src)
+			safe_update_tgui()
 			return TRUE
 
 		if("set_force")
 			global_force = clamp(text2num(params["value"]), SEX_FORCE_MIN, SEX_FORCE_MAX)
-			SStgui.update_uis(src)
+			safe_update_tgui()
 			return TRUE
 
 		if("start_action")
 			try_start_action(params["action_type"])
-			SStgui.update_uis(src)
+			safe_update_tgui()
 			return TRUE
 
 		if("stop_action")
 			stop_all_actions()
-			SStgui.update_uis(src)
+			safe_update_tgui()
 			return TRUE
 
 		if("toggle_finished")
 			do_until_finished = !do_until_finished
-			SStgui.update_uis(src)
+			safe_update_tgui()
 			return TRUE
 
 		if("toggle_knot")
 			if(can_toggle_knot())
 				do_knot_action = !do_knot_action
-			SStgui.update_uis(src)
+			safe_update_tgui()
 			return TRUE
 
 		if("quick")
@@ -657,7 +667,7 @@
 				if(yield_to_partner)
 					stop_all_actions()
 
-			SStgui.update_uis(src)
+			safe_update_tgui()
 			return TRUE
 
 		if("set_partner")
@@ -671,19 +681,19 @@
 						target = M
 					if(!partner_bodypart_override || !istype(partner_bodypart_override, /obj/item/bodypart/head/dullahan))
 						partner_bodypart_override = null
-					SStgui.update_uis(src)
+					safe_update_tgui()
 					return TRUE
 
 		if("stop_all")
 			stop_all_actions()
-			SStgui.update_uis(src)
+			safe_update_tgui()
 			return TRUE
 
 		if("stop_link")
 			var/id = params["id"]
 			if(id)
 				stop_instance(id)
-				SStgui.update_uis(src)
+				safe_update_tgui()
 				return TRUE
 
 		if("set_link_speed")
@@ -692,7 +702,7 @@
 			var/datum/sex_action_session/I = current_actions[id]
 			if(I)
 				I.speed = value
-				SStgui.update_uis(src)
+				safe_update_tgui()
 				return TRUE
 
 		if("set_link_force")
@@ -701,12 +711,12 @@
 			var/datum/sex_action_session/I2 = current_actions[id2]
 			if(I2)
 				I2.force = value2
-				SStgui.update_uis(src)
+				safe_update_tgui()
 				return TRUE
 
 		if("toggle_link_finished")
 			do_until_finished = !do_until_finished
-			SStgui.update_uis(src)
+			safe_update_tgui()
 			return TRUE
 
 		if("set_arousal_value")
@@ -718,7 +728,7 @@
 				var/mob/living/carbon/human/P = get_current_partner()
 				if(P)
 					SEND_SIGNAL(P, COMSIG_SEX_SET_AROUSAL, amount)
-			SStgui.update_uis(src)
+			safe_update_tgui()
 			return TRUE
 
 		if("set_organ_tuning")
@@ -734,7 +744,7 @@
 				if("sensitivity")
 					O.sensivity = clamp(value, 0, O.sensivity_max)
 
-			SStgui.update_uis(src)
+			safe_update_tgui()
 			return TRUE
 
 		if("set_link_tuning")
@@ -751,7 +761,7 @@
 
 			user_org.sensivity = clamp(value, 0, user_org.sensivity_max)
 
-			SStgui.update_uis(src)
+			safe_update_tgui()
 			return TRUE
 
 		if("flip")
@@ -765,7 +775,7 @@
 
 				user.mob_timers["sexpanel_flip"] = world.time
 				user.sexpanel_flip()
-			SStgui.update_uis(src)
+			safe_update_tgui()
 			return TRUE
 
 		if("freeze_arousal")
@@ -776,7 +786,7 @@
 				SEND_SIGNAL(user, COMSIG_SEX_GET_AROUSAL, ad)
 				arousal_frozen = !!ad["frozen"]
 
-			SStgui.update_uis(src)
+			safe_update_tgui()
 			return TRUE
 
 		if("toggle_erect")
@@ -803,27 +813,27 @@
 				P.set_manual_erect_state(ERECT_STATE_HARD)
 
 			update_knotted_penis_flag()
-			SStgui.update_uis(src)
+			safe_update_tgui()
 			return TRUE
 
 		if("custom_create")
 			handle_custom_create(params)
-			SStgui.update_uis(src)
+			safe_update_tgui()
 			return TRUE
 
 		if("custom_update")
 			handle_custom_update(params)
-			SStgui.update_uis(src)
+			safe_update_tgui()
 			return TRUE
 
 		if("custom_delete")
 			handle_custom_delete(params)
-			SStgui.update_uis(src)
+			safe_update_tgui()
 			return TRUE
 
 		if("toggle_moan")
 			allow_user_moan = !allow_user_moan
-			SStgui.update_uis(src)
+			safe_update_tgui()
 			return TRUE
 
 	return FALSE
@@ -876,7 +886,7 @@
 	if(existing)
 		existing.speed = global_speed
 		existing.force = global_force
-		SStgui.update_uis(src)
+		safe_update_tgui()
 		return
 
 	var/cat = category_of_actor_node(a_id)
@@ -891,7 +901,7 @@
 	INVOKE_ASYNC(I, TYPE_PROC_REF(/datum/sex_action_session, start))
 
 	start_broadcast_loop()
-	SStgui.update_uis(src)
+	safe_update_tgui()
 
 /datum/sex_session_tgui/proc/stop_all_actions()
 	var/list/ids = current_actions.Copy()
@@ -923,7 +933,7 @@
 		clear_actor_locks()
 		stop_broadcast_loop()
 
-	SStgui.update_uis(src)
+	safe_update_tgui()
 
 /datum/sex_session_tgui/proc/sync_arousal_ui()
 	var/list/ad_user = list()
@@ -943,7 +953,19 @@
 
 /datum/sex_session_tgui/proc/on_arousal_changed()
 	sync_arousal_ui()
-	SStgui.update_uis(src)
+
+	var/changed = FALSE
+
+	if(abs(actor_arousal_ui - last_sent_actor_arousal) >= 1)
+		last_sent_actor_arousal = actor_arousal_ui
+		changed = TRUE
+
+	if(abs(partner_arousal_ui - last_sent_partner_arousal) >= 1)
+		last_sent_partner_arousal = partner_arousal_ui
+		changed = TRUE
+
+	if(changed)
+		safe_update_tgui()
 
 /datum/sex_session_tgui/proc/on_resolution_event(mob/source)
 	if(source != user)

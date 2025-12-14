@@ -9,6 +9,7 @@
 	check_same_tile = FALSE
 	require_grab = FALSE
 	required_grab_state = null
+	actor_make_sound = TRUE
 	message_on_climax_actor  = "{actor} оставляет под собой беспорядок."
 
 /datum/sex_panel_action/self/shows_on_menu(mob/living/carbon/human/user, mob/living/carbon/human/target)
