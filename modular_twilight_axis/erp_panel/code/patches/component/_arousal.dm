@@ -62,6 +62,7 @@
 		SEND_SIGNAL(mob_object, COMSIG_SEX_ADJUST_AROUSAL, bonus)
 
 /datum/component/arousal/after_ejaculation(intimate = FALSE, mob/living/carbon/human/user, mob/living/carbon/human/target)
+	record_round_statistic(STATS_PLEASURES)
 	var/do_spread = !chain_orgasm_lock
 	chain_orgasm_lock = FALSE
 
@@ -284,7 +285,6 @@
 	)
 
 /datum/component/arousal/handle_climax(climax_type, mob/living/carbon/human/user, mob/living/carbon/human/target)
-	record_round_statistic(STATS_PLEASURES)
 	switch(climax_type)
 		if("onto")
 			log_combat(user, target, "Came onto the target")
