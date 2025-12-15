@@ -1178,6 +1178,18 @@ export const EroticRolePlayPanel: React.FC = () => {
         <Stack vertical fill>
           <Stack.Item>
             <Section>
+
+              {!!partners.length && (
+                <Box mt={0.5}>
+                  <PartnerSelector
+                    actorName={data.actor_name}
+                    partners={partners}
+                    currentRef={data.current_partner_ref}
+                    onChange={(ref) => act('set_partner', { ref })}
+                  />
+                </Box>
+              )}
+
               <ArousalBars
                 actorName={data.actor_name}
                 partnerLabel={currentPartner?.name || 'Партнёр'}

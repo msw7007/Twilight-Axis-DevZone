@@ -623,6 +623,7 @@
 				selected_actor_organ_id = id
 			else if(side == "partner")
 				selected_partner_organ_id = id
+				
 			dirty_actions = TRUE
 			SStgui.update_uis(src)
 			return TRUE
@@ -639,16 +640,23 @@
 
 		if("start_action")
 			try_start_action(params["action_type"])
+			dirty_links = TRUE
+			dirty_org_nodes = TRUE
+			dirty_actions = TRUE
 			SStgui.update_uis(src)
 			return TRUE
 
 		if("stop_action")
 			stop_all_actions()
+			dirty_links = TRUE
+			dirty_org_nodes = TRUE
+			dirty_actions = TRUE
 			SStgui.update_uis(src)
 			return TRUE
 
 		if("toggle_finished")
 			do_until_finished = !do_until_finished
+			dirty_links = TRUE
 			SStgui.update_uis(src)
 			return TRUE
 
@@ -674,6 +682,9 @@
 
 				if(yield_to_partner)
 					stop_all_actions()
+					dirty_links = TRUE
+					dirty_org_nodes = TRUE
+					dirty_actions = TRUE
 
 			SStgui.update_uis(src)
 			return TRUE
@@ -689,11 +700,18 @@
 						target = M
 					if(!partner_bodypart_override || !istype(partner_bodypart_override, /obj/item/bodypart/head/dullahan))
 						partner_bodypart_override = null
+
+					dirty_org_nodes = TRUE
+					dirty_actions = TRUE
+
 					SStgui.update_uis(src)
 					return TRUE
 
 		if("stop_all")
 			stop_all_actions()
+			dirty_links = TRUE
+			dirty_org_nodes = TRUE
+			dirty_actions = TRUE
 			SStgui.update_uis(src)
 			return TRUE
 
@@ -701,6 +719,9 @@
 			var/id = params["id"]
 			if(id)
 				stop_instance(id)
+				dirty_links = TRUE
+				dirty_org_nodes = TRUE
+				dirty_actions = TRUE
 				SStgui.update_uis(src)
 				return TRUE
 
@@ -710,6 +731,7 @@
 			var/datum/sex_action_session/I = current_actions[id]
 			if(I)
 				I.speed = value
+				dirty_links = TRUE
 				SStgui.update_uis(src)
 				return TRUE
 
@@ -719,11 +741,13 @@
 			var/datum/sex_action_session/I2 = current_actions[id2]
 			if(I2)
 				I2.force = value2
+				dirty_links = TRUE
 				SStgui.update_uis(src)
 				return TRUE
 
 		if("toggle_link_finished")
 			do_until_finished = !do_until_finished
+			dirty_links = TRUE
 			SStgui.update_uis(src)
 			return TRUE
 
@@ -736,6 +760,7 @@
 				var/mob/living/carbon/human/P = get_current_partner()
 				if(P)
 					SEND_SIGNAL(P, COMSIG_SEX_SET_AROUSAL, amount)
+
 			SStgui.update_uis(src)
 			return TRUE
 
@@ -752,6 +777,7 @@
 				if("sensitivity")
 					O.sensivity = clamp(value, 0, O.sensivity_max)
 
+			dirty_links = TRUE
 			SStgui.update_uis(src)
 			return TRUE
 
@@ -769,6 +795,7 @@
 
 			user_org.sensivity = clamp(value, 0, user_org.sensivity_max)
 
+			dirty_links = TRUE
 			SStgui.update_uis(src)
 			return TRUE
 
@@ -826,16 +853,22 @@
 
 		if("custom_create")
 			handle_custom_create(params)
+			dirty_custom_actions = TRUE
+			dirty_actions = TRUE
 			SStgui.update_uis(src)
 			return TRUE
 
 		if("custom_update")
 			handle_custom_update(params)
+			dirty_custom_actions = TRUE
+			dirty_actions = TRUE
 			SStgui.update_uis(src)
 			return TRUE
 
 		if("custom_delete")
 			handle_custom_delete(params)
+			dirty_custom_actions = TRUE
+			dirty_actions = TRUE
 			SStgui.update_uis(src)
 			return TRUE
 
