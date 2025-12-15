@@ -6,8 +6,8 @@
 	armor_slot_target = null
 	can_knot = FALSE
 	
-	affects_self_arousal	= 0.25
-	affects_arousal			= 1.0
+	affects_self_arousal	= 1.25
+	affects_arousal			= 0.25
 	affects_self_pain		= 0.01
 	affects_pain			= 0.03
 
