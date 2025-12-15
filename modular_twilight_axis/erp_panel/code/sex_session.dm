@@ -623,18 +623,8 @@
 				selected_actor_organ_id = id
 			else if(side == "partner")
 				selected_partner_organ_id = id
-				
+
 			dirty_actions = TRUE
-			SStgui.update_uis(src)
-			return TRUE
-
-		if("set_speed")
-			global_speed = clamp(text2num(params["value"]), SEX_SPEED_MIN, SEX_SPEED_MAX)
-			SStgui.update_uis(src)
-			return TRUE
-
-		if("set_force")
-			global_force = clamp(text2num(params["value"]), SEX_FORCE_MIN, SEX_FORCE_MAX)
 			SStgui.update_uis(src)
 			return TRUE
 
@@ -643,20 +633,6 @@
 			dirty_links = TRUE
 			dirty_org_nodes = TRUE
 			dirty_actions = TRUE
-			SStgui.update_uis(src)
-			return TRUE
-
-		if("stop_action")
-			stop_all_actions()
-			dirty_links = TRUE
-			dirty_org_nodes = TRUE
-			dirty_actions = TRUE
-			SStgui.update_uis(src)
-			return TRUE
-
-		if("toggle_finished")
-			do_until_finished = !do_until_finished
-			dirty_links = TRUE
 			SStgui.update_uis(src)
 			return TRUE
 
