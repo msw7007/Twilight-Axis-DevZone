@@ -31,7 +31,7 @@
 		"Town Crier",
 		"Captain",
 		"Archivist",
-		"Knight",
+		"Knight Captain",
 		"Court Magician",
 		"Inquisitor",
 		"Orthodoxist",
