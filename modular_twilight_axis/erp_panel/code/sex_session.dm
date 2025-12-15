@@ -496,6 +496,7 @@
 	arousal_frozen = is_frozen
 	D["actor_arousal"] = clamp(round(actor_arousal_ui), 0, 100)
 	D["frozen"] = arousal_frozen
+
 	var/charge_u = ad_user["charge"] || 0
 	D["actor_charge"] = round(charge_u)
 	D["actor_charge_max"] = ad_user["charge_max"]
@@ -511,16 +512,15 @@
 	if(dirty_actions || !cached_actions_for_menu)
 		cached_actions_for_menu = actions_for_menu()
 		dirty_actions = FALSE
-		D["actions"] = cached_actions_for_menu
+	D["actions"] = cached_actions_for_menu
 
 	if(dirty_org_nodes || !cached_actor_organs || !cached_partner_organs)
 		cached_actor_organs = build_org_nodes(src.user, "actor")
 		cached_partner_organs = build_org_nodes(active_partner, "partner")
 		dirty_org_nodes = FALSE
 
-		D["actor_organs"] = cached_actor_organs
-		D["partner_organs"] = cached_partner_organs
-		
+	D["actor_organs"] = cached_actor_organs
+	D["partner_organs"] = cached_partner_organs
 	D["status_organs"] = build_status_org_nodes(src.user)
 
 	var/list/cur_types = list()
@@ -535,7 +535,7 @@
 		if(src.user)
 			partners_data += list(list(
 				"ref" = REF(src.user),
-				"name" = "[src.user.name]"
+				"name" = "[src.user.name]",
 			))
 
 		for(var/mob/living/carbon/human/M in partners)
@@ -543,7 +543,7 @@
 				continue
 			partners_data += list(list(
 				"ref" = REF(M),
-				"name" = M.name
+				"name" = M.name,
 			))
 
 		if(!current_partner_ref && src.user)
@@ -552,10 +552,8 @@
 		cached_partners_data = partners_data
 		dirty_partners = FALSE
 
-		D["partners"] = cached_partners_data
-		D["current_partner_ref"] = current_partner_ref
-	else
-		D["current_partner_ref"] = current_partner_ref
+	D["partners"] = cached_partners_data
+	D["current_partner_ref"] = current_partner_ref
 
 	if(dirty_links || !cached_active_links)
 		var/list/links = list()
@@ -586,14 +584,15 @@
 
 		cached_active_links = links
 		dirty_links = FALSE
-		D["active_links"] = cached_active_links
 
+	D["active_links"] = cached_active_links
 	D["passive_links"] = collect_passive_links_for(user)
 
 	if(dirty_custom_actions || !cached_custom_actions)
 		cached_custom_actions = build_custom_actions_for_ui()
 		dirty_custom_actions = FALSE
-		D["custom_actions"] = cached_custom_actions
+
+	D["custom_actions"] = cached_custom_actions
 
 	var/list/can = list()
 	var/user_ckey = src.user?.client?.ckey
@@ -605,6 +604,7 @@
 			continue
 		if(can_start_action_now(key))
 			can += key
+
 	D["can_perform"] = can
 	D["organ_filtered"] = actions_matching_nodes()
 
