@@ -588,7 +588,7 @@
 		dirty_links = FALSE
 		D["active_links"] = cached_active_links
 
-	D["passive_links"] = collect_passive_links_for(H)
+	D["passive_links"] = collect_passive_links_for(user)
 
 	if(dirty_custom_actions || !cached_custom_actions)
 		cached_custom_actions = build_custom_actions_for_ui()
