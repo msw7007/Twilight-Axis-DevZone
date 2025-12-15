@@ -33,15 +33,24 @@
 	var/next_broadcast_time = 0
 	var/allow_user_moan = TRUE
 
-	var/next_tgui_update_time = 0
 	var/last_sent_actor_arousal = -1
 	var/last_sent_partner_arousal = -1
 
-/datum/sex_session_tgui/proc/safe_update_tgui()
-	if(world.time < next_tgui_update_time)
-		return
-	next_tgui_update_time = world.time + 0.5 SECONDS
-	SStgui.update_uis(src)
+	var/dirty_heavy = TRUE
+	var/dirty_actions = TRUE
+	var/dirty_org_nodes = TRUE
+	var/dirty_links = TRUE
+	var/dirty_partners = TRUE
+	var/dirty_custom_actions = TRUE
+
+	var/list/cached_actions_for_menu
+	var/list/cached_actor_organs
+	var/list/cached_partner_organs
+	var/list/cached_status_organs
+	var/list/cached_partners_data
+	var/list/cached_active_links
+	var/list/cached_passive_links
+	var/list/cached_custom_actions
 
 /datum/sex_session_tgui/New(mob/living/carbon/human/U, mob/living/carbon/human/T)
 	. = ..()
@@ -113,6 +122,8 @@
 
 	if(!(M in partners))
 		partners += M
+		dirty_partners = TRUE
+		dirty_org_nodes = TRUE
 
 	if(!current_partner_ref)
 		current_partner_ref = REF(M)
@@ -461,25 +472,19 @@
 	var/list/D = list()
 
 	var/mob/living/carbon/human/active_partner = get_current_partner()
-
-	D["actions"] = actions_for_menu()
 	D["title"] = "Соитие с [get_partner_display_name(active_partner)]"
 	D["session_name"] = "Private Session"
 	D["actor_name"] = src.user?.name || "—"
 	D["partner_name"] = get_partner_display_name(active_partner)
-	D["actor_organs"] = build_org_nodes(src.user, "actor")
-	D["partner_organs"] = build_org_nodes(active_partner, "partner")
 	D["selected_actor_organ"] = selected_actor_organ_id
 	D["selected_partner_organ"] = selected_partner_organ_id
 	D["speed"] = global_speed
 	D["force"] = global_force
-
-	if(can_see_partner_arousal())
-		D["partner_arousal"] = clamp(round(partner_arousal_ui), 0, 100)
-		D["partner_arousal_hidden"] = FALSE
-	else
-		D["partner_arousal"] = null
-		D["partner_arousal_hidden"] = TRUE
+	D["do_until_finished"] = do_until_finished
+	D["has_knotted_penis"] = has_knotted_penis
+	D["do_knot_action"] = do_knot_action
+	D["yield_to_partner"] = yield_to_partner
+	D["allow_user_moan"] = allow_user_moan
 
 	var/list/ad_user = list()
 	if(src.user)
@@ -495,30 +500,100 @@
 	D["actor_charge"] = round(charge_u)
 	D["actor_charge_max"] = ad_user["charge_max"]
 	D["actor_charge_for_climax"] = ad_user["charge_for_climax"]
-	
-	D["do_until_finished"] = do_until_finished
-	var/can_knot_now = FALSE
-	if(has_knotted_penis && length(current_actions))
+
+	if(can_see_partner_arousal())
+		D["partner_arousal"] = clamp(round(partner_arousal_ui), 0, 100)
+		D["partner_arousal_hidden"] = FALSE
+	else
+		D["partner_arousal"] = null
+		D["partner_arousal_hidden"] = TRUE
+
+	if(dirty_actions || !cached_actions_for_menu)
+		cached_actions_for_menu = actions_for_menu()
+		dirty_actions = FALSE
+		D["actions"] = cached_actions_for_menu
+
+	if(dirty_org_nodes || !cached_actor_organs || !cached_partner_organs)
+		cached_actor_organs = build_org_nodes(src.user, "actor")
+		cached_partner_organs = build_org_nodes(active_partner, "partner")
+		dirty_org_nodes = FALSE
+
+		D["actor_organs"] = cached_actor_organs
+		D["partner_organs"] = cached_partner_organs
+		
+	D["status_organs"] = build_status_org_nodes(src.user)
+
+	var/list/cur_types = list()
+	for(var/id in current_actions)
+		var/datum/sex_action_session/I = current_actions[id]
+		if(I && I.action_type)
+			cur_types |= I.action_type
+	D["current_actions"] = cur_types
+
+	if(dirty_partners || !cached_partners_data)
+		var/list/partners_data = list()
+		if(src.user)
+			partners_data += list(list(
+				"ref" = REF(src.user),
+				"name" = "[src.user.name]"
+			))
+
+		for(var/mob/living/carbon/human/M in partners)
+			if(QDELETED(M))
+				continue
+			partners_data += list(list(
+				"ref" = REF(M),
+				"name" = M.name
+			))
+
+		if(!current_partner_ref && src.user)
+			current_partner_ref = REF(src.user)
+
+		cached_partners_data = partners_data
+		dirty_partners = FALSE
+
+		D["partners"] = cached_partners_data
+		D["current_partner_ref"] = current_partner_ref
+	else
+		D["current_partner_ref"] = current_partner_ref
+
+	if(dirty_links || !cached_active_links)
+		var/list/links = list()
 		for(var/id in current_actions)
 			var/datum/sex_action_session/I = current_actions[id]
-			if(!I || !I.action)
+			if(!I)
 				continue
-			if(I.session.user != src.user)
-				continue
-			if(node_organ_type(I.actor_node_id) != SEX_ORGAN_PENIS)
-				continue
-			if(!I.action.can_knot)
-				continue
-			can_knot_now = TRUE
-			break
 
-	D["has_knotted_penis"] = has_knotted_penis
-	D["do_knot_action"] = do_knot_action
-	D["can_knot_now"] = can_knot_now
-	D["yield_to_partner"] = yield_to_partner
+			var/datum/sex_organ/tuned_org = resolve_organ_datum(I.actor, I.actor_node_id)
+			if(!tuned_org)
+				tuned_org = resolve_organ_datum(I.partner, I.partner_node_id)
 
-	var/mob/living/carbon/human/human_viewer = src.user
-	D["status_organs"] = build_status_org_nodes(human_viewer)
+			var/sens = tuned_org ? tuned_org.sensivity : 0
+			var/pain = tuned_org ? tuned_org.pain : 0
+
+			links += list(list(
+				"id"                = I.instance_id,
+				"actor_organ_id"    = I.actor_node_id,
+				"partner_organ_id"  = I.partner_node_id,
+				"action_type"       = I.action_type,
+				"action_name"       = I.action?.name,
+				"speed"             = I.speed,
+				"force"             = I.force,
+				"do_until_finished" = do_until_finished,
+				"sensitivity"       = sens,
+				"pain"              = pain,
+			))
+
+		cached_active_links = links
+		dirty_links = FALSE
+		D["active_links"] = cached_active_links
+
+	D["passive_links"] = collect_passive_links_for(H)
+
+	if(dirty_custom_actions || !cached_custom_actions)
+		cached_custom_actions = build_custom_actions_for_ui()
+		dirty_custom_actions = FALSE
+		D["custom_actions"] = cached_custom_actions
 
 	var/list/can = list()
 	var/user_ckey = src.user?.client?.ckey
@@ -532,75 +607,6 @@
 			can += key
 	D["can_perform"] = can
 	D["organ_filtered"] = actions_matching_nodes()
-
-	var/list/cur_types = list()
-	for(var/id in current_actions)
-		var/datum/sex_action_session/I = current_actions[id]
-		if(I && I.action_type)
-			cur_types |= I.action_type
-
-	D["current_actions"] = cur_types
-
-	var/list/partners_data = list()
-	if(src.user)
-		partners_data += list(list(
-			"ref" = REF(src.user),
-			"name" = "[src.user.name]"
-		))
-
-	for(var/mob/living/carbon/human/M in partners)
-		if(QDELETED(M))
-			continue
-		partners_data += list(list(
-			"ref" = REF(M),
-			"name" = M.name
-		))
-
-	if(!current_partner_ref && src.user)
-		current_partner_ref = REF(src.user)
-
-	D["partners"] = partners_data
-	D["current_partner_ref"] = current_partner_ref
-
-	active_partner = get_current_partner()
-	D["partner_name"] = get_partner_display_name(active_partner)
-
-	var/list/links = list()
-	for(var/id in current_actions)
-		var/datum/sex_action_session/I = current_actions[id]
-		if(!I)
-			continue
-
-		var/datum/sex_organ/tuned_org = resolve_organ_datum(I.actor, I.actor_node_id)
-		if(!tuned_org)
-			tuned_org = resolve_organ_datum(I.partner, I.partner_node_id)
-
-		var/sens = tuned_org ? tuned_org.sensivity : 0
-		var/pain = tuned_org ? tuned_org.pain : 0
-
-		links += list(list(
-			"id"                = I.instance_id,
-			"actor_organ_id"    = I.actor_node_id,
-			"partner_organ_id"  = I.partner_node_id,
-			"action_type"       = I.action_type,
-			"action_name"       = I.action?.name,
-			"speed"             = I.speed,
-			"force"             = I.force,
-			"do_until_finished" = do_until_finished,
-			"sensitivity"       = sens,
-			"pain"              = pain,
-		))
-
-	D["active_links"] = links
-
-	if(ishuman(user))
-		var/mob/living/carbon/human/H = user
-		D["passive_links"] = collect_passive_links_for(H)
-	else
-		D["passive_links"] = list()
-
-	D["custom_actions"] = build_custom_actions_for_ui()
-	D["allow_user_moan"] = allow_user_moan
 
 	return D
 
@@ -617,38 +623,39 @@
 				selected_actor_organ_id = id
 			else if(side == "partner")
 				selected_partner_organ_id = id
-			safe_update_tgui()
+			dirty_actions = TRUE
+			SStgui.update_uis(src)
 			return TRUE
 
 		if("set_speed")
 			global_speed = clamp(text2num(params["value"]), SEX_SPEED_MIN, SEX_SPEED_MAX)
-			safe_update_tgui()
+			SStgui.update_uis(src)
 			return TRUE
 
 		if("set_force")
 			global_force = clamp(text2num(params["value"]), SEX_FORCE_MIN, SEX_FORCE_MAX)
-			safe_update_tgui()
+			SStgui.update_uis(src)
 			return TRUE
 
 		if("start_action")
 			try_start_action(params["action_type"])
-			safe_update_tgui()
+			SStgui.update_uis(src)
 			return TRUE
 
 		if("stop_action")
 			stop_all_actions()
-			safe_update_tgui()
+			SStgui.update_uis(src)
 			return TRUE
 
 		if("toggle_finished")
 			do_until_finished = !do_until_finished
-			safe_update_tgui()
+			SStgui.update_uis(src)
 			return TRUE
 
 		if("toggle_knot")
 			if(can_toggle_knot())
 				do_knot_action = !do_knot_action
-			safe_update_tgui()
+			SStgui.update_uis(src)
 			return TRUE
 
 		if("quick")
@@ -668,7 +675,7 @@
 				if(yield_to_partner)
 					stop_all_actions()
 
-			safe_update_tgui()
+			SStgui.update_uis(src)
 			return TRUE
 
 		if("set_partner")
@@ -682,19 +689,19 @@
 						target = M
 					if(!partner_bodypart_override || !istype(partner_bodypart_override, /obj/item/bodypart/head/dullahan))
 						partner_bodypart_override = null
-					safe_update_tgui()
+					SStgui.update_uis(src)
 					return TRUE
 
 		if("stop_all")
 			stop_all_actions()
-			safe_update_tgui()
+			SStgui.update_uis(src)
 			return TRUE
 
 		if("stop_link")
 			var/id = params["id"]
 			if(id)
 				stop_instance(id)
-				safe_update_tgui()
+				SStgui.update_uis(src)
 				return TRUE
 
 		if("set_link_speed")
@@ -703,7 +710,7 @@
 			var/datum/sex_action_session/I = current_actions[id]
 			if(I)
 				I.speed = value
-				safe_update_tgui()
+				SStgui.update_uis(src)
 				return TRUE
 
 		if("set_link_force")
@@ -712,12 +719,12 @@
 			var/datum/sex_action_session/I2 = current_actions[id2]
 			if(I2)
 				I2.force = value2
-				safe_update_tgui()
+				SStgui.update_uis(src)
 				return TRUE
 
 		if("toggle_link_finished")
 			do_until_finished = !do_until_finished
-			safe_update_tgui()
+			SStgui.update_uis(src)
 			return TRUE
 
 		if("set_arousal_value")
@@ -729,7 +736,7 @@
 				var/mob/living/carbon/human/P = get_current_partner()
 				if(P)
 					SEND_SIGNAL(P, COMSIG_SEX_SET_AROUSAL, amount)
-			safe_update_tgui()
+			SStgui.update_uis(src)
 			return TRUE
 
 		if("set_organ_tuning")
@@ -745,7 +752,7 @@
 				if("sensitivity")
 					O.sensivity = clamp(value, 0, O.sensivity_max)
 
-			safe_update_tgui()
+			SStgui.update_uis(src)
 			return TRUE
 
 		if("set_link_tuning")
@@ -762,7 +769,7 @@
 
 			user_org.sensivity = clamp(value, 0, user_org.sensivity_max)
 
-			safe_update_tgui()
+			SStgui.update_uis(src)
 			return TRUE
 
 		if("flip")
@@ -776,7 +783,7 @@
 
 				user.mob_timers["sexpanel_flip"] = world.time
 				user.sexpanel_flip()
-			safe_update_tgui()
+			SStgui.update_uis(src)
 			return TRUE
 
 		if("freeze_arousal")
@@ -787,7 +794,7 @@
 				SEND_SIGNAL(user, COMSIG_SEX_GET_AROUSAL, ad)
 				arousal_frozen = !!ad["frozen"]
 
-			safe_update_tgui()
+			SStgui.update_uis(src)
 			return TRUE
 
 		if("toggle_erect")
@@ -814,27 +821,27 @@
 				P.set_manual_erect_state(ERECT_STATE_HARD)
 
 			update_knotted_penis_flag()
-			safe_update_tgui()
+			SStgui.update_uis(src)
 			return TRUE
 
 		if("custom_create")
 			handle_custom_create(params)
-			safe_update_tgui()
+			SStgui.update_uis(src)
 			return TRUE
 
 		if("custom_update")
 			handle_custom_update(params)
-			safe_update_tgui()
+			SStgui.update_uis(src)
 			return TRUE
 
 		if("custom_delete")
 			handle_custom_delete(params)
-			safe_update_tgui()
+			SStgui.update_uis(src)
 			return TRUE
 
 		if("toggle_moan")
 			allow_user_moan = !allow_user_moan
-			safe_update_tgui()
+			SStgui.update_uis(src)
 			return TRUE
 
 	return FALSE
@@ -887,7 +894,7 @@
 	if(existing)
 		existing.speed = global_speed
 		existing.force = global_force
-		safe_update_tgui()
+		SStgui.update_uis(src)
 		return
 
 	var/cat = category_of_actor_node(a_id)
@@ -902,7 +909,10 @@
 	INVOKE_ASYNC(I, TYPE_PROC_REF(/datum/sex_action_session, start))
 
 	start_broadcast_loop()
-	safe_update_tgui()
+	dirty_actions = TRUE
+	dirty_links = TRUE
+	dirty_org_nodes = TRUE
+	SStgui.update_uis(src)
 
 /datum/sex_session_tgui/proc/stop_all_actions()
 	var/list/ids = current_actions.Copy()
@@ -912,12 +922,20 @@
 	if(!length(current_actions))
 		clear_actor_locks()
 
+	dirty_actions = TRUE
+	dirty_links = TRUE
+	dirty_org_nodes = TRUE
+
 /datum/sex_session_tgui/proc/stop_instance(id)
 	var/datum/sex_action_session/I = current_actions[id]
 	if(!I)
 		return
 
 	current_actions -= id
+
+	dirty_actions = TRUE
+	dirty_links = TRUE
+	dirty_org_nodes = TRUE
 
 	var/cat = category_of_actor_node(I.actor_node_id)
 	if(cat)
@@ -934,7 +952,7 @@
 		clear_actor_locks()
 		stop_broadcast_loop()
 
-	safe_update_tgui()
+	SStgui.update_uis(src)
 
 /datum/sex_session_tgui/proc/sync_arousal_ui()
 	var/list/ad_user = list()
@@ -966,7 +984,7 @@
 		changed = TRUE
 
 	if(changed)
-		safe_update_tgui()
+		SStgui.update_uis(src)
 
 /datum/sex_session_tgui/proc/on_resolution_event(mob/source)
 	if(source != user)
@@ -1845,6 +1863,8 @@
 	custom.message_on_climax_target = params["message_on_climax_target"] || base.message_on_climax_target
 
 	register_custom_sex_action(custom)
+	dirty_custom_actions = TRUE
+	dirty_actions = TRUE
 
 /datum/sex_session_tgui/proc/handle_custom_update(list/params)
 	if(!user || !user.client)
@@ -1933,6 +1953,9 @@
 	if(params["message_on_climax_target"])
 		A.message_on_climax_target = params["message_on_climax_target"]
 
+	dirty_custom_actions = TRUE
+	dirty_actions = TRUE
+
 /datum/sex_session_tgui/proc/handle_custom_delete(list/params)
 	if(!user || !user.client)
 		return
@@ -1947,6 +1970,9 @@
 
 	if(A.ckey != user.client.ckey)
 		return
+
+	dirty_custom_actions = TRUE
+	dirty_actions = TRUE
 
 	unregister_custom_sex_action(A)
 	qdel(A)
