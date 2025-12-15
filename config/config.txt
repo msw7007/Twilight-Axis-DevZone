@@ -480,9 +480,6 @@ MINUTE_CLICK_LIMIT 400
 ## Send a message to the chat when a ckey  is removed or added to donator
 #CHAT_ANNOUNCE_DONATOR donator
 
-## Chat which you are allowed to add / remove ckeys to the whitelist
-#CHAT_COMMAND_WHITELIST whitelist
-
 ## Allow admin hrefs that don't use the new token system, will eventually be removed
 DEBUG_ADMIN_HREFS
 
