@@ -23,6 +23,8 @@
 	color = "#eee4e4"
 	taste_description = "sweet and tart"
 	nutriment_factor = 0
+	metabolizing = TRUE
+	metabolization_rate = 0.1
 
 /datum/reagent/consumable/milk/erp/on_mob_add(mob/living/carbon/carbon) //milk additional effect on nymphos and baotha's worshippers
 	if(ishuman(carbon))
