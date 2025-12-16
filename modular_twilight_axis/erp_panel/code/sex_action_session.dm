@@ -226,7 +226,7 @@
 			can_moan_user = FALSE
 
 	if(U && (user_delta || total_user_pain))
-		SEND_SIGNAL(U, COMSIG_SEX_RECEIVE_ACTION, user_delta, total_user_pain, TRUE, force, speed, actor_node_id, can_moan_user)
+		SEND_SIGNAL(U, COMSIG_SEX_RECEIVE_ACTION, user_delta, total_user_pain, TRUE, force, speed, actor_node_id)
 
 	if(T && (target_delta || total_target_pain))
 		SEND_SIGNAL(T, COMSIG_SEX_RECEIVE_ACTION, target_delta, total_target_pain, FALSE, force, speed, partner_node_id)

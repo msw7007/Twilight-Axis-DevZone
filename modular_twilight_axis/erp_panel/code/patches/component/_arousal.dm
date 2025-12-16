@@ -193,7 +193,7 @@
 				var/datum/sex_organ/vagina/vag_datum = vag.sex_organ
 				vag_datum.on_intimate_climax(father, mother_arousal, knot_bonus)
 
-/datum/component/arousal/receive_sex_action(datum/source, arousal_amt, pain_amt, giving, applied_force, applied_speed, organ_id, can_moan = TRUE)
+/datum/component/arousal/receive_sex_action(datum/source, arousal_amt, pain_amt, giving, applied_force, applied_speed, organ_id)
 	var/mob/user = parent
 
 	arousal_amt *= get_force_pleasure_multiplier(applied_force, giving)
@@ -244,6 +244,15 @@
 	if(final_pain > 0)
 		accumulated_pain_for_vice += final_pain
 
+	var/list/sessions = return_sessions_with_user_tgui(source)
+	var/can_moan = TRUE
+	for(var/datum/sex_session_tgui/session_object in sessions)
+		if(session_object.user != user)
+			continue
+		else
+			can_moan = session_object.allow_user_moan
+			break
+
 	try_do_pain_effect(final_pain, giving)
 	try_do_moan(arousal_amt, final_pain, applied_force, giving, can_moan)
 	try_do_maso_vice_moan(can_moan)
@@ -291,7 +300,8 @@
 			playsound(target, 'sound/misc/mat/endout.ogg', 50, TRUE, ignore_walls = FALSE)
 			var/turf/turf = get_turf(target)
 			new /obj/effect/decal/cleanable/coom(turf)
-			if(target)
+			var/obj/item/organ/penis/P = user.getorganslot(ORGAN_SLOT_PENIS)
+			if(target && P)
 				var/datum/status_effect/facial/facial = target.has_status_effect(/datum/status_effect/facial)
 				if(!facial)
 					target.apply_status_effect(/datum/status_effect/facial)
@@ -300,7 +310,8 @@
 		if("into")
 			log_combat(user, target, "Came inside the target")
 			playsound(target, 'sound/misc/mat/endin.ogg', 50, TRUE, ignore_walls = FALSE)
-			if(target)
+			var/obj/item/organ/penis/P = user.getorganslot(ORGAN_SLOT_PENIS)
+			if(target && P)
 				var/status_type = /datum/status_effect/facial/internal
 				var/datum/status_effect/facial/internal_effect = target.has_status_effect(status_type)
 				if(!internal_effect)
