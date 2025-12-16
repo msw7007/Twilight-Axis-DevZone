@@ -242,7 +242,7 @@
 		damage_from_pain(final_pain, organ_id)
 
 	if(final_pain > 0)
-		accumulated_pain_for_vice = accumulated_pain_for_vice + final_pain
+		accumulated_pain_for_vice += final_pain
 
 	try_do_pain_effect(final_pain, giving)
 	try_do_moan(arousal_amt, final_pain, applied_force, giving, can_moan)
@@ -412,6 +412,7 @@
 		return
 
 	adjust_arousal(parent, dt * -1)
+	accumulated_pain_for_vice -=  (dt / 10)
 
 /datum/component/arousal/update_arousal_effects()
 	update_pink_screen()
@@ -607,9 +608,6 @@
 		return
 
 	if(accumulated_pain_for_vice < 1)
-		return
-
-	if(last_moan + MOAN_COOLDOWN >= world.time)
 		return
 
 	var/chance = clamp(round(accumulated_pain_for_vice * 5), 0, 100)
