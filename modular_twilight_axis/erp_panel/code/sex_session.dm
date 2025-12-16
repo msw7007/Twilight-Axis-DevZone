@@ -481,8 +481,6 @@
 	D["speed"] = global_speed
 	D["force"] = global_force
 	D["do_until_finished"] = do_until_finished
-	D["has_knotted_penis"] = has_knotted_penis
-	D["do_knot_action"] = do_knot_action
 	D["yield_to_partner"] = yield_to_partner
 	D["allow_user_moan"] = allow_user_moan
 
@@ -568,7 +566,6 @@
 
 			var/sens = tuned_org ? tuned_org.sensivity : 0
 			var/pain = tuned_org ? tuned_org.pain : 0
-
 			links += list(list(
 				"id"                = I.instance_id,
 				"actor_organ_id"    = I.actor_node_id,
@@ -587,6 +584,20 @@
 
 	D["active_links"] = cached_active_links
 	D["passive_links"] = collect_passive_links_for(user)
+
+	var/can_knot_now = FALSE
+	for(var/id in current_actions)
+		var/datum/sex_action_session/I = current_actions[id]
+		if(!I)
+			continue
+
+		if(I.action?.can_knot)
+			can_knot_now = TRUE
+			break
+			
+	D["has_knotted_penis"] = has_knotted_penis
+	D["do_knot_action"] = do_knot_action
+	D["can_knot_now"] = can_knot_now
 
 	if(dirty_custom_actions || !cached_custom_actions)
 		cached_custom_actions = build_custom_actions_for_ui()
