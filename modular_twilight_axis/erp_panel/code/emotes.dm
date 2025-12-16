@@ -70,8 +70,11 @@
 /datum/emote/living/lick/adjacentaction(mob/user, mob/target)
 	. = ..()
 	message_param = initial(message_param)
-	if(!user || !target)
+	if(!user)
 		return
+
+	if(!target)
+		target = user
 
 	if(ishuman(user) && ishuman(target))
 		var/mob/living/carbon/human/user_mob = user
@@ -102,5 +105,6 @@
 				message_param = "licks %t cheek"
 			else
 				message_param = "licks %t [parse_zone(user_mob.zone_selected)]."
+				wash_mob(target)
 
 	playsound(target.loc, "sound/vo/lick.ogg", 100, FALSE, -1)

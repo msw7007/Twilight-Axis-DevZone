@@ -220,11 +220,6 @@
 			target_delta *= target_org.sensivity
 			target_org.pain += partner_pain_delta
 
-	var/can_moan_user = TRUE
-	if(U && (user_delta || total_user_pain))
-		if(session && !session.allow_user_moan && U == session.user)
-			can_moan_user = FALSE
-
 	if(U && (user_delta || total_user_pain))
 		SEND_SIGNAL(U, COMSIG_SEX_RECEIVE_ACTION, user_delta, total_user_pain, TRUE, force, speed, actor_node_id)
 
