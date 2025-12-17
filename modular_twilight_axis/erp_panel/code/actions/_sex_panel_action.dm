@@ -170,9 +170,13 @@
 		compiled_messages = null
 
 	session = new_session
+
 	var/message = span_warning(get_start_message(user, target))
 	if(message)
-		user.visible_message(message)
+		if(session)
+			session.send_sex_message(user, target, message)
+		else if(user)
+			user.visible_message(message)
 	
 	var/list/orgs = connect_organs(user, target)
 	if(!orgs)
@@ -183,7 +187,10 @@
 /datum/sex_panel_action/proc/on_perform(mob/living/carbon/human/user, mob/living/carbon/human/target)
 	var/message = get_perform_message(user, target)
 	if(message)
-		user.visible_message(message)
+		if(session)
+			session.send_sex_message(user, target, message)
+		else if(user)
+			user.visible_message(message)
 	return
 
 /datum/sex_panel_action/proc/on_finish(mob/living/carbon/human/user, mob/living/carbon/human/target)
@@ -191,7 +198,10 @@
 
 	var/message = span_warning(get_finish_message(user, target))
 	if(message)
-		user.visible_message(message)
+		if(session)
+			session.send_sex_message(user, target, message)
+		else if(user)
+			user.visible_message(message)
 
 	session = null
 	compiled_messages = null
@@ -619,4 +629,3 @@
 	t = replacetext(t, "{knot}", "[knot_text]")
 
 	return t
-

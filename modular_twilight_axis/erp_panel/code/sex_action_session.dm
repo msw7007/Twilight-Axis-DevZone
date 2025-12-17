@@ -299,3 +299,12 @@
 		"pain"     = pain_mult,
 		"pleasure" = pleasure_mult,
 	)
+
+/datum/sex_action_session/proc/send_sex_message(mob/living/carbon/human/user, mob/living/carbon/human/target, message)
+	if(!message)
+		return
+
+	if(session)
+		session.dispatch_sex_message(user, target, message)
+	else if(user)
+		user.visible_message(message)

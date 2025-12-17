@@ -32,6 +32,7 @@
 
 	var/next_broadcast_time = 0
 	var/allow_user_moan = TRUE
+	var/hidden_mode = FALSE
 
 	var/last_sent_actor_arousal = -1
 	var/last_sent_partner_arousal = -1
@@ -483,6 +484,7 @@
 	D["do_until_finished"] = do_until_finished
 	D["yield_to_partner"] = yield_to_partner
 	D["allow_user_moan"] = allow_user_moan
+	D["hidden_mode"] = hidden_mode
 
 	var/list/ad_user = list()
 	if(src.user)
@@ -594,7 +596,7 @@
 		if(I.action?.can_knot)
 			can_knot_now = TRUE
 			break
-			
+
 	D["has_knotted_penis"] = has_knotted_penis
 	D["do_knot_action"] = do_knot_action
 	D["can_knot_now"] = can_knot_now
@@ -861,6 +863,11 @@
 
 		if("toggle_moan")
 			allow_user_moan = !allow_user_moan
+			SStgui.update_uis(src)
+			return TRUE
+
+		if("toggle_hidden")
+			hidden_mode = !hidden_mode
 			SStgui.update_uis(src)
 			return TRUE
 
@@ -1996,3 +2003,26 @@
 
 	unregister_custom_sex_action(A)
 	qdel(A)
+
+/datum/sex_session_tgui/proc/dispatch_sex_message(mob/living/carbon/human/user, mob/living/carbon/human/target,	message)
+	if(!message)
+		return
+
+	if(!hidden_mode)
+		if(user)
+			user.visible_message(message)
+		return
+
+	var/list/receivers = list()
+
+	if(user)
+		receivers |= user
+	if(target)
+		receivers |= target
+
+	for(var/mob/living/carbon/human/P in partners)
+		if(P)
+			receivers |= P
+
+	for(var/mob/living/carbon/human/H in receivers)
+		to_chat(H, message)

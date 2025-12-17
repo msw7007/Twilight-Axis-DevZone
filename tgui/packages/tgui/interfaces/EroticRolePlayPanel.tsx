@@ -80,6 +80,7 @@ export type SexSessionData = {
   can_knot_now?: boolean;
   yield_to_partner?: boolean;
   allow_user_moan?: boolean;
+  hidden_mode?: boolean;
 
   actions?: SexAction[];
   can_perform?: string[];
@@ -940,21 +941,25 @@ const BottomControls: React.FC<{
   yieldToPartner?: boolean;
   frozen?: boolean;
   suppressMoans?: boolean;
+  hiddenMode?: boolean;
   onFlipPose: () => void;
   onStopAll: () => void;
   onToggleYield: () => void;
   onToggleFreeze: () => void;
   onToggleMoans: () => void;
+  onToggleHiddenMode: () => void;
   compact?: boolean;
 }> = ({
   yieldToPartner,
   frozen,
   suppressMoans,
+  hiddenMode,
   onFlipPose,
   onStopAll,
   onToggleYield,
   onToggleFreeze,
   onToggleMoans,
+  onToggleHiddenMode,
 }) => (
   <Section>
     <Stack vertical align="center" justify="center">
@@ -989,6 +994,11 @@ const BottomControls: React.FC<{
         <Stack.Item style={{ marginInline: 2, marginBlock: 1 }}>
           <Pill selected={!!suppressMoans} onClick={onToggleMoans}>
             {suppressMoans ? 'НЕ СТОНЕТ' : 'СТОНЕТ'}
+          </Pill>
+        </Stack.Item>
+        <Stack.Item style={{ marginInline: 2, marginBlock: 1 }}>
+          <Pill selected={!!hiddenMode} onClick={onToggleHiddenMode}>
+            {hiddenMode ? 'СКРЫТНО' : 'ОТКРЫТО'}
           </Pill>
         </Stack.Item>
       </Stack>
@@ -1260,11 +1270,13 @@ export const EroticRolePlayPanel: React.FC = () => {
                   yieldToPartner={data.yield_to_partner}
                   frozen={data.frozen}
                   suppressMoans={!data.allow_user_moan}
+                  hiddenMode={!data.hidden_mode}
                   onFlipPose={() => act('flip', { dir: 1 })}
                   onStopAll={() => act('stop_all')}
                   onToggleYield={() => act('quick', { op: 'yield' })}
                   onToggleFreeze={() => act('freeze_arousal')}
                   onToggleMoans={() => act('toggle_moan')}
+                  onToggleHiddenMode={() => act('toggle_hidden')}
                 />
               </Stack.Item>
 
