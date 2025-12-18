@@ -195,8 +195,24 @@ GLOBAL_LIST_EMPTY(created_sound_groups)
 			else
 				on_hear_sound(M)
 
+//TA Addition start - new sound sync
+// /datum/looping_sound/proc/on_hear_sound(mob/M) //убираем старое неработащее нечто, эта процедура вывзавется, когда кукла возвращаетс я взону действия звука
+// 	return
 /datum/looping_sound/proc/on_hear_sound(mob/M)
-	return
+	if(!persistent_loop || !M?.client) //Опять доп перестраховка
+		return
+
+	var/list/L = M.client.played_loops[src]
+	if(!L)
+		return
+
+	L["MUTESTATUS"] = FALSE
+	L["VOL"] = volume
+
+	var/sound/SD = L["SOUND"]
+	if(SD)
+		M.unmute_sound(SD) //Вовзаращаем звуку громкость
+//TA Addition end - new sound sync
 
 /datum/looping_sound/proc/get_sound(starttime, _mid_sounds)
 	. = _mid_sounds || mid_sounds
@@ -208,9 +224,33 @@ GLOBAL_LIST_EMPTY(created_sound_groups)
 	if(start_sound) //does ANYTHING even use start_sound
 		play(start_sound)
 		start_wait = start_length
+
+	//TA Addition start - new sound sync
+	if(persistent_loop) //только, если звук циклится и постоянно (например, музыка с инструментов, боксов и прочее)
+		attach_loop_to_all_clients() //запуск этого звукуа на ВСЕХ Клиентах
+	//TA Addition end
+	
 	addtimer(CALLBACK(src, PROC_REF(begin_loop)), start_wait, TIMER_CLIENT_TIME)
 	if(persistent_loop && !(src in GLOB.persistent_sound_loops))
 		GLOB.persistent_sound_loops += src
+
+//TA Addition start - new sound sync - процедура запуска звука на всех клиентах
+/datum/looping_sound/proc/attach_loop_to_all_clients()
+	if(!persistent_loop) //Доп защита
+		return
+
+	var/soundfile = get_sound(world.time, mid_sounds) //Получение активного звука
+	if(!soundfile)
+		return
+
+	cursound = soundfile //Получение текущего звука
+	for(var/client/C in GLOB.clients) //По всем активным в момент запуска звука клиентам
+		var/mob/M = C.mob
+		if(!M)
+			continue
+
+		M.playsound_local(null, soundfile, 0, vary, frequency, falloff, channel, FALSE, null, src) //Привязать звук
+//TA Addition end
 
 /datum/looping_sound/proc/begin_loop()
 	sound_loop()
