@@ -1198,6 +1198,7 @@
 	if(world.time < next_broadcast_time)
 		return
 
+	update_partners_proximity()
 	broadcast_step()
 
 /datum/sex_session_tgui/proc/broadcast_step()
@@ -2025,4 +2026,5 @@
 			receivers |= P
 
 	for(var/mob/living/carbon/human/H in receivers)
-		to_chat(H, message)
+		if(get_dist(user, H) <= 2)
+			to_chat(H, message)
