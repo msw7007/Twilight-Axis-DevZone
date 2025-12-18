@@ -5,3 +5,13 @@
 #include "code/soundbreaker_spells_base.dm"
 #include "code/soundbreaker_spells_notes.dm"
 #include "code/soundbreaker_spells_combos.dm"
+#include "code/soundbreaker_overhead.dm"
+// BEGIN_INTERNALS
+// END_INTERNALS
+// BEGIN_FILE_DIR
+#define FILE_DIR .
+// END_FILE_DIR
+// BEGIN_PREFERENCES
+// END_PREFERENCES
+// BEGIN_INCLUDE
+// END_INCLUDE

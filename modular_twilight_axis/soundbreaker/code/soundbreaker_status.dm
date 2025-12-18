@@ -8,12 +8,13 @@
 /datum/status_effect/buff/soundbreaker_combo
 	id = "soundbreaker_combo"
 	status_type = STATUS_EFFECT_REFRESH
-	duration = 7 SECONDS
+	duration = 5 SECONDS
 	tick_interval = 1 SECONDS
 	alert_type = /atom/movable/screen/alert/status_effect/buff/soundbreaker_combo
 
 	var/stacks = 0
 	var/max_stacks = 5
+	var/mutable_appearance/aura_overlay
 
 /datum/status_effect/buff/soundbreaker_combo/on_apply()
 	. = ..()
@@ -35,9 +36,22 @@
 		to_chat(owner, span_notice("Your rhythm surges ([stacks]/[max_stacks])."))
 
 /datum/status_effect/buff/soundbreaker_combo/on_remove()
+	// аура
 	clear_visuals()
 	if(owner)
-		SEND_SIGNAL(owner, COMSIG_SOUNDBREAKER_COMBO_CLEARED)
+		if(aura_overlay)
+			owner.cut_overlay(aura_overlay)
+		aura_overlay = null
+
+		// чистим мелкие ноты + очередь
+		soundbreaker_clear_note_icons(owner)
+
+		// чистим историю в трекере, чтобы не висели хвосты 11/111
+		if(owner.soundbreaker_combo)
+			var/datum/soundbreaker_combo_tracker/T = owner.soundbreaker_combo
+			if(T && islist(T.history))
+				T.history.Cut()
+
 	. = ..()
 
 /datum/status_effect/buff/soundbreaker_combo/proc/update_visuals()

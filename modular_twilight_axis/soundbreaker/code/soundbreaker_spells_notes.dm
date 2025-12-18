@@ -5,7 +5,7 @@
 	desc = "A focused sound-empowered punch that hits up to two tiles ahead."
 	note_id = SOUNDBREAKER_NOTE_STRIKE
 	damage_type = BRUTE
-	
+	overlay_state = "active_strike"
 
 /obj/effect/proc_holder/spell/invoked/soundbreaker/sound_strike/perform_attack(mob/living/user)
 	var/list/hit_targets = list()
@@ -44,6 +44,7 @@
 	note_id = SOUNDBREAKER_NOTE_WAVE
 	damage_mult = 0.75
 	damage_type = BRUTE
+	overlay_state = "active_wave"
 
 /obj/effect/proc_holder/spell/invoked/soundbreaker/resonant_wave/perform_attack(mob/living/user)
 	var/list/hit_targets = list()
@@ -82,6 +83,7 @@
 	note_id = SOUNDBREAKER_NOTE_DULCE
 	damage_mult = 1.25
 	damage_type = BRUTE
+	overlay_state = "active_dulce"
 
 /obj/effect/proc_holder/spell/invoked/soundbreaker/dulce_step/perform_attack(mob/living/user)
 	var/list/hit_targets = list()
@@ -129,6 +131,7 @@
 	note_id = SOUNDBREAKER_NOTE_OVERLOAD
 	damage_mult = 0.5
 	damage_type = BRUTE
+	overlay_state = "active_overload"
 
 /obj/effect/proc_holder/spell/invoked/soundbreaker/overload_chord/perform_attack(mob/living/user)
 	var/list/hit_targets = list()
@@ -186,6 +189,7 @@
 	damage_mult = 0.75
 	damage_type = BRUTE
 	var/front_bonus = 0.5
+	overlay_state = "active_encore"
 
 /obj/effect/proc_holder/spell/invoked/soundbreaker/encore_line/cast(list/targets, mob/living/user)
 	if(!isliving(user))
@@ -240,6 +244,7 @@
 	note_id = SOUNDBREAKER_NOTE_SOLO
 	damage_mult = 0.75
 	damage_type = BRUTE
+	overlay_state = "active_solo"
 
 /obj/effect/proc_holder/spell/invoked/soundbreaker/solo_break/cast(list/targets, mob/living/user)
 	if(!isliving(user))

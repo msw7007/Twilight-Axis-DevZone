@@ -97,8 +97,8 @@
 		soundbreaker_combo_syncopation(owner, last_target)
 		return
 
-	// 8) Ritmo: 1,1,1
-	if(soundbreaker_match_suffix(notes, list(1, 1, 1)))
+	// 8) Ritmo: 1,6,1,6
+	if(soundbreaker_match_suffix(notes, list(1, 6, 1, 6)))
 		soundbreaker_combo_ritmo(owner, last_target)
 		return
 
@@ -124,16 +124,22 @@
 
 /// Глобалка для регистрации удара ноты
 /proc/soundbreaker_on_hit(mob/living/user, mob/living/target, note_id)
-	if(!user || !target || !note_id)
+	if(!user || !note_id)
 		return
 
+	// музыка обязательна для комбо/стаков
 	if(!soundbreaker_has_music(user))
 		return
 
+	// история нот и проверка комбо — на ЮЗЕРЕ
 	var/datum/soundbreaker_combo_tracker/T = soundbreaker_get_combo_tracker(user)
-	if(T)
+	if(T && target)
 		T.register_hit(note_id, target)
 
+	// МАЛЕНЬКАЯ ИКОНКА ВВОДА — НАД ЮЗЕРОМ
+	soundbreaker_show_note_icon(user, note_id)
+
+	// стаки ритма — тоже на юзере
 	soundbreaker_add_combo_stack(user)
 
 /// Получить/создать трекер на мобе
@@ -378,6 +384,22 @@
 	damage *= skill_bonus
 
 	return max(1, round(damage))
+
+/proc/soundbreaker_reset_rhythm(mob/living/user)
+	if(!user)
+		return
+
+	// снимаем бафф
+	user.remove_status_effect(/datum/status_effect/buff/soundbreaker_combo)
+
+	// чистим маленькие иконки
+	soundbreaker_clear_note_icons(user)
+
+	// чистим историю нот в трекере
+	if(user.soundbreaker_combo)
+		var/datum/soundbreaker_combo_tracker/T = user.soundbreaker_combo
+		if(T && islist(T.history))
+			T.history.Cut()
 
 #undef SB_MIN_DAMAGE_MULT
 #undef SB_MAX_DAMAGE_MULT

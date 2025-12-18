@@ -5,7 +5,7 @@
 	charge_type = "recharge"
 	associated_skill = /datum/skill/misc/music
 	cost = 0
-	xp_gain = TRUE
+	xp_gain = FALSE
 
 	releasedrain = 0
 	chargedrain = 0
@@ -27,6 +27,7 @@
 	var/note_id = 0
 	var/damage_mult = 1
 	var/damage_type = BRUTE
+	action_icon = 'modular_twilight_axis/soundbreaker/icons/soundspells.dmi'
 
 /obj/effect/proc_holder/spell/invoked/soundbreaker/cast(list/targets, mob/living/user)
 	if(!isliving(user))
