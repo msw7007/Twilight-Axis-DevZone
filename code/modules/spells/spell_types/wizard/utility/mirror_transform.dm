@@ -45,7 +45,7 @@
 	if (!H)
 		return
 	var/should_update = FALSE
-	var/list/choices = list("hairstyle", "facial hairstyle", "accessory", "face detail", "horns", "ears", "ear color one", "ear color two", "tail", "tail color one", "tail color two", "hair color", "facial hair color", "eye color", "natural gradient", "natural gradient color", "dye gradient", "dye gradient color", "penis", "testicles", "breasts", "vagina", "breast size", "penis size", "testicle size")
+	var/list/choices = list("hairstyle", "facial hairstyle", "accessory", "face detail", "horns", "horns color", "ears", "ear color one", "ear color two", "wings", "wings color", "tail", "tail color one", "tail color two", "hair color", "facial hair color", "eye color", "natural gradient", "natural gradient color", "dye gradient", "dye gradient color", "penis", "testicles", "breasts", "vagina", "breast size", "penis size", "testicle size") // TWILIGHT AXIS EDITION - new ERP SYSTEM
 	var/chosen = input(H, "Change what?", "Appearance") as null|anything in choices
 
 	if(!chosen)
@@ -420,12 +420,6 @@
 					var/obj/item/organ/penis/penis = new penis_type_path
 					penis.Insert(H, TRUE, FALSE)
 					penis.accessory_type = valid_penis_types[new_style]
-					if(H.dna && H.dna.species)
-						var/datum/species/S = H.dna.species
-						if((MUTCOLORS in S.species_traits) || (DYNCOLORS in S.species_traits))
-							penis.color = H.dna.features["mcolor"]
-						else
-							penis.color = initial(penis.color)
 
 					if(penis.sex_organ)
 						var/datum/sex_organ/penis/SP = penis.sex_organ
@@ -435,6 +429,41 @@
 
 					penis.sync_knotting_component()
 
+					// --- КАСТОМИЗАЦИЯ ЦВЕТА ЧЛЕНА ЧЕРЕЗ accessory_colors ---
+					var/datum/sprite_accessory/penis/acc = SPRITE_ACCESSORY(penis.accessory_type)
+					var/list/colors = list()
+
+					if(penis.accessory_colors)
+						colors = color_string_to_list(penis.accessory_colors)
+
+					if(!length(colors))
+						// грузим дефолты из аксессуара
+						if(acc)
+							var/list/defaults = acc.get_default_colors(list())
+							if(defaults && defaults.len)
+								colors = defaults.Copy()
+					if(!length(colors))
+						colors = list("#FFFFFF") // крайний запасной вариант
+
+					// пока делаем один цвет на всё – красим все ключи одинаково
+					var/default_pick = colors[1]
+					var/new_color = color_pick_sanitized(H, "Choose your penis color", "Penis Color", default_pick)
+
+					if(new_color)
+						new_color = sanitize_hexcolor(new_color, 6, TRUE)
+						for(var/i in 1 to colors.len)
+							colors[i] = new_color
+						penis.accessory_colors = color_list_to_string(colors)
+
+					if(penis.sex_organ)
+						var/datum/sex_organ/penis/SP = penis.sex_organ
+						SP.refresh_from_organ(penis)
+					else
+						penis.refresh_sex_organ()
+
+					penis.sync_knotting_component()
+
+					H.update_body_parts()
 					H.update_body()
 					should_update = TRUE
 			// TWILIGHT AXIS EDITION END - new ERP SYSTEM
@@ -460,7 +489,27 @@
 						testicles = new()
 						testicles.Insert(H, TRUE, FALSE)
 					testicles.accessory_type = valid_testicle_types[new_style]
-					testicles.color = H.dna.features["mcolor"]
+					// TWILIGHT AXIS EDITION START - new ERP SYSTEM
+					var/datum/sprite_accessory/testicles/tacc = SPRITE_ACCESSORY(testicles.accessory_type)
+					var/list/colors = list()
+
+					if(testicles.accessory_colors)
+						colors = color_string_to_list(testicles.accessory_colors)
+					if(!length(colors))
+						var/default_hex = "#FFFFFF"
+						if(tacc && tacc.default_colors && tacc.default_colors.len)
+							default_hex = tacc.default_colors[1]
+						colors = list(default_hex)
+
+					var/default_pick = colors[1]
+					var/new_color = color_pick_sanitized(H, "Choose your testicles color", "Testicles Color", default_pick)
+
+					if(new_color)
+						new_color = sanitize_hexcolor(new_color, 6, TRUE)
+						colors[1] = new_color
+						testicles.accessory_colors = color_list_to_string(colors)
+					H.update_body_parts()
+					// TWILIGHT AXIS EDITION END - new ERP SYSTEM
 					H.update_body()
 					should_update = TRUE
 
@@ -487,7 +536,29 @@
 						breasts.Insert(H, TRUE, FALSE)
 
 					breasts.accessory_type = valid_breast_types[new_style]
-					breasts.color = H.dna.features["mcolor"]
+					// TWILIGHT AXIS EDITION START - new ERP SYSTEM
+					// Красим через accessory_colors, как хвост/уши
+					var/datum/sprite_accessory/breasts/bacc = SPRITE_ACCESSORY(breasts.accessory_type)
+					var/list/colors = list()
+
+					if(breasts.accessory_colors)
+						colors = color_string_to_list(breasts.accessory_colors)
+					if(!length(colors))
+						// если аксессуар многоцветный – всё равно хотя бы первый цвет будет
+						var/default_hex = "#FFFFFF"
+						if(bacc && bacc.default_colors && bacc.default_colors.len)
+							default_hex = bacc.default_colors[1]
+						colors = list(default_hex)
+
+					var/default_pick = colors[1]
+					var/new_color = color_pick_sanitized(H, "Choose your breasts color", "Breasts Color", default_pick)
+
+					if(new_color)
+						new_color = sanitize_hexcolor(new_color, 6, TRUE)
+						colors[1] = new_color
+						breasts.accessory_colors = color_list_to_string(colors)
+					H.update_body_parts()
+					// TWILIGHT AXIS EDITION END - new ERP SYSTEM
 					H.update_body()
 					should_update = TRUE
 
@@ -747,6 +818,73 @@
 					H.update_body()
 					should_update = TRUE
 
+		// TWILIGHT AXIS EDITION START - new ERP SYSTEM
+		if("horns Color")
+			var/obj/item/organ/horns/horns = H.getorganslot(ORGAN_SLOT_HORNS)
+			if(horns)
+				var/new_color = color_pick_sanitized(H, "Choose your primary ear color", "Ear Color One", "#FFFFFF")
+				if(new_color)
+					horns.Remove(H)
+					var/list/colors = list()
+					if(horns.accessory_colors)
+						colors = color_string_to_list(horns.accessory_colors)
+					if(!length(colors))
+						colors = list("#FFFFFF", "#FFFFFF") // Default colors if none set
+					colors[1] = sanitize_hexcolor(new_color, 6, TRUE)
+					horns.accessory_colors = color_list_to_string(colors)
+					horns.Insert(H, TRUE, FALSE)
+					H.dna.features["horns_color"] = colors[1]  // Update DNA features
+					H.update_body()
+					should_update = TRUE
+			else
+				to_chat(H, span_warning("You don't have horns!"))
+
+		if("wings")
+			var/list/valid_wings = list("none")
+			for(var/wings_path in subtypesof(/datum/sprite_accessory/wings))
+				var/datum/sprite_accessory/wings/wings = new wings_path()
+				valid_wings[wings.name] = wings_path
+
+			var/new_style = input(H, "Choose your wings", "Wings Customization") as null|anything in valid_wings
+			if(new_style)
+				if(new_style == "none")
+					var/obj/item/organ/wings/wings = H.getorganslot(ORGAN_SLOT_WINGS)
+					if(wings)
+						wings.Remove(H)
+						qdel(wings)
+						H.update_body()
+						should_update = TRUE
+				else
+					var/obj/item/organ/wings/wings = H.getorganslot(ORGAN_SLOT_WINGS)
+					if(!wings)
+						wings = new /obj/item/organ/wings()
+						wings.Insert(H, TRUE, FALSE)
+					wings.accessory_type = valid_wings[new_style]
+					var/datum/sprite_accessory/wings/wings_type = SPRITE_ACCESSORY(wings.accessory_type)
+					wings.accessory_colors = wings_type.get_default_colors(list())
+					H.update_body()
+					should_update = TRUE
+
+		if("wings Color")
+			var/obj/item/organ/wings/wings = H.getorganslot(ORGAN_SLOT_WINGS)
+			if(wings)
+				var/new_color = color_pick_sanitized(H, "Choose your primary wing color", "Wing Color One", "#FFFFFF")
+				if(new_color)
+					wings.Remove(H)
+					var/list/colors = list()
+					if(wings.accessory_colors)
+						colors = color_string_to_list(wings.accessory_colors)
+					if(!length(colors))
+						colors = list("#FFFFFF", "#FFFFFF") // Default colors if none set
+					colors[1] = sanitize_hexcolor(new_color, 6, TRUE)
+					wings.accessory_colors = color_list_to_string(colors)
+					wings.Insert(H, TRUE, FALSE)
+					H.dna.features["wings_color"] = colors[1]  // Update DNA features
+					H.update_body()
+					should_update = TRUE
+			else
+				to_chat(H, span_warning("You don't have wings!"))
+		// TWILIGHT AXIS EDITION END - new ERP SYSTEM
 
 	if(should_update)
 		H.update_hair()
