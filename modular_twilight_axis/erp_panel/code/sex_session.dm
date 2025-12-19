@@ -469,6 +469,7 @@
 	return D
 
 /datum/sex_session_tgui/ui_data(mob/user)
+	update_partners_proximity()
 	update_knotted_penis_flag()
 	var/list/D = list()
 
@@ -892,16 +893,26 @@
 
 	partners = new_partners
 
-	if(!length(partners))
+	if(length(new_partners) != partners.len)
+		dirty_partners = TRUE
+		dirty_org_nodes = TRUE
+		dirty_actions = TRUE
+		dirty_links = TRUE
+		dirty_custom_actions = TRUE
+
+	// текущий выбранный партнер должен быть валиден именно "рядом"
+	var/mob/living/carbon/human/cur = null
+	if(current_partner_ref)
+		cur = locate(current_partner_ref)
+
+	if(cur && cur != user && !(cur in partners))
 		current_partner_ref = REF(user)
 		target = user
 		partner_bodypart_override = null
-	else
-		if(!locate(current_partner_ref))
-			var/mob/living/carbon/human/N = partners[1]
-			current_partner_ref = REF(N)
-			target = N
-			partner_bodypart_override = null
+
+		dirty_partners = TRUE
+		dirty_org_nodes = TRUE
+		dirty_actions = TRUE
 
 /datum/sex_session_tgui/proc/try_start_action(action_type)
 	var/datum/sex_panel_action/A = SEX_PANEL_ACTION(action_type)
