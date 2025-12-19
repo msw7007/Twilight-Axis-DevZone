@@ -845,6 +845,10 @@
 			handle_custom_create(params)
 			dirty_custom_actions = TRUE
 			dirty_actions = TRUE
+			var/datum/preferences/P = user.client?.prefs
+			if(P)
+				P.erp_sync_from_globals(user.client.ckey)
+				P.save_preferences()
 			SStgui.update_uis(src)
 			return TRUE
 
@@ -852,6 +856,10 @@
 			handle_custom_update(params)
 			dirty_custom_actions = TRUE
 			dirty_actions = TRUE
+			var/datum/preferences/P = user.client?.prefs
+			if(P)
+				P.erp_sync_from_globals(user.client.ckey)
+				P.save_preferences()
 			SStgui.update_uis(src)
 			return TRUE
 
@@ -859,6 +867,10 @@
 			handle_custom_delete(params)
 			dirty_custom_actions = TRUE
 			dirty_actions = TRUE
+			var/datum/preferences/P = user.client?.prefs
+			if(P)
+				P.erp_sync_from_globals(user.client.ckey)
+				P.save_preferences()
 			SStgui.update_uis(src)
 			return TRUE
 

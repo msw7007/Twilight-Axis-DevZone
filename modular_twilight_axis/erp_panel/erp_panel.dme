@@ -1,6 +1,7 @@
 #include "code\_defenitions.dm"
 #include "code\sex_action_session.dm"
 #include "code\emotes.dm"
+#include "code\preferences.dm"
 #include "code\reagents.dm"
 #include "code\sex_session.dm"
 #include "code\stress.dm"
