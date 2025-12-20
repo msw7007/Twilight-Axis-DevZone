@@ -108,3 +108,15 @@
 				wash_mob(target)
 
 	playsound(target.loc, "sound/vo/lick.ogg", 100, FALSE, -1)
+
+/datum/emote/living/spit/run_emote(mob/user, params, type_override, intentional)
+	message_param = initial(message_param) // reset
+	if(ishuman(user))
+		var/mob/living/carbon/human/H = user
+		if(H.mouth)
+			if(H.mouth.spitoutmouth)
+				H.spit_from_mouth()
+				H.visible_message(span_warning("[H] spits out [H.mouth]."))
+				H.dropItemToGround(H.mouth, silent = FALSE)
+			return
+	..()

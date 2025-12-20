@@ -169,3 +169,89 @@
 		bonus += 5 * (knot_count - 1)
 
 	return bonus
+
+/datum/component/knotting/apply_knot(mob/living/carbon/human/user, mob/living/carbon/human/target, force_level, knot_count_param = 1)
+	knotted_owner = user
+	knotted_recipient = target
+	knotted_status = KNOTTED_AS_TOP
+	tugging_knot_blocked = FALSE
+	knot_count = knot_count_param
+
+	for(var/obj/item/organ/O in target.internal_organs)
+		if(O.sex_organ && (O.sex_organ.organ_type in list(SEX_ORGAN_VAGINA, SEX_ORGAN_ANUS, SEX_ORGAN_MOUTH)))
+			O.sex_organ.block_drain = TRUE
+
+	handle_knot_force_effects(user, target, force_level)
+	var/knot_plural = knot_count > 1 ? "s" : ""
+	user.visible_message(span_notice("[user] ties their knot[knot_plural] inside of [target]!"),
+		span_notice("I tie my knot inside of [target]."))
+
+	if(!knot_count)
+		return
+
+	if(target.stat != DEAD)
+		var/knot_count = count_active_knots(target)
+		switch(knot_count)
+			if(1)
+				to_chat(target, span_userdanger("You have been knotted!"))
+			if(2)
+				to_chat(target, span_userdanger("You have been double-knotted!"))
+			if(3)
+				to_chat(target, span_userdanger("You have been triple-knotted!"))
+			if(4)
+				to_chat(target, span_userdanger("You have been quad-knotted!"))
+			if(5)
+				to_chat(target, span_userdanger("You have been penta-knotted!"))
+			else
+				to_chat(target, span_userdanger("You have been ultra-knotted!"))
+
+	apply_knot_status_effects(user, target)
+
+	RegisterSignal(user, COMSIG_MOVABLE_MOVED, PROC_REF(knot_movement))
+	RegisterSignal(target, COMSIG_MOVABLE_MOVED, PROC_REF(knot_movement))
+
+	log_combat(user, target, "Started knot tugging")
+
+/datum/component/knotting/knot_exit(keep_top_status = FALSE, keep_btm_status = FALSE)
+	var/mob/living/carbon/human/top = knotted_owner
+	var/mob/living/carbon/human/btm = knotted_recipient
+
+	if(istype(top))
+		if(!keep_top_status)
+			top.remove_status_effect(/datum/status_effect/knotted)
+		UnregisterSignal(top, COMSIG_MOVABLE_MOVED)
+		log_combat(top, top, "Stopped knot tugging")
+
+	if(istype(btm))
+		if(!keep_btm_status)
+			btm.remove_status_effect(/datum/status_effect/knot_tied)
+		for(var/obj/item/organ/O in btm.internal_organs)
+			if(O.sex_organ)
+				O.sex_organ.block_drain = FALSE
+		UnregisterSignal(btm, COMSIG_MOVABLE_MOVED)
+		log_combat(btm, btm, "Stopped knot tugging")
+
+	knotted_owner = null
+	knotted_recipient = null
+	knotted_status = KNOTTED_NULL
+	knot_count = 0
+
+/datum/component/knotting/handle_existing_knots(mob/living/carbon/human/user, mob/living/carbon/human/target)
+	if(knotted_status)
+		if(knotted_status == KNOTTED_AS_TOP && knotted_recipient == target)
+			return
+
+		var/user_was_top = (knotted_status == KNOTTED_AS_TOP)
+		var/user_was_bottom = (knotted_status == KNOTTED_AS_BTM)
+		knot_remove(keep_btm_status = user_was_bottom, keep_top_status = user_was_top)
+		if(user_was_top && !target.has_status_effect(/datum/status_effect/knot_fucked_stupid))
+			target.apply_status_effect(/datum/status_effect/knot_fucked_stupid)
+			to_chat(target, span_userdanger("You can't think straight!"))
+
+	var/mob/living/carbon/human/other_knotter = find_knotter_for_target(target)
+	if(other_knotter && other_knotter != user)
+		var/datum/component/knotting/other_knot = other_knotter.GetComponent(/datum/component/knotting)
+		if(other_knot?.knotted_recipient == target)
+			other_knot.knot_remove(forceful_removal = TRUE)
+			if(other_knot.knotted_status == KNOTTED_AS_BTM && !target.has_status_effect(/datum/status_effect/knot_fucked_stupid))
+				target.apply_status_effect(/datum/status_effect/knot_fucked_stupid)

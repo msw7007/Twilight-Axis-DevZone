@@ -1,7 +1,7 @@
-#define BREAST_BASE_PROD_PER_SIZE		0.05
-#define BREAST_STORAGE_PER_SIZE			100
+#define BREAST_BASE_PROD_PER_SIZE		0.4
+#define BREAST_STORAGE_PER_SIZE			50
 #define BREAST_INJECTION_PER_SIZE		2
-#define BREAST_NUTRITION_COST_PER_UNIT	0.2
+#define BREAST_NUTRITION_COST_PER_UNIT	0.4
 
 /datum/sex_organ/breasts
 	organ_type = SEX_ORGAN_BREASTS
@@ -66,7 +66,7 @@
 	if(h_mult <= 0)
 		return 0
 
-	amount *= mult * h_mult * BASIC_LACTATION_MULTIPLIER
+	amount *= mult * h_mult
 	if(istype(human_object))
 		var/max_from_nutrition = max(0, human_object.nutrition - NUTRITION_LEVEL_STARVING)
 		if(max_from_nutrition <= 0)

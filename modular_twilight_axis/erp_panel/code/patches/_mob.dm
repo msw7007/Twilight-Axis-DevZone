@@ -203,28 +203,20 @@
 	return head_object?.sex_organ
 
 /mob/living/carbon/human/proc/swallow_from_mouth(amount = 5)
-	if(amount <= 0 || !reagents)
+	var/datum/sex_organ/mouth/M = get_sex_organ_by_type(SEX_ORGAN_MOUTH)
+	if(!M || !M.has_liquid())
 		return FALSE
 
-	var/datum/sex_organ/mouth/M = get_mouth_sex_organ()
-	if(!M || !M.stored_liquid)
-		remove_status_effect(/datum/status_effect/mouth_full)
-		return FALSE
-
-	if(M.stored_liquid.total_volume <= 0)
-		remove_status_effect(/datum/status_effect/mouth_full)
-		return FALSE
-
-	var/to_swallow = min(amount, M.stored_liquid.total_volume)
+	var/to_swallow = min(amount, M.total_volume())
 	if(to_swallow <= 0)
-		remove_status_effect(/datum/status_effect/mouth_full)
 		return FALSE
 
-	M.stored_liquid.trans_to(reagents, to_swallow)
+	var/list/L = M.stored_liquid.reagent_list.Copy()
+	M.drain_uniform(to_swallow)
+	for(var/datum/reagent/R in L)
+		reagents.add_reagent(R.type, to_swallow)
 
-	if(M.stored_liquid.total_volume <= 0)
-		remove_status_effect(/datum/status_effect/mouth_full)
-
+	visible_message(span_notice("[src] сглатывает."), span_notice("Я проглатываю семя во рту."))
 	return TRUE
 
 /mob/living/carbon/human/erp_proxy
@@ -379,3 +371,21 @@
 			return
 		return
 	..()
+
+/mob/living/carbon/human/proc/spit_from_mouth(amount = 5)
+	var/datum/sex_organ/mouth/M = get_sex_organ_by_type(SEX_ORGAN_MOUTH)
+	if(!M || !M.has_liquid())
+		return FALSE
+
+	var/to_spit = min(amount, M.total_volume())
+	if(to_spit <= 0)
+		return FALSE
+
+	M.drain_uniform(to_spit)
+	var/turf/T = get_turf(src)
+	if(T)
+		new /obj/effect/decal/cleanable/coom(T)
+
+	visible_message(span_notice("[src] сплёвывает что-то на пол."),	span_notice("Я сплёвываю содержимое рта."))
+
+	return TRUE

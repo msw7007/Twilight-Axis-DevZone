@@ -160,7 +160,7 @@
 	if(A && T)
 		var/datum/component/knotting/K = A.GetComponent(/datum/component/knotting)
 		if(K && K.knotted_status == KNOTTED_AS_TOP && K.knotted_recipient == T)
-			target_pain_delta += 0.25
+			return
 
 	if(src_org && self_pain_delta > 0)
 		src_org.adjust_pain(self_pain_delta)

@@ -36,6 +36,7 @@
 	// intervals
 	var/production_interval = 5 SECONDS
 	var/drain_interval = 5 MINUTES
+	var/block_drain = FALSE
 
 /datum/sex_organ/body
 
@@ -209,6 +210,9 @@
 	return null
 
 /datum/sex_organ/proc/on_timer_end()
+	if(block_drain)
+		return
+	
 	if(!has_storage())
 		return
 
@@ -310,6 +314,9 @@
 	return null
 
 /datum/sex_organ/proc/inject_liquid(obj/item/container = null, mob/living/carbon/human/preferred_holder = null, list/blocked_containers = list())
+	if(block_drain)
+		return 0
+	
 	if(!has_storage() || total_volume() <= 0)
 		return 0
 
@@ -410,6 +417,9 @@
 	return mult
 
 /datum/sex_organ/proc/wash_out(max_amount = 0)
+	if(block_drain)
+		return 0
+	
 	if(!has_storage())
 		return 0
 
