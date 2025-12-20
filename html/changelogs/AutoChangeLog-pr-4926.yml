@@ -1,4 +1,0 @@
-author: "FreeStylaLT"
-delete-after: True
-changes:
-  - refactor: "XP drops now round to the nearest 0.1 decimal."

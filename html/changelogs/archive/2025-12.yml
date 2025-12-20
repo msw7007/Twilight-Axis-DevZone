@@ -346,3 +346,20 @@
       Squire, and no more bonking a dummy for a few minutes.
   kano-dot:
   - bugfix: fixed half-elves not being able to pick wood elf ears.
+2025-12-20:
+  FreeStylaLT:
+  - rscadd: New ears for Aaasimar / Elves / Dark Elves / Tieflings
+  - refactor: XP drops now round to the nearest 0.1 decimal.
+  - image: Targeting Gargoyle shows Left and Right now.
+  HeroWithYay:
+  - bugfix: Psydonian Barbarians no longer get mini-pain crits.
+  PatapoIIIa:
+  - bugfix: Legendary (Rank 6) skills are no longer incorrectly reduced to lower ranks
+      when applying a Virtue with the softcap flag.
+  - code_imp: Refactored the entire skill application logic in `handle_skills` to
+      use sequential hardcap/softcap checks, ensuring no negative skill adjustments.
+  Stutternov:
+  - bugfix: fixed badly named helmet state.
+  ToasterStrudes:
+  - rscadd: Added new Venard sounds!
+  - rscadd: Added friendly Venard sounds to Mimi the Guild Pet.

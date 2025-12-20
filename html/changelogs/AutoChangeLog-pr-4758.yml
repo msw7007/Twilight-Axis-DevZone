@@ -1,5 +1,0 @@
-author: "PatapoIIIa"
-delete-after: True
-changes:
-  - bugfix: "Legendary (Rank 6) skills are no longer incorrectly reduced to lower ranks when applying a Virtue with the softcap flag."
-  - code_imp: "Refactored the entire skill application logic in `handle_skills` to use sequential hardcap/softcap checks, ensuring no negative skill adjustments."
