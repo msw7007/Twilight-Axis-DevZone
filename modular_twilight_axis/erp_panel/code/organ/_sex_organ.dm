@@ -347,7 +347,10 @@
 	var/mob/living/carbon/human/human_object = get_owner()
 	var/turf/turf_object = human_object ? get_turf(human_object) : (organ_link ? get_turf(organ_link) : null)
 	if(turf_object)
-		new /obj/effect/decal/cleanable/coom(turf_object)
+		if(organ_type == SEX_ORGAN_PENIS)
+			new /obj/effect/decal/cleanable/coom(turf_object)
+		if(organ_type == SEX_ORGAN_PENIS)
+			new /obj/effect/decal/cleanable/coom/milk(turf_object)
 		moved = drain_uniform(amount)
 		if(moved > 0)
 			mode = INJECT_MODE_GROUND

@@ -1270,7 +1270,7 @@ export const EroticRolePlayPanel: React.FC = () => {
                   yieldToPartner={data.yield_to_partner}
                   frozen={data.frozen}
                   suppressMoans={!data.allow_user_moan}
-                  hiddenMode={!data.hidden_mode}
+                  hiddenMode={data.hidden_mode}
                   onFlipPose={() => act('flip', { dir: 1 })}
                   onStopAll={() => act('stop_all')}
                   onToggleYield={() => act('quick', { op: 'yield' })}
