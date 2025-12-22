@@ -1,0 +1,8 @@
+author: "Geevies"
+delete-after: True
+changes:
+  - rscadd: "Animals that retaliate to being attacked will no longer attack their friends."
+  - rscadd: "Taming an animal will make it your friend. Petting a tamed animal when it isn't fighting will make it your friend."
+  - rscadd: "You can only pet a crazed animal to calm it down if you're friends with it."
+  - rscadd: "You can always attack/grab an animal you're friends with, it will not dodge you."
+  - rscadd: "If your class spawns with an animal, it will automatically be your friend."

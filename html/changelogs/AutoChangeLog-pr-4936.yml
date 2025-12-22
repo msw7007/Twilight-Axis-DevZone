@@ -1,4 +1,0 @@
-author: "FreeStylaLT"
-delete-after: True
-changes:
-  - bugfix: "Fixed Limbguard Special straining the user when they try to kick with it active."

@@ -1,0 +1,4 @@
+author: "FreeStylaLT"
+delete-after: True
+changes:
+  - bugfix: "Bandages not working as intended with Omniwounds. They are now effective on a lot more wounds."

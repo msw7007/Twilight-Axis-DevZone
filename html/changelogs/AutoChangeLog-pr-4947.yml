@@ -1,0 +1,4 @@
+author: "Geevies"
+delete-after: True
+changes:
+  - rscadd: "Added caparisons that can be put on both male and female Saiga. You can get them via the loadout or via tailoring them (2 fiber, 4 cloth)."

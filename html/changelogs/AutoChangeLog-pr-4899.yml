@@ -1,0 +1,4 @@
+author: "Ketrai"
+delete-after: True
+changes:
+  - balance: "Locate corpse miracle is now cheaper and provides more information"

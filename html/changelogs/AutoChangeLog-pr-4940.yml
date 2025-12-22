@@ -1,0 +1,5 @@
+author: "FreeStylaLT"
+delete-after: True
+changes:
+  - balance: "Strong Stance will now always give +10% damage instead of +1 STR (ignores softcaps)"
+  - balance: "Strong Stance will now incur bonus sharpness / integrity loss to defenders."

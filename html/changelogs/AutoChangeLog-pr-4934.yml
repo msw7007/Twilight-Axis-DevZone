@@ -1,4 +1,0 @@
-author: "hubertjones"
-delete-after: True
-changes:
-  - bugfix: "marshal appropriately gets scabbard and sheath"

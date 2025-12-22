@@ -1,0 +1,5 @@
+author: "nauticall"
+delete-after: True
+changes:
+  - bugfix: "Blacksteel armet can now flip up its visor and apply a plume."
+  - rscadd: "A steel gorget has been added to the Duke's armor closet."

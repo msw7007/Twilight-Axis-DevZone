@@ -1619,16 +1619,26 @@
 	effectedstats = list("strength" = 3)
 	duration = 20 MINUTES
 
+/datum/status_effect/buff/magic/strength/on_apply()
+	if(owner.has_status_effect(/datum/status_effect/buff/magic/strength_lesser))
+		owner.remove_status_effect(/datum/status_effect/buff/magic/strength_lesser)
+	return ..()
+
 /atom/movable/screen/alert/status_effect/buff/magic/strength
 	name = "arcane reinforced strength"
 	desc = "I am magically strengthened."
 	icon_state = "buff"
 
-/datum/status_effect/buff/magic/strength/lesser
+/datum/status_effect/buff/magic/strength_lesser
 	id = "lesser strength"
 	alert_type = /atom/movable/screen/alert/status_effect/buff/magic/strength/lesser
 	effectedstats = list("strength" = 1)
 	duration = 20 MINUTES
+
+/datum/status_effect/buff/magic/strength_lesser/on_apply()
+	if(owner.has_status_effect(/datum/status_effect/buff/magic/strength))
+		return FALSE
+	return ..()
 
 /atom/movable/screen/alert/status_effect/buff/magic/strength/lesser
 	name = "lesser arcane strength"
@@ -1642,16 +1652,26 @@
 	effectedstats = list("speed" = 3)
 	duration = 20 MINUTES
 
+/datum/status_effect/buff/magic/speed/on_apply()
+	if(owner.has_status_effect(/datum/status_effect/buff/magic/speed_lesser))
+		owner.remove_status_effect(/datum/status_effect/buff/magic/speed_lesser)
+	return ..()
+
 /atom/movable/screen/alert/status_effect/buff/magic/speed
 	name = "arcane swiftness"
 	desc = "I am magically swift."
 	icon_state = "buff"
 
-/datum/status_effect/buff/magic/speed/lesser
+/datum/status_effect/buff/magic/speed_lesser
 	id = "lesser speed"
 	alert_type = /atom/movable/screen/alert/status_effect/buff/magic/speed/lesser
 	effectedstats = list("speed" = 1)
 	duration = 20 MINUTES
+
+/datum/status_effect/buff/magic/speed_lesser/on_apply()
+	if(owner.has_status_effect(/datum/status_effect/buff/magic/speed))
+		return FALSE
+	return ..()
 
 /atom/movable/screen/alert/status_effect/buff/magic/speed/lesser
 	name = "arcane swiftness"
@@ -1664,16 +1684,26 @@
 	effectedstats = list("willpower" = 3)
 	duration = 20 MINUTES
 
+/datum/status_effect/buff/magic/willpower/on_apply()
+	if(owner.has_status_effect(/datum/status_effect/buff/magic/willpower_lesser))
+		owner.remove_status_effect(/datum/status_effect/buff/magic/willpower_lesser)
+	return ..()
+
 /atom/movable/screen/alert/status_effect/buff/magic/willpower
 	name = "arcane willpower"
 	desc = "I am magically resilient."
 	icon_state = "buff"
 
-/datum/status_effect/buff/magic/willpower/lesser
+/datum/status_effect/buff/magic/willpower_lesser
 	id = "lesser willpower"
 	alert_type = /atom/movable/screen/alert/status_effect/buff/magic/willpower/lesser
 	effectedstats = list("willpower" = 1)
 	duration = 20 MINUTES
+
+/datum/status_effect/buff/magic/willpower_lesser/on_apply()
+	if(owner.has_status_effect(/datum/status_effect/buff/magic/willpower))
+		return FALSE
+	return ..()
 
 /atom/movable/screen/alert/status_effect/buff/magic/willpower/lesser
 	name = "lesser arcane willpower"
@@ -1686,16 +1716,26 @@
 	effectedstats = list("constitution" = 3)
 	duration = 20 MINUTES
 
+/datum/status_effect/buff/magic/constitution/on_apply()
+	if(owner.has_status_effect(/datum/status_effect/buff/magic/constitution_lesser))
+		owner.remove_status_effect(/datum/status_effect/buff/magic/constitution_lesser)
+	return ..()
+
 /atom/movable/screen/alert/status_effect/buff/magic/constitution
 	name = "arcane constitution"
 	desc = "I feel reinforced by magick."
 	icon_state = "buff"
 
-/datum/status_effect/buff/magic/constitution/lesser
+/datum/status_effect/buff/magic/constitution_lesser
 	id = "lesser constitution"
 	alert_type = /atom/movable/screen/alert/status_effect/buff/magic/constitution/lesser
 	effectedstats = list("constitution" = 1)
 	duration = 20 MINUTES
+
+/datum/status_effect/buff/magic/constitution_lesser/on_apply()
+	if(owner.has_status_effect(/datum/status_effect/buff/magic/constitution))
+		return FALSE
+	return ..()
 
 /atom/movable/screen/alert/status_effect/buff/magic/constitution/lesser
 	name = "lesser arcane constitution"
@@ -1708,16 +1748,26 @@
 	effectedstats = list("perception" = 3)
 	duration = 20 MINUTES
 
+/datum/status_effect/buff/magic/perception/on_apply()
+	if(owner.has_status_effect(/datum/status_effect/buff/magic/perception_lesser))
+		owner.remove_status_effect(/datum/status_effect/buff/magic/perception_lesser)
+	return ..()
+
 /atom/movable/screen/alert/status_effect/buff/magic/perception
 	name = "arcane perception"
 	desc = "I can see everything."
 	icon_state = "buff"
 
-/datum/status_effect/buff/magic/perception/lesser
+/datum/status_effect/buff/magic/perception_lesser
 	id = "lesser perception"
 	alert_type = /atom/movable/screen/alert/status_effect/buff/magic/perception/lesser
 	effectedstats = list("perception" = 1)
 	duration = 20 MINUTES
+
+/datum/status_effect/buff/magic/perception_lesser/on_apply()
+	if(owner.has_status_effect(/datum/status_effect/buff/magic/perception))
+		return FALSE
+	return ..()
 
 /atom/movable/screen/alert/status_effect/buff/magic/perception/lesser
 	name = "lesser arcane perception"

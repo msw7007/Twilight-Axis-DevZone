@@ -1,0 +1,5 @@
+author: "Geevies"
+delete-after: True
+changes:
+  - balance: "The Empowerment Array ritual's lesser and greater buffs no longer stack. If you have a greater one, the lesser will do nothing. If you have a lesser, the greater will replace it."
+  - balance: "You can now have three of these buffs active at a time, instead of two."

@@ -363,3 +363,15 @@
   ToasterStrudes:
   - rscadd: Added new Venard sounds!
   - rscadd: Added friendly Venard sounds to Mimi the Guild Pet.
+2025-12-21:
+  FreeStylaLT:
+  - bugfix: Fixed Limbguard Special straining the user when they try to kick with
+      it active.
+  Hollyhock:
+  - rscadd: Added a variant of the bug snouts without fluffy moth antennae.
+  - rscadd: Gave revenants the antennae ears that wild-kin have.
+  JustSomeGalSS13:
+  - bugfix: Summoning a primordial while your face is concealed will no longer make
+      your the primordial hostile to you
+  hubertjones:
+  - bugfix: marshal appropriately gets scabbard and sheath
