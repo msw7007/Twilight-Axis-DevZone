@@ -267,7 +267,7 @@
 	if(!part)
 		return
 
-	var/effective_pain = max(0, pain_amt - 1)
+	var/effective_pain = max(0, pain_amt)
 	if(effective_pain <= 0)
 		return
 	
@@ -278,7 +278,7 @@
 	if(!prob(chance))
 		return
 
-	var/damage = ((applied_force == SEX_FORCE_EXTREME) ? max(1, effective_pain /2) : 0.5)
+	var/damage = ((applied_force == SEX_FORCE_EXTREME) ? max(1, effective_pain * 2) : 0.5)
 	user.apply_damage(damage, BRUTE, zone)
 
 /datum/component/arousal/get_arousal(datum/source, list/arousal_data)
