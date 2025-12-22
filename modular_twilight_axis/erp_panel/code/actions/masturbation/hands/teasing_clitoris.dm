@@ -1,7 +1,7 @@
 /datum/sex_panel_action/self/hands/teasing_clitoris
 	abstract_type = FALSE
 
-	name = "Фингеринг вагинальный"
+	name = "Ласкать клитор"
 	required_target = SEX_ORGAN_VAGINA
 	armor_slot_init = BODY_ZONE_PRECISE_GROIN
 
