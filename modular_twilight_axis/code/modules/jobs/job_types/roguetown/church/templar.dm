@@ -88,6 +88,8 @@
 			cloak = /obj/item/clothing/cloak/templar/xylixian
 			mask = /obj/item/clothing/mask/rogue/facemask/xylixmask/armored //TA edit
 			H.cmode_music = 'sound/music/combat_jester.ogg'
+			var/datum/inspiration/I = new /datum/inspiration(H)
+			I.grant_inspiration(H, bard_tier = BARD_T1)
 		if(/datum/patron/divine/dendor)
 			wrists = /obj/item/clothing/neck/roguetown/psicross/dendor
 			cloak = /obj/item/clothing/cloak/tabard/crusader/dendor
@@ -117,7 +119,7 @@
 			mask = /obj/item/clothing/head/roguetown/roguehood/ravoxgorget
 			wrists = /obj/item/clothing/neck/roguetown/psicross/ravox
 			cloak = /obj/item/clothing/cloak/templar/ravox
-			backpack_contents = list(/obj/item/ritechalk, /obj/item/book/rogue/law, /obj/item/clothing/mask/rogue/facemask/steel)
+			backpack_contents = list(/obj/item/ritechalk, /obj/item/book/rogue/law, /obj/item/clothing/mask/rogue/facemask/steel, /obj/item/rogueweapon/scabbard/sheath = 1, /obj/item/storage/keyring/churchie)
 		if(/datum/patron/divine/malum)
 			head = /obj/item/clothing/head/roguetown/roguehood
 			wrists = /obj/item/clothing/neck/roguetown/psicross/malum

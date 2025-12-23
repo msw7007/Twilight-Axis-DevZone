@@ -40,6 +40,10 @@
 	var/sheathe_time = 0.1 SECONDS
 	var/sheathe_sound = 'sound/foley/equip/scabbard_holster.ogg'
 
+/obj/item/rogueweapon/scabbard/get_mechanics_examine(mob/user)
+	. = ..()
+	. += span_info("Left click to sheath a weapon, or to draw a sheathed weapon. Will only draw if held in hand, belt, or back.")
+	. += span_info("Right click to draw a sheathed weapon.")
 
 /obj/item/rogueweapon/scabbard/attack_obj(obj/O, mob/living/user)
 	return FALSE
@@ -139,11 +143,18 @@
 
 
 /obj/item/rogueweapon/scabbard/attack_hand(mob/user)
+	var/is_in_slot = TRUE
+	if(ishuman(user))
+		var/mob/living/carbon/human/human = user
+		is_in_slot = (src in (list(human.backl, human.backr, human.beltl, human.beltr) + human.get_inactive_held_item()))
+	if(sheathed && is_in_slot)
+		return puke_sword(user)
+	return ..()
+
+/obj/item/rogueweapon/scabbard/attack_right(mob/user)
 	if(sheathed)
 		return puke_sword(user)
-
-	..()
-
+	return ..()
 
 /obj/item/rogueweapon/scabbard/attackby(obj/item/I, mob/user, params)
 	if(!sheathed)
@@ -258,7 +269,7 @@
 
 /obj/item/rogueweapon/scabbard/sheath
 	name = "dagger sheath"
-	desc = "A slingable sheath made of leather, meant to host surprises in smaller sizes."
+	desc = "A slingable sheath made of leather, meant to host surprises in smaller sizes. </br>By middle-clicking the sheath while it's unoccupied, I can strip off the coverings and turn it into a light weapon strap."
 	sewrepair = TRUE
 
 	icon_state = "sheath"
@@ -607,7 +618,7 @@
 
 /obj/item/rogueweapon/scabbard/sword
 	name = "simple scabbard"
-	desc = "The natural evolution to the advent of longblades."
+	desc = "The natural evolution to the advent of longblades. </br>By middle-clicking the scabbard while it's unoccupied, I can strip off the coverings and turn it into a weapon strap."
 
 	icon_state = "scabbard"
 	item_state = "scabbard"
@@ -772,7 +783,7 @@
 /obj/item/rogueweapon/scabbard/sword/kazengun/noparry
 	name = "ceremonial kazengun scabbard"
 	desc = "A simple wooden scabbard, trimmed with bronze. Unlike its steel cousins, this one cannot parry."
-	
+
 	valid_blade = /obj/item/rogueweapon/sword/long/kriegmesser/ssangsudo
 	can_parry = FALSE
 

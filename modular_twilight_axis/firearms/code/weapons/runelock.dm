@@ -12,7 +12,6 @@
 	w_class = WEIGHT_CLASS_BULKY
 	spread = 10
 	recoil = 3
-	associated_skill = /datum/skill/combat/maces
 	force = 10
 	var/cocked = FALSE
 	cartridge_wording = "runed sphere"
@@ -26,7 +25,7 @@
 	var/misfire_chance = 0
 	/// Reload time, in SECONDS
 	var/reload_time = 8
-	damfactor = 0.7
+	damfactor = 0.8
 	var/critfactor = 0.7
 	var/npcdamfactor = 2
 

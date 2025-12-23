@@ -24,6 +24,8 @@ GLOBAL_LIST_EMPTY(vampire_objects)
 	var/datum/clan/forcing_clan
 	var/generation
 	var/research_points = 10
+	var/max_thralls = 0
+	var/thrall_count = 0
 
 /datum/antagonist/vampire/New(incoming_clan = /datum/clan/nosferatu, forced_clan = FALSE, generation)
 	. = ..()
@@ -78,6 +80,21 @@ GLOBAL_LIST_EMPTY(vampire_objects)
 		vampdude.hud_used?.initialize_bloodpool()
 		vampdude.hud_used?.bloodpool.set_fill_color("#510000")
 
+		switch(generation) 
+			if(GENERATION_METHUSELAH)
+				vampdude?.adjust_skillrank_up_to(/datum/skill/magic/blood, 6, TRUE)
+			if(GENERATION_ANCILLAE)
+				vampdude?.adjust_skillrank_up_to(/datum/skill/magic/blood, 5, TRUE)
+			if(GENERATION_NEONATE)
+				vampdude?.adjust_skillrank_up_to(/datum/skill/magic/blood, 4, TRUE) // Licker Wretch
+			if(GENERATION_THINBLOOD)
+				vampdude?.adjust_skillrank_up_to(/datum/skill/magic/blood, 3, TRUE) // You are not even an antagonist
+			else
+				vampdude?.adjust_skillrank_up_to(/datum/skill/magic/blood, 2, TRUE) // Default weight if generation not set
+
+		if(HAS_TRAIT(vampdude, TRAIT_DNR)) //if you have DNR, we add dustable
+			ADD_TRAIT(vampdude, TRAIT_DUSTABLE, TRAIT_GENERIC)
+
 		if(!forced)
 			// Show clan selection interface
 			if(!clan_selected)
@@ -85,9 +102,15 @@ GLOBAL_LIST_EMPTY(vampire_objects)
 			else
 				// Apply the selected clan
 				vampdude.set_clan(default_clan)
+			max_thralls = 1
 		else
 			vampdude.set_clan_direct(forcing_clan)
 			forcing_clan = null
+
+		if(vampdude.job == "Wretch")
+			max_thralls = 1
+		if(vampdude.mind.special_role == "Vampire Lord")
+			max_thralls = 0
 
 	// The clan system now handles most of the setup, but we can still do antagonist-specific things
 	after_gain()
@@ -158,6 +181,8 @@ GLOBAL_LIST_EMPTY(vampire_objects)
 		var/mob/living/carbon/human/vampdude = owner.current
 		// Remove the clan when losing antagonist status
 		vampdude.set_clan(null)
+		if(HAS_TRAIT(vampdude, TRAIT_DUSTABLE)) //if you have DNR, we add dustable
+			REMOVE_TRAIT(vampdude, TRAIT_DUSTABLE, TRAIT_GENERIC)
 	owner.current?.hud_used?.shutdown_bloodpool()
 	if(!silent && owner.current)
 		to_chat(owner.current, span_danger("I am no longer a [job_rank]!"))
