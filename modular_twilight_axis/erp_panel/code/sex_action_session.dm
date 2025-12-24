@@ -15,11 +15,12 @@
 
 	var/next_tick_time = 0
 
-/datum/sex_action_session/New(datum/sex_session_tgui/S, datum/sex_panel_action/A, actor_node, partner_node)
+/datum/sex_action_session/New(datum/sex_session_tgui/S, datum/sex_panel_action/A, actor_node, partner_node, action_key)
 	. = ..()
 	session = S
 
 	START_PROCESSING(SSerp_sytem, src)
+	action_type = action_key
 
 	if(A)
 		var/datum/sex_panel_action/new_action = new A.type
@@ -40,10 +41,10 @@
 		new_action.climax_liquid_mode_active  = A.climax_liquid_mode_active
 		new_action.climax_liquid_mode_passive = A.climax_liquid_mode_passive
 
-		new_action.message_on_start        = A.message_on_start
-		new_action.message_on_perform      = A.message_on_perform
-		new_action.message_on_finish       = A.message_on_finish
-		new_action.message_on_climax_actor = A.message_on_climax_actor
+		new_action.message_on_start         = A.message_on_start
+		new_action.message_on_perform       = A.message_on_perform
+		new_action.message_on_finish        = A.message_on_finish
+		new_action.message_on_climax_actor  = A.message_on_climax_actor
 		new_action.message_on_climax_target = A.message_on_climax_target
 
 		new_action.actor_sex_hearts            = A.actor_sex_hearts
@@ -62,7 +63,6 @@
 		new_action.session = src
 
 		action = new_action
-		action_type = action.type
 
 	instance_id = "[REF(src)]"
 	actor_node_id = actor_node

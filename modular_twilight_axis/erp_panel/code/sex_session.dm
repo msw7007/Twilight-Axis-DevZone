@@ -903,9 +903,10 @@
 			continue
 		new_partners += M
 
+	var/old_len = partners.len
 	partners = new_partners
 
-	if(length(new_partners) != partners.len)
+	if(length(new_partners) != old_len)
 		dirty_partners = TRUE
 		dirty_org_nodes = TRUE
 		dirty_actions = TRUE
@@ -940,8 +941,9 @@
 	if(!can_execute_action(A, a_id, p_id, TRUE))
 		return
 
-	var/datum/sex_action_session/existing = find_existing_action_session(A, a_id, p_id)
+	var/datum/sex_action_session/existing = find_existing_action_session(action_type, a_id, p_id)
 	if(existing)
+		existing.action_type = action_type
 		existing.speed = global_speed
 		existing.force = global_force
 		SStgui.update_uis(src)
@@ -951,7 +953,8 @@
 	if(cat)
 		locked_actor_categories |= cat
 
-	var/datum/sex_action_session/I = new(src, A, a_id, p_id)
+	var/datum/sex_action_session/I = new(src, A, a_id, p_id, action_type)
+	I.action_type = action_type
 	I.speed = global_speed
 	I.force = global_force
 
@@ -1639,8 +1642,8 @@
 
 	return TRUE
 
-/datum/sex_session_tgui/proc/find_existing_action_session(datum/sex_panel_action/A, actor_node_id, partner_node_id)
-	if(!A || !actor_node_id || !partner_node_id)
+/datum/sex_session_tgui/proc/find_existing_action_session(action_key, actor_node_id, partner_node_id)
+	if(!action_key || !actor_node_id || !partner_node_id)
 		return null
 	if(!length(current_actions))
 		return null
@@ -1650,7 +1653,7 @@
 		if(!I || QDELETED(I) || !I.action)
 			continue
 
-		if(I.action_type != A.type)
+		if(I.action_type != action_key)
 			continue
 		if(I.actor_node_id != actor_node_id)
 			continue
