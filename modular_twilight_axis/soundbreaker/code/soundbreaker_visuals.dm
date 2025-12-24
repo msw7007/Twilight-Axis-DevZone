@@ -164,10 +164,15 @@
 /proc/sb_fire_sound_note(mob/living/user, damage_mult = 0.5, damage_type = BRUTE, zone = BODY_ZONE_CHEST)
 	if(!user)
 		return
-	var/turf/start = get_turf(user)
+	var/dir = user.dir
+	if(!dir)
+		dir = SOUTH
+	var/turf/start = get_step(user, dir)
 	if(!start)
 		return
+	if(start.density)
+		return null	
 
 	var/obj/projectile/soundbreaker_note/P = new(start, user, damage_mult, damage_type, zone)
 	P.setDir(user.dir)
-	P.fire(angle = user.dir, direct_target = user)
+	P.fire(angle = user.dir)

@@ -291,23 +291,21 @@
 	mouse_opacity = MOUSE_OPACITY_TRANSPARENT
 
 #define ATTACK_OVERRIDE_NODEFENSE 2
+
 /obj/item/soundbreaker_proxy/attack(mob/living/M, mob/living/user)
 	var/override_status
 	last_attack_success = FALSE
 	last_attack_target = null
-	
-	// Item signal for override
+
 	if(SEND_SIGNAL(src, COMSIG_ITEM_ATTACK, M, user) & COMPONENT_ITEM_NO_ATTACK)
 		return FALSE
 
-	// Receiver signal for overrides
 	var/_receiver_signal = SEND_SIGNAL(M, COMSIG_MOB_ITEM_BEING_ATTACKED, M, user, src)
 	if(_receiver_signal & COMPONENT_ITEM_NO_ATTACK)
 		return FALSE
 	else if(_receiver_signal & COMPONENT_ITEM_NO_DEFENSE)
 		override_status = ATTACK_OVERRIDE_NODEFENSE
 
-	// Attacker signal generic + override for no defense
 	var/_attacker_signal = SEND_SIGNAL(user, COMSIG_MOB_ITEM_ATTACK, M, user, src)
 	if(_attacker_signal & COMPONENT_ITEM_NO_ATTACK)
 		return FALSE
@@ -352,8 +350,6 @@
 		return
 	if(QDELETED(src) || QDELETED(M))
 		return
-	if(!user.CanReach(M, src))
-		return
 
 	if(user.incapacitated())
 		return
@@ -386,7 +382,6 @@
 			user.adjustBruteLoss(5)
 			user.apply_status_effect(/datum/status_effect/churned, M)
 
-	// Niche signal for post-swingdelay attacks
 	_attacker_signal = null
 	_attacker_signal = SEND_SIGNAL(user, COMSIG_MOB_ITEM_ATTACK_POST_SWINGDELAY, M, user, src)
 	if(_attacker_signal & COMPONENT_ITEM_NO_ATTACK)
@@ -401,8 +396,9 @@
 	SEND_SIGNAL(src, COMSIG_ITEM_ATTACK_SUCCESS, M, user)
 	SEND_SIGNAL(M, COMSIG_ITEM_ATTACKED_SUCCESS, src, user)
 
-	// дисармы по зонам рук — оставляем как у оффа (если тебе это не нужно, скажи — уберём)
-	if(user.zone_selected == BODY_ZONE_PRECISE_R_INHAND)
+	var/sb_zone = user.zone_selected
+
+	if(sb_zone == BODY_ZONE_PRECISE_R_INHAND)
 		var/offh = 0
 		var/obj/item/W = M.held_items[1]
 		if(W)
@@ -414,7 +410,7 @@
 							span_boldwarning("I'm disarmed by [user]!"))
 			return
 
-	if(user.zone_selected == BODY_ZONE_PRECISE_L_INHAND)
+	if(sb_zone == BODY_ZONE_PRECISE_L_INHAND)
 		var/offh = 0
 		var/obj/item/W = M.held_items[2]
 		if(W)
@@ -426,18 +422,66 @@
 							span_boldwarning("I'm disarmed by [user]!"))
 			return
 
-	if(M.attacked_by(src, user))
-		last_attack_success = TRUE
-		last_attack_target = M
-		if(user.used_intent == cached_intent)
-			var/tempsound = user.used_intent.hitsound
-			if(tempsound)
-				playsound(M.loc, tempsound, 100, FALSE, -1)
-			else
-				playsound(M.loc, "nodmg", 100, FALSE, -1)
+	var/selzone
+	if(sb_zone)
+		selzone = sb_zone
+	else
+		selzone = accuracy_check(user.zone_selected, user, M, /datum/skill/combat/unarmed, user.used_intent)
 
-	log_combat(user, M, "attacked", src.name, "(INTENT: [uppertext(user.used_intent.name)]) (DAMTYPE: [uppertext(damtype)])")
-	add_fingerprint(user)
+	var/obj/item/bodypart/affecting = M.get_bodypart(check_zone(selzone))
+	if(!affecting)
+		to_chat(user, span_warning("Unfortunately, there's nothing there."))
+		return FALSE
+
+	var/mob/living/carbon/human/target = M
+	if(!target)
+		return
+	
+	if(!target.lying_attack_check(user))
+		return FALSE
+	if(target.has_status_effect(/datum/status_effect/buff/clash) && target.get_active_held_item() && ishuman(user))
+		var/obj/item/IM = target.get_active_held_item()
+		target.process_clash(user, IM)
+		return FALSE
+
+	var/attack_flag = soundbreaker_get_damage_flag(thrown_bclass, damtype)
+	var/armor_block = target.run_armor_check(
+		selzone,
+		attack_flag,
+		armor_penetration = armor_penetration,
+		blade_dulling = user.used_intent?.blade_class,
+		damage = force_dynamic,
+		intdamfactor = user.used_intent?.intent_intdamage_factor
+	)
+
+	target.next_attack_msg.Cut()
+	var/nodmg = FALSE
+	if(!target.apply_damage(force_dynamic, damtype, affecting, armor_block))
+		nodmg = TRUE
+		target.next_attack_msg += VISMSG_ARMOR_BLOCKED
+	else
+		affecting.bodypart_attacked_by(
+			thrown_bclass,
+			force_dynamic,
+			user,
+			selzone,
+			crit_message = TRUE,
+			armor = armor_block,
+			weapon = src
+		)
+
+		SEND_SIGNAL(target, COMSIG_ATOM_ATTACK_HAND, user)
+		if(affecting.body_zone == BODY_ZONE_HEAD)
+			SEND_SIGNAL(user, COMSIG_HEAD_PUNCHED, target)
+
+
+	target.send_item_attack_message(src, user, selzone)
+
+	target.next_attack_msg.Cut()
+	target.retaliate(user)
+
+	last_attack_target = target
+	last_attack_success = !nodmg
 	return last_attack_success
 
 #undef ATTACK_OVERRIDE_NODEFENSE

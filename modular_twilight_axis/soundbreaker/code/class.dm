@@ -4,7 +4,7 @@
 	outfit = /datum/outfit/job/roguetown/adventurer/soundbreaker
 	cmode_music = 'sound/music/cmode/adventurer/combat_outlander3.ogg'
 	traits_applied = list(
-		TRAIT_DODGEEXPERT,
+		TRAIT_CRITICAL_RESISTANCE, TRAIT_GOODLOVER, TRAIT_EMPATH
 	)
 	class_select_category = CLASS_CAT_ROGUE
 	category_tags = list(CTAG_ADVENTURER)
