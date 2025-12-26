@@ -30,8 +30,6 @@
 
 	note_history = list()
 	note_overlays = list()
-
-	// soundbreaker-specific signals from external systems
 	RegisterSignal(owner, COMSIG_SOUNDBREAKER_PRIME_NOTE, PROC_REF(_sig_prime_note))
 	RegisterSignal(owner, COMSIG_SOUNDBREAKER_TRY_CONSUME_PREPARED, PROC_REF(_sig_try_consume_prepared))
 	RegisterSignal(owner, COMSIG_SOUNDBREAKER_RIFF_DEFENSE_SUCCESS, PROC_REF(_sig_riff_defense_success))
@@ -122,13 +120,9 @@
 	return TRUE
 
 /datum/component/combo_core/soundbreaker/OnHistoryChanged()
-	// Soundbreaker note visuals: show last notes overhead.
-	// (history is only updated on hits)
 	UpdateNoteOverlays()
 
 /datum/component/combo_core/soundbreaker/OnHistoryCleared(reason)
-	// Core history clear is NOT the same as rhythm reset (stacks/status),
-	// but Soundbreaker wants visuals gone when rhythm is cleared.
 	ClearNoteIcons()
 
 // ----------------- external signal handlers -----------------
@@ -145,11 +139,9 @@
 	if(!owner)
 		return 0
 
-	// быстрый синхронный гейт: если не подготовлено — не трогаем обычную атаку
 	if(!owner.has_status_effect(/datum/status_effect/buff/soundbreaker_prepared))
 		return 0
 
-	// подготовлено -> гасим обычный удар и в async исполняем ноту
 	INVOKE_ASYNC(src, PROC_REF(TryConsumePreparedAttack), target, zone)
 	return COMPONENT_SOUNDBREAKER_CONSUMED
 
@@ -172,7 +164,6 @@
 
 /datum/component/combo_core/soundbreaker/proc/_sig_combo_cleared(datum/source)
 	SIGNAL_HANDLER
-	// External systems (status remove) say "combo cleared" => reset visuals/history.
 	ClearNoteIcons()
 	ClearHistory("external_clear")
 	return 0
@@ -184,10 +175,7 @@
 
 	var/mob/living/L = owner
 
-	// На всякий: если вдруг компонент перевесили/реинициализировали
 	RevokeSpells()
-
-	// Выдаём спеллы
 	var/list/paths = list(
 		/obj/effect/proc_holder/spell/self/soundbreaker/bend,
 		/obj/effect/proc_holder/spell/self/soundbreaker/bare,
@@ -232,9 +220,7 @@
 	if(!owner || !note_id)
 		return
 
-	// register in combo core history (this triggers matching)
 	RegisterInput(note_id, target, zone, null)
-
 	ShowNoteIcon(note_id)
 	AddComboStack()
 
@@ -278,8 +264,6 @@
 		nname = NoteDisplayName(note_id)
 
 	var/datum/status_effect/buff/soundbreaker_prepared/P = owner.has_status_effect(/datum/status_effect/buff/soundbreaker_prepared)
-
-	// if same note, reapply/refresh payload
 	if(P && P.note_id == note_id)
 		owner.remove_status_effect(/datum/status_effect/buff/soundbreaker_prepared)
 		owner.apply_status_effect(/datum/status_effect/buff/soundbreaker_prepared, note_id, damage_mult, damage_type, nname)
@@ -331,14 +315,11 @@
 
 	owner.remove_status_effect(/datum/status_effect/buff/soundbreaker_prepared)
 	owner.stamina_add(GetNoteStaminaCost())
-
-	// Note executes ALWAYS (even if target is null)
 	var/mob/living/last_hit = ExecuteNote(target, note_id, damage_mult, damage_type, zone)
 
 	if(last_hit)
 		OnHit(last_hit, note_id, zone)
 	else
-		// whiff sound (your original behavior)
 		playsound(owner, 'sound/combat/sp_whip_whiff.ogg', 40, TRUE)
 
 	return TRUE
@@ -448,7 +429,6 @@
 	var/obj/item/active = owner.get_active_held_item()
 	P.name = active ? active.name : "soundbreaking strike"
 
-	// main swing
 	var/old_hand = owner.active_hand_index
 	P.last_attack_success = FALSE
 	P.last_attack_target = null
@@ -457,7 +437,7 @@
 	P.melee_attack_chain(owner, target, params)
 	var/success_main = P.last_attack_success
 
-	// dual swing (same as your original)
+	// dual swing
 	var/success_off = FALSE
 	if(HAS_TRAIT(owner, TRAIT_DUALWIELDER))
 		var/offhand_index = (old_hand == 1) ? 2 : 1
@@ -657,7 +637,6 @@
 		target.safe_throw_at(dest, tiles, 1, owner, force = MOVE_FORCE_NORMAL)
 
 // ----------------- Note visuals (overhead) -----------------
-
 /datum/component/combo_core/soundbreaker/proc/GetNoteIconState(note_id)
 	switch(note_id)
 		if(SOUNDBREAKER_NOTE_BEND) return "note_strike"
@@ -741,8 +720,6 @@
 	target.play_overhead_indicator_flick(SOUNDBREAKER_NOTES_ICON, icon_state, duration, ABOVE_MOB_LAYER + 0.3, null, 16, 0)
 
 // ----------------- FX helpers (use your existing FX objects) -----------------
-
-
 /datum/component/combo_core/soundbreaker/proc/sb_fx_ring(turf/T)
 	if(!T)
 		return
@@ -838,7 +815,6 @@
 	return null
 
 // ----------------- Notes play procs -----------------
-
 /datum/component/combo_core/soundbreaker/proc/NoteBendPlay(mob/living/primary, damage_mult, damage_type, zone)
 	var/turf/T = GetFrontTurf(1)
 	if(!T)
@@ -943,40 +919,31 @@
 	var/intent = owner.used_intent?.type
 	var/allow_attack = (intent != INTENT_HELP)
 
-	// 1-й тайл рывка
+	// 1-st tile
 	var/turf/t1 = get_step(start, dash_dir)
 	if(!t1 || _turf_is_dash_blocked(t1))
-		// стоп перед препятствием (т.е. остаёмся на месте)
 		soundbreaker_spawn_afterimage(owner, start, 0.8 SECONDS)
 		return null
 
-	// 2-й тайл рывка
+	// 2-nd tile
 	var/turf/t2 = get_step(t1, dash_dir)
 	if(!t2 || _turf_is_dash_blocked(t2))
-		// можем встать только на t1
 		soundbreaker_spawn_afterimage(owner, start, 0.8 SECONDS)
 		soundbreaker_spawn_afterimage(owner, t1, 0.8 SECONDS)
 		owner.forceMove(t1)
-
-		// ударяем по тому, кто на t1 (если есть)
 		var/mob/living/v1 = _first_living_on_turf(t1)
 		if(v1 && allow_attack)
 			last_hit = v1
 			owner.face_atom(v1)
 		return last_hit
 
-	// Оба тайла чистые => базовый рывок на 2
 	soundbreaker_spawn_afterimage(owner, start, 0.8 SECONDS)
 	soundbreaker_spawn_afterimage(owner, t1, 0.8 SECONDS)
-
-	// Проверяем, есть ли моб на t2 (приоритет) или на t1
 	var/mob/living/v2 = _first_living_on_turf(t2)
 	var/mob/living/v1 = _first_living_on_turf(t1)
 
 	if(v2)
-		// Моб на 2-м тайле:
-		// "можно сделать доп. шаг за спину, но только если за мобом нет стены, иначе на его тайтл"
-		var/turf/behind2 = get_step(t2, dash_dir) // "за спину" по направлению рывка
+		var/turf/behind2 = get_step(t2, dash_dir)
 		if(behind2 && !_turf_is_dash_blocked(behind2))
 			owner.forceMove(behind2)
 		else
@@ -987,15 +954,12 @@
 			last_hit = v2
 
 	else if(v1)
-		// Моб на 1-м тайле: прыгаем "сквозь" до t2 (как рывок на 2),
-		// но поворачиваемся к нему (ты так и писал)
 		owner.forceMove(t2)
 		owner.face_atom(v1)
 		if(allow_attack)
 			last_hit = v1
 
 	else
-		// никого — просто рывок на 2
 		owner.forceMove(t2)
 
 	if(last_hit)
@@ -1023,7 +987,6 @@
 	return last_hit
 
 // ----------------- Riff defense proc -----------------
-
 /datum/component/combo_core/soundbreaker/proc/RiffOnSuccessfulDefense()
 	if(!owner)
 		return
@@ -1054,7 +1017,6 @@
 	ResetRhythm()
 
 /datum/component/combo_core/soundbreaker/proc/ComboTempoFlick(mob/living/target)
-	// projectile spit note
 	sb_fire_sound_note(owner, 0.5, BRUTE, BODY_ZONE_CHEST)
 	ResetRhythm()
 

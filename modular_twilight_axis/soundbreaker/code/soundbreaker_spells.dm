@@ -30,7 +30,6 @@
 	action_icon = 'modular_twilight_axis/soundbreaker/icons/soundspells.dmi'
 
 /obj/effect/proc_holder/spell/self/soundbreaker/cast(list/targets, mob/living/user)
-	// ВАЖНО: возвращаем механику кулдауна (раньше её съедало отсутствие ..())
 	. = ..()
 	if(!isliving(user))
 		return
@@ -39,7 +38,6 @@
 	if(L.incapacitated())
 		return
 
-	// мгновенно заготавливаем удар на 5 секунд
 	if(!soundbreaker_prime_note(L, note_id, damage_mult, damage_type, name))
 		return
 

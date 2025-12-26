@@ -10,7 +10,7 @@
 // - optionally override OnHistoryChanged()/OnHistoryCleared()
 // - optionally push inputs directly via RegisterInput() (no signals inside component)
 
-/// One entry in history
+
 /datum/combo_input_entry
 	var/skill_id
 	var/time
@@ -35,8 +35,8 @@
 	var/combo_window = 8 SECONDS
 	var/max_history = 5
 
-	var/list/history // list(/datum/combo_input_entry)
-	var/list/rules   // list(/datum/combo_rule)
+	var/list/history
+	var/list/rules
 
 	var/last_input_time = 0
 	var/_expire_stamp = 0
@@ -73,7 +73,6 @@
 // ----------------- Virtuals -----------------
 
 /// Child defines rules: call RegisterRule(rule_id, pattern, priority)
-/// pattern must be a list()
 /datum/component/combo_core/proc/DefineRules()
 	return
 
@@ -86,8 +85,6 @@
 	return
 
 /// How to consume history on combo fire.
-/// Default: clear all.
-/// Child can override for other designs.
 /datum/component/combo_core/proc/ConsumeOnCombo(rule_id)
 	ClearHistory("combo")
 	return
@@ -110,7 +107,6 @@
 	rules = sortTim(rules, /proc/_combo_rule_cmp)
 
 /proc/_combo_rule_cmp(datum/combo_rule/A, datum/combo_rule/B)
-	// descending priority
 	if(A.priority > B.priority) return -1
 	if(A.priority < B.priority) return 1
 	return 0

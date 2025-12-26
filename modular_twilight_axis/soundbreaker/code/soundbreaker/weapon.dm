@@ -223,13 +223,11 @@
 	icon = SOUNDBREAKER_FX_ICON
 	icon_state = SB_FX_PROJ_NOTE
 
-	// подгони под свою баллистику
 	speed = 1
 	range = 7
 	damage = 0
 	anchored = FALSE
 
-	/// payload
 	var/mob/living/owner
 	var/damage_mult = 0.5
 	damage_type = BRUTE
