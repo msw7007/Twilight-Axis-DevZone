@@ -399,9 +399,6 @@
 	if(ishuman(src))
 		var/mob/living/carbon/human/H = src
 		H.stamina_add(used_intent.misscost)
-	if(used_intent.is_attack_swing())
-		atkswinging = null
-		return
 
 //Is the atom obscured by a PREVENT_CLICK_UNDER_1 object above it
 /atom/proc/IsObscured()
