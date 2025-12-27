@@ -177,21 +177,38 @@
 			action_object.try_knot_on_climax(source, partner)
 
 	if(return_type == "into")
+		var/receiving_organ_type = null
+
+		if(session_object.actor == source)
+			receiving_organ_type = session_tgui_object.node_organ_type(session_object.partner_node_id)
+		else
+			receiving_organ_type = session_tgui_object.node_organ_type(session_object.actor_node_id)
+
+		if(receiving_organ_type != SEX_ORGAN_VAGINA)
+			return
+
 		var/mob/living/carbon/human/mother = partner
 		var/mob/living/carbon/human/father = source
-		if(istype(mother) && istype(father))
-			var/obj/item/organ/vagina/vag = mother.getorganslot(ORGAN_SLOT_VAGINA)
-			if(vag && vag.sex_organ)
-				var/list/arousal_data = list()
-				SEND_SIGNAL(mother, COMSIG_SEX_GET_AROUSAL, arousal_data)
-				var/mother_arousal = arousal_data["arousal"] || 0
-				var/knot_bonus = 0
-				var/datum/component/knotting/knot_comp = father.GetComponent(/datum/component/knotting)
-				if(knot_comp)
-					knot_bonus = knot_comp.get_pregnancy_bonus(mother)
 
-				var/datum/sex_organ/vagina/vag_datum = vag.sex_organ
-				vag_datum.on_intimate_climax(father, mother_arousal, knot_bonus)
+		if(!istype(mother) || !istype(father))
+			return
+
+		var/obj/item/organ/vagina/vag = mother.getorganslot(ORGAN_SLOT_VAGINA)
+		if(!vag || !vag.sex_organ)
+			return
+
+		var/list/arousal_data = list()
+		SEND_SIGNAL(mother, COMSIG_SEX_GET_AROUSAL, arousal_data)
+
+		var/mother_arousal = arousal_data["arousal"] || 0
+		var/knot_bonus = 0
+
+		var/datum/component/knotting/knot_comp = father.GetComponent(/datum/component/knotting)
+		if(knot_comp)
+			knot_bonus = knot_comp.get_pregnancy_bonus(mother)
+
+		var/datum/sex_organ/vagina/vag_datum = vag.sex_organ
+		vag_datum.on_intimate_climax(father, mother_arousal, knot_bonus)
 
 /datum/component/arousal/receive_sex_action(datum/source, arousal_amt, pain_amt, giving, applied_force, applied_speed, organ_id)
 	var/mob/user = parent
@@ -574,7 +591,7 @@
 		return
 
 	var/chosen_emote
-	if(arousal < 85)
+	if(arousal < 99)
 		chosen_emote = "sexmoanlight"
 	else
 		chosen_emote = "sexmoanhvy"

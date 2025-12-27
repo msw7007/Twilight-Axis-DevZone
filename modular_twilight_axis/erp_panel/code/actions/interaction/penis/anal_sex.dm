@@ -20,7 +20,7 @@
 	message_on_perform = "{actor} {pose}, {force} и {speed} трахает {partner} в задницу{knot}."
 	message_on_finish  = "{actor} вытаскивает член из попки {partner}."
 	message_on_climax_actor  = "{actor} кончает в попку {partner}."
-	message_on_climax_target = "{partner} кончает сжимая анус вокруг членов {actor}."
+	message_on_climax_target = "{partner} кончает сжимая анус вокруг члена {actor}."
 	climax_liquid_mode_active = "into"
 	climax_liquid_mode_passive = "onto"
 

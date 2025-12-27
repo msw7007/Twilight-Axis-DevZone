@@ -120,3 +120,18 @@
 				H.dropItemToGround(H.mouth, silent = FALSE)
 			return
 	..()
+
+/datum/emote/living/moan
+	key = "moan"
+	key_third_person = "moans"
+	message = "moans."
+	message_mime = "appears to moan!"
+	emote_type = EMOTE_AUDIBLE
+	message_muffled = "makes a muffled moan!"
+	show_runechat = TRUE
+
+/mob/living/carbon/human/verb/moan()
+	set name = "Moan"
+	set category = "Noises"
+
+	emote("moan", intentional = TRUE)
