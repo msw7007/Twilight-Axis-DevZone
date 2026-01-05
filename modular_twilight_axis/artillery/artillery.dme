@@ -1,0 +1,7 @@
+#include "code\core\subsystem.dm"
+#include "code\core\component.dm"
+
+#include "code\instruments.dm"
+#include "code\powder.dm"
+#include "code\shells.dm"
+#include "code\mortar.dm"

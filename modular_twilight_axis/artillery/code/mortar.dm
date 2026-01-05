@@ -1,228 +1,172 @@
+// ================================================
+// mortar.dm
+// ================================================
+
 /obj/structure/artillery/mortar
 	name = "mortar"
-	desc = "A crude mortar. Needs an azimuth and a powder charge."
-	icon = 'icons/obj/artillery.dmi'
-	icon_state = "mortar"
+	desc = "A crude mortar. Requires a shell, powder charge, and an azimuth."
+	//icon = 'icons/obj/artillery.dmi'
+	//icon_state = "mortar"
 
-	anchored = TRUE
+	anchored = FALSE
 	density = TRUE
+	// Pullable like a chest:
+	// INTEGRATION: if your codebase has a proper flag/property, set it here.
 
-	/// Loaded projectile
+	var/broken = FALSE
+
+	// payload
 	var/obj/item/artillery_shell/loaded_shell
-	/// Powder measures loaded (1..ART_CHARGE_MAX)
-	var/powder_measures = 0
-	/// Quality of the loaded powder (from keg batch)
-	var/powder_quality = 1.0
-	/// Moisture of the loaded powder (from keg batch)
-	var/powder_moisture = 0.0
 
-	/// Aim azimuth degrees 0..359
+	// aiming / charge
 	var/aim_azimuth = 0
 
-	/// Wear 0..100; affects safe charge and burst risk
-	var/wear = 0
+	var/powder_measures = 0
+	var/powder_quality = 1.0
+	var/powder_moisture = 0.0
 
-	/// Base safe max charge at wear=0
+	// durability
+	var/wear = 0 // 0..100
 	var/base_safe_charge = 7
 
-	/// Cooldown
-	var/next_fire_time = 0
-	var/fire_cooldown = 5 SECONDS
+/obj/structure/artillery/mortar/Initialize(mapload)
+	. = ..()
+	AddComponent(/datum/component/artillery_fcs)
 
 /obj/structure/artillery/mortar/examine(mob/user)
 	. = ..()
 	. += "Aim: [aim_azimuth]°."
-	. += "Loaded: [loaded_shell ? loaded_shell.name : "no shell"], powder: [powder_measures]/[ART_CHARGE_MAX]."
-	. += "Wear: [wear]%."
+	. += "Loaded shell: [loaded_shell ? loaded_shell.name : "none"]."
+	. += "Powder: [powder_measures]/[ART_CHARGE_MAX]. Wear: [wear]%."
 
 /obj/structure/artillery/mortar/proc/get_safe_charge_max()
-	// Worn barrel => less safe charge
+	// Worse barrel => less safe charge => easier burst
 	return clamp(base_safe_charge - round(wear / 25), 3, ART_CHARGE_MAX)
 
-/// Load a shell into the mortar
-/obj/structure/artillery/mortar/proc/load_shell(obj/item/artillery_shell/S, mob/living/user)
-	if(!S || loaded_shell)
-		return FALSE
-	loaded_shell = S
-	S.forceMove(src)
-	return TRUE
+/// Blend powder from keg into current charge
+/obj/structure/artillery/mortar/proc/blend_powder(new_quality, new_moisture, added_measures)
+	if(added_measures <= 0)
+		return
 
-/// Load powder measures from a keg
-/obj/structure/artillery/mortar/proc/load_powder(obj/item/artillery_powder_keg/K, amount, mob/living/user)
-	if(!K || amount <= 0)
-		return FALSE
-
-	if(powder_measures >= ART_CHARGE_MAX)
-		return FALSE
-
-	var/can_take = min(amount, ART_CHARGE_MAX - powder_measures)
-	var/list/taken = K.take_measures(can_take)
-	var/q = taken[1]
-	var/m = taken[2]
-	var/t = taken[3]
-
-	if(t <= 0)
-		return FALSE
-
-	// If already had powder loaded, blend qualities in a simple weighted way
 	if(powder_measures > 0)
-		var/total = powder_measures + t
-		powder_quality = ((powder_quality * powder_measures) + (q * t)) / total
-		powder_moisture = ((powder_moisture * powder_measures) + (m * t)) / total
+		var/total = powder_measures + added_measures
+		powder_quality = ((powder_quality * powder_measures) + (new_quality * added_measures)) / total
+		powder_moisture = ((powder_moisture * powder_measures) + (new_moisture * added_measures)) / total
 	else
-		powder_quality = q
-		powder_moisture = m
+		powder_quality = new_quality
+		powder_moisture = new_moisture
 
-	powder_measures += t
-	return TRUE
+	powder_measures += added_measures
+	powder_measures = clamp(powder_measures, 0, ART_CHARGE_MAX)
 
-/// Set aim azimuth (0..359)
-/obj/structure/artillery/mortar/proc/set_aim(new_azimuth)
-	aim_azimuth = (new_azimuth + 360) % 360
+/// Shell loading by hand: click mortar with shell
+/obj/structure/artillery/mortar/attackby(obj/item/I, mob/user, params)
+	. = ..()
+	if(broken)
+		return
 
-/// Main firing proc
-/obj/structure/artillery/mortar/proc/fire(mob/living/user)
-	if(world.time < next_fire_time)
-		to_chat(user, "The mortar needs time before the next shot.")
-		return FALSE
+	if(istype(I, /obj/item/artillery_shell))
+		if(loaded_shell)
+			to_chat(user, span_warning("A shell is already loaded."))
+			return
+		loaded_shell = I
+		I.forceMove(src)
+		to_chat(user, span_notice("You load [I] into [src]."))
+		return
 
-	if(!loaded_shell)
-		to_chat(user, "No shell loaded.")
-		return FALSE
-
-	if(powder_measures <= 0)
-		to_chat(user, "No powder loaded.")
-		return FALSE
-
-	next_fire_time = world.time + fire_cooldown
-
-	var/turf/origin = get_turf(src)
-	if(!origin)
-		return FALSE
-
-	// Ensure atmosphere exists
-	if(!GLOB.artillery_atmo)
-		init_artillery_atmo_roundstart()
-
-	var/datum/artillery_atmosphere/A = GLOB.artillery_atmo
-
-	// INTEGRATION: Use your real skill/stat
-	var/ranged = get_ranged_skill(user) // 0..100
-	var/pers = get_pers_stat(user) // 0..100
-
-	// Base force from charge * quality
-	var/base_force = powder_measures * powder_quality
-
-	// Optional: tiny skill bonus to "effective force" (keep small!)
-	var/skill_force_mult = 1.0 + (ranged / 1000) // +0..+10%
-	var/effective_force = base_force * skill_force_mult
-
-	// Overload / burst logic
-	var/safe_max = get_safe_charge_max()
-	var/burst_chance = 0
-	if(powder_measures > safe_max)
-		// Nonlinear growth: +15% per measure above safe, plus wear + moisture
-		var/over = powder_measures - safe_max
-		burst_chance = (over * over) * 10 // 10,40,90... (tune)
-		burst_chance += wear
-		burst_chance += round(powder_moisture * 100)
-
-		burst_chance = clamp(burst_chance, 0, 95)
-
-	// Misfire/hangfire risk from moisture (even if not overloaded)
-	var/misfire_chance = clamp(round(powder_moisture * 40) - round(ranged / 10), 0, 35)
-
-	if(prob(burst_chance))
-		visible_message(span_danger("[src] catastrophically bursts!"))
-		do_artillery_explosion(origin, 1.0)
-		// Destroy loaded contents
-		qdel(loaded_shell)
-		loaded_shell = null
-		powder_measures = 0
-		// Increase wear hard
-		wear = clamp(wear + 25, 0, 100)
-		return TRUE
-
-	if(prob(misfire_chance))
-		visible_message(span_warning("[src] misfires with a dull thud!"))
-		// Consume powder, keep shell (or not — your choice)
-		powder_measures = 0
-		// Slight wear
-		wear = clamp(wear + 2, 0, 100)
-		return TRUE
-
-	visible_message(span_notice("[src] fires with a thunderous boom!"))
-
-	// Compute effective atmosphere
-	var/wind_dir = A.get_effective_wind_dir()
-	var/wind_strength = A.get_effective_wind_strength()
-	var/density = A.get_effective_density()
-	var/humidity = A.get_effective_humidity()
-
-	// Core range model (tile-based)
-	// Range grows with force, shrinks with mass, adjusted by air density.
-	// Lower density => slightly longer; higher density => slightly shorter.
-	var/mass = loaded_shell.mass
-	var/range_float = (effective_force / mass) * 12 // base scale
-	range_float *= (1.05 - (density - 1.0)) // density 1.15 => ~0.90 ; 0.85 => ~1.20-ish
-	range_float = clamp(range_float, 3, 80)
-
-	// Drift model: crosswind * strength, heavier shells drift less.
-	var/cross = wind_cross_component(wind_dir, aim_azimuth) // -1..1
-	var/drift_float = cross * wind_strength * 2.2 * loaded_shell.drift_mult * (10 / mass)
-	drift_float = clamp(drift_float, -12, 12)
-
-	// Scatter model: base + humidity + bad weather; reduced by skill & PERS a bit.
-	var/scatter = loaded_shell.base_scatter
-	scatter += round(humidity * 4) // 0..4
-	scatter += round(powder_moisture * 2) // wet powder => more wobble
-	scatter -= round(ranged / 30) // 0..3
-	scatter -= round(pers / 40) // 0..2
-	scatter = clamp(scatter, 0, 8)
-
-	// Direction vectors
-	var/list/fwd = azimuth_to_step(aim_azimuth)
-	var/dx = fwd[1]
-	var/dy = fwd[2]
-	var/list/right = perp_step(dx, dy)
-	var/rx = right[1]
-	var/ry = right[2]
-
-	var/range_tiles = round(range_float)
-	var/drift_tiles = round(drift_float)
-
-	// Build impact turf
-	var/turf/T = step_n(origin, dx, dy, range_tiles)
-	if(!T)
-		T = origin
-
-	// Apply drift
-	T = step_n(T, rx, ry, abs(drift_tiles))
-	if(!T)
-		T = origin
-
-	// Apply scatter
-	T = apply_scatter(T, scatter)
-
-	// Consume ammo
-	qdel(loaded_shell)
-	loaded_shell = null
-	powder_measures = 0
-
-	// Wear increases each shot; more with high charge
+/// Consume shot state after a successful impact
+/obj/structure/artillery/mortar/proc/consume_shot(base_force)
+	// charge affects wear
 	wear = clamp(wear + 1 + round(base_force / 10), 0, 100)
 
-	// Impact effect
-	var/power = loaded_shell ? loaded_shell.blast_mult : 1.0 // (loaded_shell got qdel'd; store earlier if needed)
-	// Store blast mult before qdel:
-	// (We do it properly below)
-	return do_impact(T, user, power)
+	// consume powder
+	powder_measures = 0
 
-/// Separate impact proc so you can plug in canister logic, shrapnel, etc.
-/obj/structure/artillery/mortar/proc/do_impact(turf/impact, mob/living/user, blast_mult)
-	if(!impact)
-		return FALSE
+	// keep properties; or reset them—your call
+	powder_quality = 1.0
+	powder_moisture = 0.0
 
-	visible_message(span_warning("A shell lands in the distance..."))
-	do_artillery_explosion(impact, blast_mult)
-	return TRUE
+/// When misfire happens
+/obj/structure/artillery/mortar/proc/apply_misfire(mob/user)
+	// burn powder, keep shell (optional)
+	powder_measures = 0
+	wear = clamp(wear + 2, 0, 100)
+
+/// When catastrophic burst happens (component is allowed to "damage mortar")
+/obj/structure/artillery/mortar/proc/apply_catastrophic_burst(mob/user)
+	var/turf/T = get_turf(src)
+	do_artillery_explosion(T, 1.0)
+
+	// Delete loaded shell, clear charge
+	if(loaded_shell)
+		qdel(loaded_shell)
+		loaded_shell = null
+	powder_measures = 0
+
+	// Massive wear and potentially break
+	wear = clamp(wear + 35, 0, 100)
+	if(wear >= 100)
+		break_mortar()
+
+/// Break state (component can call this via apply_catastrophic_burst / future hooks)
+/// You can also drop parts here.
+/obj/structure/artillery/mortar/proc/break_mortar()
+	broken = TRUE
+	icon_state = "mortar_broken"
+	desc = "A broken mortar. The barrel looks cracked."
+
+/// Fire request (UI)
+/// Component handles all math + risks
+/obj/structure/artillery/mortar/proc/request_fire(mob/living/user)
+	if(broken)
+		to_chat(user, span_warning("It's broken."))
+		return
+	SEND_SIGNAL(src, COMSIG_ARTILLERY_FIRE, user)
+
+
+/obj/structure/artillery/mortar_base
+	name = "mortar base"
+	desc = "A heavy base. Needs a barrel to assemble a mortar."
+	//icon = 'icons/obj/artillery.dmi'
+	//icon_state = "mortar_base"
+	anchored = FALSE
+	density = TRUE
+
+	var/assemble_time = 4 SECONDS
+
+/obj/item/mortar_barrel
+	name = "mortar barrel"
+	desc = "A heavy barrel used to assemble a mortar."
+	//icon = 'icons/obj/artillery.dmi'
+	//icon_state = "mortar_barrel"
+	w_class = WEIGHT_CLASS_BULKY
+
+/obj/structure/artillery/mortar_base/attackby(obj/item/I, mob/user, params)
+	. = ..()
+	if(!istype(I, /obj/item/mortar_barrel))
+		return
+
+	if(get_dist(user, src) > 1)
+		to_chat(user, span_warning("You need to be closer."))
+		return
+
+	user.visible_message(span_notice("[user] begins assembling a mortar..."))
+
+	if(!do_after(user, assemble_time, target = src))
+		to_chat(user, span_warning("You stop assembling the mortar."))
+		return
+
+	// Validate that both still exist and user is still close
+	if(QDELETED(src) || QDELETED(I) || get_dist(user, src) > 1)
+		return
+
+	var/turf/T = get_turf(src)
+	if(!T)
+		return
+
+	user.visible_message(span_notice("[user] assembles a mortar."))
+
+	new /obj/structure/artillery/mortar(T)
+
+	qdel(I)
+	qdel(src)
