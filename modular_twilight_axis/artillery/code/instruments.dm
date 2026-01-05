@@ -1,76 +1,79 @@
-#define ART_INSTRUMENT_TIME (3 SECONDS)
-#define ART_PERS_MIN 1
-#define ART_PERS_NORMAL 10
-#define ART_PERS_MAX 20
-
-/// -------------------------
-/// INTEGRATION HOOKS
-/// -------------------------
 
 /// PERS range assumed 1..20
 /obj/item/artillery_instrument/proc/get_pers_stat(mob/living/user)
-	// INTEGRATION: replace with real stat getter
-	return ART_PERS_NORMAL
+	return user.get_stat(STAT_PERCEPTION)
 
 /// Reading skill range assumed 0..100
 /obj/item/artillery_instrument/proc/get_reading_skill(mob/living/user)
-	// INTEGRATION: replace with your skill system
-	return 0
+	return user.get_skill_level(/datum/skill/misc/reading)
 
-/// -------------------------
-/// ERROR MODEL
-/// -------------------------
-
-/// Returns "spread percent" (0..100). Your spec:
-/// - PERS <= 10 => 100%
-/// - PERS 20 => 0%
-/// - 11..20 => linear down
 /obj/item/artillery_instrument/proc/art_get_base_spread_percent(mob/living/user)
 	var/pers = clamp(get_pers_stat(user), ART_PERS_MIN, ART_PERS_MAX)
 
+	// 1..10 : 25 -> 15
 	if(pers <= ART_PERS_NORMAL)
-		return 100
+		var/t = (pers - ART_PERS_MIN) / (ART_PERS_NORMAL - ART_PERS_MIN) // 0..1
+		return round(25 - (10 * t)) // 25..15
 
-	// pers 11..20 => 90..0
-	// Example: pers=11 => (20-11)/10*100 = 90
-	return round(((ART_PERS_MAX - pers) / (ART_PERS_MAX - ART_PERS_NORMAL)) * 100)
+	// 11..18 : 15 -> 0
+	// (pers=10 => 15, pers=18 => 0)
+	var/t2 = (pers - ART_PERS_NORMAL) / 8 // 10..18 => 0..1
+	var/out = round(15 * (1 - t2)) // 15..0
+	return clamp(out, 0, 25)
 
-/// Reading reduces spread and blunder chance.
-/// reading 0..100 => up to -35% spread (tune) and -20% blunder chance (tune)
-/obj/item/artillery_instrument/proc/art_apply_reading_bonus(spread_percent, blunder_chance, mob/living/user)
-	var/reading = clamp(get_reading_skill(user), 0, 100)
-
-	var/spread_reduction = round(35 * (reading / 100))
-	var/blunder_reduction = round(20 * (reading / 100))
-
-	spread_percent = clamp(spread_percent - spread_reduction, 0, 100)
-	blunder_chance = clamp(blunder_chance - blunder_reduction, 0, 100)
-
-	return list(spread_percent, blunder_chance)
-
-/// Chance that the measurement has a "calculation error" (not just noisy).
-/// This is separate from spread.
-/// Behavior idea:
-/// - PERS <=10: noticeably high chance
-/// - PERS 20: very low
-/// Complexity increases chance (wind_dir more "mathy" than humidity).
 /obj/item/artillery_instrument/proc/art_get_blunder_chance(mob/living/user, complexity = 1)
 	var/pers = clamp(get_pers_stat(user), ART_PERS_MIN, ART_PERS_MAX)
 
-	// Base: at pers=1 -> ~35%, pers=10 -> ~25%, pers=20 -> ~5%
-	var/base = 0
+	// pers=1 => 12, pers=10 => 6, pers=20 => 2
+	var/base
 	if(pers <= ART_PERS_NORMAL)
-		base = 25 + round((ART_PERS_NORMAL - pers) * 1.2) // 10->25%, 1->~36%
+		var/t = (pers - ART_PERS_MIN) / (ART_PERS_NORMAL - ART_PERS_MIN) // 0..1
+		base = round(12 - (6 * t)) // 12..6
 	else
-		base = round(25 * ((ART_PERS_MAX - pers) / (ART_PERS_MAX - ART_PERS_NORMAL))) // 11->22.., 20->0
-		base = max(base, 5) // keep a tiny risk even at 20 if you want; set to 0 if you don't.
+		var/t2 = (pers - ART_PERS_NORMAL) / (ART_PERS_MAX - ART_PERS_NORMAL) // 0..1
+		base = round(6 - (4 * t2)) // 6..2
 
-	// Complexity scales it a bit
-	base += (complexity - 1) * 5
-	return clamp(base, 0, 60)
+	base += (complexity - 1) * 2
+	return clamp(base, 0, 25)
 
-/// Apply percent noise to a float-like value.
-/// spread=100 means +/-100% (value can double or go near 0).
+/// Reading бонус — теперь относительный и приятный.
+/// reading 0..100:
+/// - spread уменьшаем до -40%
+/// - blunder уменьшаем до -50% (но не ниже 0)
+/obj/item/artillery_instrument/proc/art_apply_reading_bonus(spread_percent, blunder_chance, mob/living/user)
+	var/reading = clamp(get_reading_skill(user), 0, 100)
+
+	var/t = (reading - 1) / 5
+	var/spread_mult = 1 - t
+	var/blunder_mult = 1 - t
+
+	spread_percent = clamp(round(spread_percent * spread_mult), 0, 100)
+	blunder_chance = clamp(round(blunder_chance * blunder_mult), 0, 100)
+
+	return list(spread_percent, blunder_chance)
+
+/// Мягкие blunder'ы
+/obj/item/artillery_instrument/proc/art_apply_blunder_wind_dir(dir)
+	return (dir + pick(-45, -30, -20, 20, 30, 45) + 360) % 360
+
+/obj/item/artillery_instrument/proc/art_apply_blunder_wind_strength(str)
+	return clamp(str + pick(-2, -1, 1, 2), 0, ART_WIND_MAX)
+
+/// density/humidity — небольшие сдвиги
+/obj/item/artillery_instrument/proc/art_apply_blunder_density(dens)
+	return clamp(dens + pick(-0.08, -0.05, -0.03, 0.03, 0.05, 0.08), 0.7, 1.3)
+
+/// влажность тоже мягче
+/obj/item/artillery_instrument/proc/art_apply_blunder_humidity(h)
+	return clamp(h + pick(-0.20, -0.12, -0.08, 0.08, 0.12, 0.20), 0, 1)
+
+/// мягкий blunder координат — перепутал деление/знак/цифры: сдвиг на 2..8% и/или + небольшая постоянная
+/obj/item/artillery_instrument/proc/art_apply_blunder_coords(value)
+	return value * pick(0.92, 0.95, 1.05, 1.08) + pick(-3, -2, 2, 3)
+
+/// Percent noise for float-ish values.
+/// spread_percent=25 => +/-25%
+/// spread_percent=0 => no change
 /obj/item/artillery_instrument/proc/art_apply_spread_float(value, spread_percent)
 	if(spread_percent <= 0)
 		return value
@@ -79,29 +82,13 @@
 
 /// Discrete noise for integer values.
 /// step_max is the maximum absolute step at spread=100.
+/// Example: step_max=3, spread=15 => step=1
 /obj/item/artillery_instrument/proc/art_apply_spread_int(value, spread_percent, step_max, low, high)
 	if(spread_percent <= 0)
 		return clamp(value, low, high)
 
 	var/step = max(1, round(step_max * (spread_percent / 100)))
 	return clamp(value + rand(-step, step), low, high)
-
-/// A "blunder" means we sometimes do something actually wrong:
-/// - wind_dir: rotate by large wrong chunk (e.g. 60..180 degrees)
-/// - wind_strength: off by 2..3 steps
-/// - density/humidity: push with big bias
-/obj/item/artillery_instrument/proc/art_apply_blunder_wind_dir(dir)
-	return (dir + pick(-180, -150, -120, -90, -60, 60, 90, 120, 150, 180) + 360) % 360
-
-/obj/item/artillery_instrument/proc/art_apply_blunder_wind_strength(str)
-	return clamp(str + pick(-3, -2, 2, 3), 0, ART_WIND_MAX)
-
-/obj/item/artillery_instrument/proc/art_apply_blunder_density(dens)
-	return clamp(dens + pick(-0.12, -0.08, 0.08, 0.12), 0.7, 1.3)
-
-/obj/item/artillery_instrument/proc/art_apply_blunder_humidity(h)
-	return clamp(h + pick(-0.35, -0.25, 0.25, 0.35), 0, 1)
-
 
 /// -------------------------
 /// BASE INSTRUMENT
@@ -110,7 +97,7 @@
 /obj/item/artillery_instrument
 	name = "instrument"
 	desc = "Measures something."
-	icon = 'icons/fullblack.dmi'
+	icon = 'modular_twilight_axis/artillery/icons/artillery.dmi'
 	icon_state = "instrument"
 
 	/// how annoying/complex it is to use: affects blunder chance slightly
@@ -212,7 +199,7 @@
 /obj/item/artillery_instrument/hygrometer
 	name = "hygrometer"
 	desc = "Measures humidity."
-	icon_state = "hygrometer"
+	icon_state = "thermometr"
 	complexity = 1
 
 /obj/item/artillery_instrument/hygrometer/use(mob/living/user)
@@ -246,7 +233,7 @@
 /obj/item/artillery_instrument/weather_slate
 	name = "weather slate"
 	desc = "A combined kit for wind, density, and humidity."
-	icon_state = "weather_slate"
+	icon_state = "anemometer"
 	complexity = 3
 	read_time = 4 SECONDS
 
@@ -284,3 +271,60 @@
 	to_chat(user, span_notice("Air density factor: [round(dens, 0.01)]."))
 	to_chat(user, span_notice("Humidity: [round(clamp(h, 0, 1) * 100)]%."))
 
+/obj/item/artillery_instrument/compass
+	name = "compass"
+	desc = "A surveyor's compass. Click a location to read its latitude/longitude."
+	icon_state = "compass"
+	complexity = 2
+	var/compass_range = 20
+
+/obj/item/artillery_instrument/compass/afterattack(atom/target, mob/user, proximity, params)
+	. = ..()
+	if(!isliving(user))
+		return
+	var/mob/living/L = user
+
+	if(!target)
+		return
+
+	var/turf/T = get_turf(target)
+	if(!T)
+		return
+
+	if(get_dist(L, T) > compass_range)
+		to_chat(L, span_warning("Too far to get a reading."))
+		return
+
+	if(!(T in view(compass_range, L)))
+		to_chat(L, span_warning("No line of sight to that location."))
+		return
+
+	if(!read_instrument(L))
+		return
+
+	var/spread = art_get_base_spread_percent(L)
+	var/blunder = art_get_blunder_chance(L, complexity)
+
+	var/list/adj = art_apply_reading_bonus(spread, blunder, L)
+	spread = adj[1]
+	blunder = adj[2]
+
+	var/list/true_coords = SSartillery_coords.get_coords(T)
+	var/lat = true_coords[1]
+	var/lon = true_coords[2]
+
+	// apply spread to offset-relative components, not absolute values
+	var/lat_u = lat - SSartillery_coords.offset_lat
+	var/lon_u = lon - SSartillery_coords.offset_lon
+
+	lat_u = art_apply_spread_float(lat_u, spread)
+	lon_u = art_apply_spread_float(lon_u, spread)
+
+	lat = lat_u + SSartillery_coords.offset_lat
+	lon = lon_u + SSartillery_coords.offset_lon
+
+	if(prob(blunder))
+		lat = art_apply_blunder_coords(lat)
+		lon = art_apply_blunder_coords(lon)
+
+	to_chat(L, span_notice("Coords: φ=[round(lat, 0.01)], λ=[round(lon, 0.01)]"))

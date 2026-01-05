@@ -1,7 +1,11 @@
-#include "code\core\subsystem.dm"
-#include "code\core\component.dm"
+#include "code\_defines.dm"
 
+#include "code\functions.dm"
 #include "code\instruments.dm"
 #include "code\powder.dm"
 #include "code\shells.dm"
 #include "code\mortar.dm"
+
+#include "code\core\subsystem.dm"
+#include "code\core\art_fire.dm"
+#include "code\core\coordinates.dm"

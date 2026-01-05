@@ -1,78 +1,142 @@
-/// BYOND sin/cos are in degrees.
-/// Returns normalized forward vector (dx, dy) for azimuth degrees.
-/// NOTE: because of tile grid, we round; "diagonals" will appear naturally.
-/proc/azimuth_to_step(azimuth)
-	var/dx = round(cos(azimuth))
-	var/dy = round(sin(azimuth))
+// artillery_explosions.dm
 
-	// Fallback so we never get 0,0 for odd rounding cases
-	if(!dx && !dy)
-		dx = 1
-	return list(dx, dy)
-
-/// Returns perpendicular (right-hand) vector for given forward step.
-/// forward (dx,dy) => right (dy, -dx)
-/proc/perp_step(dx, dy)
-	return list(dy, -dx)
-
-/// Move from start turf along (dx,dy) for N tiles; stops if turf becomes null/out of map.
-/proc/step_n(turf/start, dx, dy, steps)
-	var/turf/T = start
-	for(var/i in 1 to steps)
-		if(!T)
-			break
-		var/next_x = T.x + dx
-		var/next_y = T.y + dy
-		T = locate(next_x, next_y, T.z)
-	return T
-
-/// Random scatter inside a square radius; cheap and cheerful for SS13.
-/// If you want a true circle, you can reject points outside radius.
-/proc/apply_scatter(turf/origin, scatter)
-	if(scatter <= 0 || !origin)
-		return origin
-
-	var/dx = rand(-scatter, scatter)
-	var/dy = rand(-scatter, scatter)
-	return locate(origin.x + dx, origin.y + dy, origin.z)
-
-/// Wind cross component relative to shot azimuth.
-/// Positive means drift to the "right" of the shot direction, negative to the left.
-/// Uses sin(angle_diff) for side drift (classic crosswind simplification).
-/proc/wind_cross_component(wind_dir, shot_azimuth)
-	var/diff = wind_dir - shot_azimuth
-	// Normalize to [-180,180] for nicer behavior
-	while(diff > 180)
-		diff -= 360
-	while(diff < -180)
-		diff += 360
-	return sin(diff)
-
-/// INTEGRATION: replace these with your actual stat/skill accessors.
-/// Ranged skill should be a reasonable scale, e.g. 0..100.
-proc/get_ranged_skill(mob/living/user)
-	// Example placeholder:
-	return 0
-
-/// INTEGRATION: "ПЕРС" stat, scale 0..100 (or whatever you use)
-proc/get_pers_stat(mob/living/user)
-	// Example placeholder:
-	return 0
-
-/// INTEGRATION: Explosion wrapper.
-/// You MUST replace this with your codebase's explosion call.
-/// On /tg it's usually: explosion(turf, devastation, heavy, light, flash, flame, ...)
-proc/do_artillery_explosion(turf/impact, power)
+/// power: 0.1..~8 (твоя шкала)
+/// По смыслу соответствует “мощности”, которую мы переводим в радиусы/интенсивности.
+/proc/do_artillery_explosion(turf/impact, power)
 	if(!impact)
 		return
 
-	// Placeholder behavior (no-op).
-	// Replace with real explosion implementation.
-	// Example pseudo:
-	// explosion(impact, 0, 1, 2, 3)
-	return
+	// power: условная шкала. Подгони в тестах.
+	// Я исхожу из того, что 1.0 = маленький бабах, 4.0 = уже страшно.
+	power = clamp(power, 0.1, 8.0)
 
-/// helper: коротчайшая разница углов (если используешь fire())
-/proc/angle_delta(a, b)
-	var/d = (b - a + 540) % 360 - 180
-	return d
+	// ---- маппинг на exp_* как у fireball ----
+	// heavy/light/flash/fire — это по смыслу ровно их система.
+	var/exp_heavy = clamp(round(power * 0.60), 0, 6)
+	var/exp_light = clamp(round(power * 1.20), 1, 10)
+	var/exp_flash = clamp(round(power * 0.90), 0, 6)
+	var/exp_fire  = clamp(round(power * 0.80), 0, 8)
+
+	// ---- И ВОТ ТУТ МАГИЯ: тот же explosion(), что и у fireball ----
+	explosion(
+		impact,
+		ART_EXPLOSION_DEVASTATION,
+		exp_heavy,
+		exp_light,
+		exp_flash,
+		0,
+		flame_range = exp_fire,
+		soundin = GLOB.artillery_explode_sounds
+	)
+
+/proc/do_powder_detonation(turf/T, ounces, potency = 1.0)
+	if(!T || ounces <= 0)
+		return
+
+	potency = clamp(potency, 0.5, 2.0)
+
+	// 25 oz = хлопок, 150 = серьёзно, 300 = ужас
+	var/power = clamp((ounces * potency) / 75, 0.2, 4.0)
+
+	if(hascall(T, "hotspot_expose"))
+		T.hotspot_expose(1000, 50)
+
+	do_artillery_explosion(T, power)
+
+/obj/effect/temp_visual/artillery_launch
+	name = "launch plume"
+	icon = 'modular_twilight_axis/artillery/icons/artillery.dmi'
+	icon_state = "mortar_launch" // сделай спрайт
+	layer = EFFECTS_LAYER
+	plane = GAME_PLANE
+	duration = 8
+
+/obj/effect/temp_visual/artillery_launch/Initialize(mapload)
+	. = ..()
+	pixel_y = 0
+	alpha = 255
+	// “улетает вверх”
+	animate(src, pixel_y = 24, alpha = 0, time = duration, easing = SINE_EASING)
+	return .
+
+/obj/effect/temp_visual/artillery_fall
+	name = "falling shell trail"
+	icon = 'modular_twilight_axis/artillery/icons/artillery.dmi'
+	icon_state = "mortar_fall" // сделай спрайт
+	layer = EFFECTS_LAYER
+	plane = GAME_PLANE
+	duration = 6
+
+/obj/effect/temp_visual/artillery_fall/Initialize(mapload)
+	. = ..()
+	pixel_y = 24
+	alpha = 0
+	// “падает вниз” (проявляется и падает)
+	animate(src, alpha = 255, time = 2, easing = LINEAR_EASING)
+	animate(src, pixel_y = 0, time = duration, easing = SINE_EASING)
+	return .
+
+/obj/effect/temp_visual/artillery_tracer
+	name = "shell trail"
+	icon = 'modular_twilight_axis/artillery/icons/artillery.dmi'
+	icon_state = "mortar_tracer" // сделай спрайт/полоску/точку
+	layer = EFFECTS_LAYER
+	plane = GAME_PLANE
+	duration = 4
+
+/obj/effect/temp_visual/artillery_tracer/Initialize(mapload)
+	. = ..()
+	alpha = 220
+	pixel_y = 16
+	animate(src, alpha = 0, pixel_y = 24, time = duration, easing = SINE_EASING)
+	return .
+
+/proc/art_is_openspace(turf/T)
+	if(!T)
+		return FALSE
+	if(istype(T, ART_TURF_OPENSPACE))
+		return TRUE
+	return FALSE
+
+/proc/art_get_above(turf/T)
+	if(!T || T.z >= world.maxz)
+		return null
+	return locate(T.x, T.y, T.z + 1)
+
+/proc/art_get_below(turf/T)
+	if(!T || T.z <= 1)
+		return null
+	return locate(T.x, T.y, T.z - 1)
+
+/// "Есть ли что-то над тайлом" в смысле вертикального прохода.
+/// Если above существует и это НЕ openspace -> считаем, что сверху закрыто потолком.
+/proc/art_has_ceiling_above(turf/T)
+	var/turf/A = art_get_above(T)
+	if(!A)
+		return FALSE
+	return !art_is_openspace(A)
+
+/// Подгоняем Z точки импакта:
+/// 1) если над точкой есть потолок — "удар в потолок" -> перенос на A (вверх на 1)
+/// 2) если сама точка — openspace/пустота — перенос вниз до первого не-openspace
+/proc/art_adjust_impact_z(turf/impact)
+	if(!impact)
+		return null
+
+	// 1) Ceiling above -> explode above (hit the ceiling)
+	if(art_has_ceiling_above(impact))
+		var/turf/A = art_get_above(impact)
+		if(A)
+			return A
+
+	// 2) If impact is open air -> fall down to ground
+	if(art_is_openspace(impact))
+		var/turf/T = impact
+		while(T && art_is_openspace(T))
+			var/turf/B = art_get_below(T)
+			if(!B)
+				break
+			T = B
+		return T
+
+	return impact

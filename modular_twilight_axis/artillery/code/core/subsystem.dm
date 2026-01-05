@@ -1,5 +1,3 @@
-#define ART_WIND_MAX 5
-
 SUBSYSTEM_DEF(artillery_weather)
 	name = "Artillery Weather"
 	init_order = INIT_ORDER_DEFAULT

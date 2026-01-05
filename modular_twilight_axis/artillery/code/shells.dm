@@ -5,8 +5,8 @@
 /obj/item/artillery_shell
 	name = "mortar shell"
 	desc = "A heavy projectile."
-	//icon = 'icons/obj/artillery.dmi'
-	//icon_state = "shell"
+	icon = 'modular_twilight_axis/artillery/icons/artillery.dmi'
+	icon_state = "shell"
 
 	var/mass = 10.0
 	var/base_scatter = 2
@@ -19,11 +19,35 @@
 	/// optional: forbid spraying certain reagents, like your spell does
 	var/list/forbidden_reagents = list(/datum/reagent/consumable/ethanol/beer/emberwine)
 
+	var/mass_variance = 0.08      // +/- 8%
+	var/scatter_variance = 1      // +/- 1
+	var/blast_variance = 0.10     // +/- 10%
+	var/drift_variance = 0.10     // +/- 10%
+
 /// give shells reagents like a container
 /obj/item/artillery_shell/Initialize(mapload)
 	. = ..()
 	if(max_chem_volume > 0)
 		create_reagents(max_chem_volume)
+
+	// --- per-shell randomization ---
+	mass = max(0.1, mass * (1 + (rand(-round(mass_variance*100), round(mass_variance*100)) / 100)))
+	base_scatter = max(0, base_scatter + rand(-scatter_variance, scatter_variance))
+	blast_mult = max(0.1, blast_mult * (1 + (rand(-round(blast_variance*100), round(blast_variance*100)) / 100)))
+	drift_mult = max(0.1, drift_mult * (1 + (rand(-round(drift_variance*100), round(drift_variance*100)) / 100)))
+
+/obj/item/artillery_shell/examine(mob/user)
+	. = ..()
+	. += "Mass: [round(mass, 0.1)]."
+	. += "Scatter: [base_scatter]."
+	. += "Blast multiplier: [round(blast_mult, 0.01)]."
+	. += "Drift multiplier: [round(drift_mult, 0.01)]."
+
+	if(reagents)
+		if(reagents.total_volume > 0)
+			. += "Payload: [reagents.total_volume]/[max_chem_volume]."
+		else
+			. += "Payload: empty."
 
 /// Quick helper: check forbidden reagents before we aerosolize
 /obj/item/artillery_shell/proc/has_forbidden_reagents()
@@ -56,7 +80,7 @@
 
 /obj/item/artillery_shell/heavy
 	name = "heavy iron shell"
-	icon_state = "shell_heavy"
+	//icon_state = "shell_heavy"
 	mass = 16.0
 	base_scatter = 1
 	blast_mult = 1.25
@@ -65,7 +89,7 @@
 
 /obj/item/artillery_shell/light
 	name = "light stone shell"
-	icon_state = "shell_light"
+	//icon_state = "shell_light"
 	mass = 8.0
 	base_scatter = 3
 	blast_mult = 0.85
@@ -74,7 +98,7 @@
 
 /obj/item/artillery_shell/canister
 	name = "canister shot"
-	icon_state = "shell_canister"
+	//icon_state = "shell_canister"
 	mass = 9.0
 	base_scatter = 4
 	blast_mult = 0.6
