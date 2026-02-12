@@ -702,6 +702,7 @@
 		if(hud_used.cmode_button)
 			hud_used.cmode_button.update_icon()
 	on_cmode()
+	SEND_SIGNAL(src, COMSIG_LIVING_CMODE_CHANGED, cmode) //TA edit - small carrying
 
 /mob/proc/on_cmode()
 	return

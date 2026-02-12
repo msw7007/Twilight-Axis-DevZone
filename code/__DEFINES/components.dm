@@ -286,6 +286,10 @@
 	#define COMPONENT_CANCEL_GRAB_ATTACK 1
 #define COMSIG_LIVING_SET_RESTING "comsig_set_resting"
 #define COMSIG_LIVING_RESIST "living_resist"					//from base of mob/living/resist() (/mob/living)
+//TA add start - small carrying
+#define COMSIG_LIVING_CMODE_CHANGED "living_cmode_changed"
+#define COMSIG_LIVING_PULL_CHANGED "living_pull_changed"
+//TA add end - small carrying
 #define COMSIG_LIVING_IGNITED "living_ignite"					//from base of mob/living/ignite_mob() (/mob/living)
 #define COMSIG_LIVING_EXTINGUISHED "living_extinguished"		//from base of mob/living/extinguish_mob() (/mob/living)
 #define COMSIG_LIVING_ELECTROCUTE_ACT "living_electrocute_act"		//from base of mob/living/electrocute_act(): (shock_damage, source, siemens_coeff, flags)

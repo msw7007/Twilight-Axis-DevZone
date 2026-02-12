@@ -420,6 +420,7 @@
 	if(AM != src)
 		pulling = AM
 		AM.pulledby = src
+	SEND_SIGNAL(src, COMSIG_LIVING_PULL_CHANGED, pulling)  //TA edit - small carrying
 	update_pull_hud_icon()
 
 	if(isliving(AM))
@@ -655,7 +656,7 @@
 	reset_offsets("pulledby")
 	reset_pull_offsets(src)
 	. = ..()
-
+	SEND_SIGNAL(src, COMSIG_LIVING_PULL_CHANGED, pulling) //TA edit - small carrying
 	update_pull_movespeed()
 	update_pull_hud_icon()
 
