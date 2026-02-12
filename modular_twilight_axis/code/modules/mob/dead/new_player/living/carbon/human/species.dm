@@ -9,3 +9,6 @@
 
 /datum/species/dwarf
 	small_spieces = TRUE
+
+/datum/species/anthromorphsmall
+	small_spieces = TRUE
