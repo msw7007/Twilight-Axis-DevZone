@@ -1,5 +1,14 @@
-/mob/living/proc/can_be_carried()
+/mob/living/proc/can_be_carried(mob/living/carbon/human/grabber)
 	var/datum/species/S = null
+
+	if(!iscarbon(grabber))
+		return null
+	
+	if(HAS_TRAIT(src, TRAIT_BIGGUY))
+		return FALSE
+
+	if(HAS_TRAIT(grabber, TRAIT_BIGGUY))
+		return TRUE
 
 	if(iscarbon(src))
 		var/mob/living/carbon/C = src
