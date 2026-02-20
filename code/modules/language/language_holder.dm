@@ -91,7 +91,6 @@
 	for(var/l in other.languages)
 		src.grant_language(l)
 
-
 /datum/language_holder/proc/open_language_menu(mob/user)
 	if(!language_menu)
 		language_menu = new(src)
