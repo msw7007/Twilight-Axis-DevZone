@@ -1,5 +1,5 @@
 /datum/advclass/rogue/soundbreaker
-	name = "Soundbreaker"
+	name = "Soundbarrier breaker"
 	tutorial = "You are a brawling bard who turns rhythm and motion into weapons. Your fists, feet, and music break bones and shatter morale."
 	outfit = /datum/outfit/job/roguetown/adventurer/soundbreaker
 	cmode_music = 'sound/music/cmode/adventurer/combat_outlander3.ogg'
