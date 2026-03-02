@@ -24,6 +24,7 @@
 
 /area/rogue/indoors/cave/old_mines
 	icon_state = "old mines"
+	icon_state = "under"
 	first_time_text = "OLD CITY MINES"
 	droning_sound = 'sound/music/area/dragonden.ogg'
 	droning_sound_dusk = null
@@ -32,6 +33,7 @@
 
 /area/rogue/indoors/cave/great_ocean
 	icon_state = "great ocean"
+	icon_state = "under"
 	first_time_text = "GREAT OCEAN"
 	droning_sound = 'sound/music/area/dragonden.ogg'
 	droning_sound_dusk = null
