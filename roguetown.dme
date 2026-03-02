@@ -3026,6 +3026,7 @@
 #include "modular\piercing\piercing.dm"
 #include "modular\piercing\piercings.dm"
 #include "modular\piercing\supply.dm"
+#include "modular_twilight_axis\code\game\area\area.dm"
 #include "statpacks\agile.dm"
 #include "statpacks\mental.dm"
 #include "statpacks\physical.dm"
