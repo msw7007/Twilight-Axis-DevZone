@@ -67,7 +67,8 @@
 		return
 
 	to_chat(me, span_warning("Я чувствую, как молоко покидает мою грудь."))
-	to_chat(partner, span_warning("Я чувствую, как молоко [me] попадает мне в рот."))
+	if(me != partner)
+		to_chat(partner, span_warning("Я чувствую, как грудь [me] выпускает молоко."))
 
 #undef BREAST_BASE_PROD_PER_SIZE
 #undef BREAST_STORAGE_PER_SIZE
