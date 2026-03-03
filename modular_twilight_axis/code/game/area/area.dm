@@ -75,3 +75,30 @@
 	droning_sound_dusk = null
 	droning_sound_night = null
 	ceiling_protected = TRUE
+
+/area/rogue/deeplevel/magic_storm
+	icon_state = "arcyne storm"
+	icon_state = "under"
+	first_time_text = "ARCYNE STORM"
+	droning_sound = 'sound/music/area/dragonden.ogg'
+	droning_sound_dusk = null
+	droning_sound_night = null
+	ceiling_protected = TRUE
+
+/area/rogue/deeplevel/great_darkness
+	icon_state = "great darkness"
+	icon_state = "under"
+	first_time_text = "GREAT DARKNESS"
+	droning_sound = 'sound/music/area/dragonden.ogg'
+	droning_sound_dusk = null
+	droning_sound_night = null
+	ceiling_protected = TRUE
+
+/area/rogue/deeplevel/great_grave
+	icon_state = "great grave"
+	icon_state = "under"
+	first_time_text = "GREAT_GRAVE"
+	droning_sound = 'sound/music/area/dragonden.ogg'
+	droning_sound_dusk = null
+	droning_sound_night = null
+	ceiling_protected = TRUE
