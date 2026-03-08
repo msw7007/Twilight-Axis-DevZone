@@ -100,7 +100,7 @@
 	name = "path"
 	desc = "Something is here... if you know how to look."
 	icon = 'modular_twilight_axis/icons/turf/roguefloor.dmi'
-	icon_state = "undervoid3"
+	icon_state = "undervoid2"
 
 	var/reveal_count = 0
 	var/revealed_state = "arcynewall"
