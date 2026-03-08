@@ -44,10 +44,16 @@
 		speed = session.default_link_speed
 
 	last_tick = world.time
+	var/mob/actor_mob = actor_active.get_mob()
+	var/mob/partner_mob = actor_passive.get_mob()
+	actor_mob.log_message("([key_name(actor_passive.client)]) started erp action with [partner_mob] ([key_name(actor_passive.client)])", LOG_ATTACK, color="red")
 	. = ..()
 
 /datum/erp_sex_link/Destroy()
 	finish()
+	var/mob/actor_mob = actor_active.get_mob()
+	var/mob/partner_mob = actor_passive.get_mob()
+	actor_mob.log_message("([key_name(actor_passive.client)]) started erp action with [partner_mob] ([key_name(actor_passive.client)])", LOG_ATTACK, color="red")
 	actor_active = null
 	actor_passive = null
 	action = null
