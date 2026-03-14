@@ -16,6 +16,8 @@
 #define AIORDER_MELEE_TARGET "melee_target"
 #define AIORDER_RANGED_TARGET "ranged_target"
 #define AIORDER_FINISH_TARGET "finish_target"
+#define AIORDER_FILL_MELEE_SLOT "fill_melee_slot"
+#define AIORDER_YIELD_MELEE_SLOT "yield_melee_slot"
 
 /// signals
 #define AISIG_SEE_ENEMY "see_enemy"

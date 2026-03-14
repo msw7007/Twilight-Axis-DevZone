@@ -19,6 +19,9 @@
 	var/atom/last_target
 	var/atom/last_melee_target
 	var/last_melee_time = 0
+	var/datum/group_ai_slot/claimed_slot
+	var/yield_requested = FALSE
+
 
 /datum/group_ai_host/New(datum/group_ai_driver/_driver)
 	..()
@@ -30,8 +33,11 @@
 	if(group)
 		group.remove_host(src)
 	SSgroup_ai.unregister_host(src)
+	if(claimed_slot && claimed_slot.occupant == src)
+		claimed_slot.occupant = null
 	driver = null
 	group = null
+	claimed_slot = null
 	available_role_ids = null
 	return ..()
 
@@ -77,6 +83,9 @@
 		qdel(new_order)
 		return TRUE
 
+	if(new_order.id != AIORDER_FILL_MELEE_SLOT && new_order.id != AIORDER_YIELD_MELEE_SLOT)
+		release_slot()
+
 	cancel_order()
 	current_order = new_order
 	return current_order.start()
@@ -87,6 +96,21 @@
 	current_order.tick(delta_time)
 	if(current_order.state == AI_ORDER_DONE || current_order.state == AI_ORDER_FAILED || current_order.state == AI_ORDER_CANCELLED)
 		QDEL_NULL(current_order)
+
+/datum/group_ai_host/proc/release_slot()
+	if(claimed_slot && claimed_slot.occupant == src)
+		claimed_slot.occupant = null
+	claimed_slot = null
+
+/datum/group_ai_host/proc/claim_slot(datum/group_ai_slot/slot)
+	if(QDELETED(slot))
+		return FALSE
+	if(claimed_slot == slot && slot.occupant == src)
+		return TRUE
+	release_slot()
+	claimed_slot = slot
+	slot.occupant = src
+	return TRUE
 
 /datum/group_ai_host/proc/can_act()
 	return driver?.can_act()

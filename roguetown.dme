@@ -3190,6 +3190,7 @@
 #include "modular_twilight_axis\code\modules\ai_system\core\group_ai_host.dm"
 #include "modular_twilight_axis\code\modules\ai_system\core\group_ai_order.dm"
 #include "modular_twilight_axis\code\modules\ai_system\core\group_ai_role.dm"
+#include "modular_twilight_axis\code\modules\ai_system\core\group_ai_slot.dm"
 #include "modular_twilight_axis\code\modules\ai_system\core\group_ai_signal.dm"
 #include "modular_twilight_axis\code\modules\ai_system\core\group_ai_subsystem.dm"
 #include "modular_twilight_axis\code\modules\ai_system\types\mirespider_group_ai.dm"

@@ -123,9 +123,9 @@
 		return new /datum/group_ai_order/spider_guard_wrapper(host, spider_group.wrap_claimed_by)
 
 	if(group.current_mode == GROUP_MODE_LIQUIDATE)
-		return new /datum/group_ai_order/finish_target(host, target)
+		return new /datum/group_ai_order/fill_melee_slot(host, target)
 
-	return new /datum/group_ai_order/melee_target(host, target)
+	return new /datum/group_ai_order/fill_melee_slot(host, target)
 
 /datum/group_ai_role/spider_paralytic
 	id = AIROLE_PARALYTIC
@@ -139,9 +139,9 @@
 		return new /datum/group_ai_order/spider_guard_wrapper(host, spider_group.wrap_claimed_by)
 
 	if(group.current_mode == GROUP_MODE_LIQUIDATE)
-		return new /datum/group_ai_order/finish_target(host, target)
+		return new /datum/group_ai_order/fill_melee_slot(host, target)
 
-	return new /datum/group_ai_order/melee_target(host, target)
+	return new /datum/group_ai_order/fill_melee_slot(host, target)
 
 /datum/group_ai_group/spider_pack
 	id = "spider_pack"

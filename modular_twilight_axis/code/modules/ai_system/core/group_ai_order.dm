@@ -196,3 +196,99 @@
 
 	host.step_away_from_target(target)
 	return TRUE
+
+/datum/group_ai_order/fill_melee_slot
+	id = AIORDER_FILL_MELEE_SLOT
+	timeout = 20
+
+/datum/group_ai_order/fill_melee_slot/tick(delta_time)
+	..()
+	if(state != AI_ORDER_RUNNING)
+		return FALSE
+
+	if(QDELETED(target))
+		return fail()
+
+	var/datum/group_ai_slot/slot = host.group?.get_slot_for_host(host)
+	if(!slot)
+		slot = host.group?.get_best_slot_for_host(host)
+		if(!slot)
+			host.group?.request_slot_yield(host)
+			return TRUE
+		host.group?.claim_slot(host, slot)
+
+	if(QDELETED(slot?.position))
+		return fail()
+
+	var/mob/living/owner = host.get_owner()
+	if(QDELETED(owner))
+		return fail()
+
+	if(get_turf(owner) != slot.position)
+		host.step_towards_target(slot.position)
+		return TRUE
+
+	if(host.driver.get_dist_to(target) <= 1)
+		host.do_melee(target)
+		return TRUE
+
+	return TRUE
+
+/datum/group_ai_order/yield_melee_slot
+	id = AIORDER_YIELD_MELEE_SLOT
+	timeout = 10
+
+/datum/group_ai_order/yield_melee_slot/tick(delta_time)
+	..()
+	if(state != AI_ORDER_RUNNING)
+		return FALSE
+
+	var/datum/group_ai_slot/my_slot = host.group?.get_slot_for_host(host)
+	if(!my_slot)
+		host.yield_requested = FALSE
+		return finish()
+
+	var/mob/living/owner = host.get_owner()
+	if(QDELETED(owner))
+		return fail()
+
+	var/turf/current = get_turf(owner)
+	var/turf/best = null
+	var/best_score = 1.0e31
+	for(var/turf/T in view(1, current))
+		if(T == current || T == my_slot.position)
+			continue
+		if(T.density)
+			continue
+		if(target && get_dist(T, target) <= 1)
+			continue
+		var/blocked = FALSE
+		for(var/datum/group_ai_slot/slot as anything in host.group?.engagement_slots)
+			if(!slot.occupant)
+				continue
+			if(slot.position == T && slot.occupant && slot.occupant != host)
+				blocked = TRUE
+				break
+		if(blocked)
+			continue
+		var/score = get_dist(T, target)
+		if(score < best_score)
+			best_score = score
+			best = T
+
+	if(!best)
+		host.yield_requested = FALSE
+		return finish()
+
+	if(current == best)
+		host.release_slot()
+		host.yield_requested = FALSE
+		return finish()
+
+	host.step_towards_target(best)
+	if(get_turf(owner) == best)
+		host.release_slot()
+		host.yield_requested = FALSE
+		return finish()
+
+	return TRUE
