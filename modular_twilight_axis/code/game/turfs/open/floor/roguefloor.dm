@@ -82,10 +82,10 @@
 	if(L.stat == DEAD)
 		return
 
-	if(L.get_variable("abyss_cd") && L.get_variable("abyss_cd") > world.time)
+	if(L.mob_timers["abyss_cd"] && L.mob_timers["abyss_cd"] > world.time)
 		return
 	
-	L.set_variable("abyss_cd", world.time + cooldown_ds)
+	L.mob_timers["abyss_cd"] = world.time + cooldown_ds
 	L.apply_damage(damage, BRUTE)
 	var/turf/target = pick_landmark_turf(landmark_tag)
 	if(target)

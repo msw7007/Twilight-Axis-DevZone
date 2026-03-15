@@ -19,7 +19,7 @@ GLOBAL_LIST_EMPTY(landmark_turf_cache)
 	var/list/out = list()
 
 	for(var/obj/effect/landmark/L as anything in GLOB.landmarks_list)
-		if(L.tag != id && L.name != id)
+		if(L.port_zone != id && L.name != id)
 			continue
 
 		var/turf/T = get_turf(L)
@@ -46,14 +46,14 @@ GLOBAL_LIST_EMPTY(landmark_turf_cache)
 		GLOB.landmark_turf_cache -= id
 
 /obj/effect/landmark
-	var/tag
+	var/port_zone
 
 /obj/effect/landmark/abyss_return
 	name = "abyss return"
 	icon_state = "x2"
-	tag = "abyss_return"
+	port_zone = "abyss_return"
 
 /obj/effect/landmark/sky_fall
 	name = "sky fall"
 	icon_state = "x2"
-	tag = "sky_fall"
+	port_zone = "sky_fall"
