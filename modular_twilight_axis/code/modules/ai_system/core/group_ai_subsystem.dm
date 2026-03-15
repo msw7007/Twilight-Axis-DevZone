@@ -1,6 +1,6 @@
 SUBSYSTEM_DEF(group_ai)
 	name = "Group AI"
-	wait = 2
+	wait = 1
 	flags = SS_KEEP_TIMING
 	priority = FIRE_PRIORITY_NPC
 

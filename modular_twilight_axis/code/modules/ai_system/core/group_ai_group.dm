@@ -53,6 +53,7 @@
 	refresh_target()
 	recalculate_mode()
 	rebuild_engagement_slots()
+	handle_frontline_swaps()
 	assign_roles()
 	assign_orders()
 	process_orders(delta_time)
@@ -63,21 +64,26 @@
 	for(var/datum/group_ai_host/host as anything in members)
 		if(QDELETED(host))
 			continue
-		pending_signals += host.drain_signals()
+
+		host.update_temporal_state()
+		var/list/signals = host.drain_signals()
+		for(var/datum/group_ai_signal/signal as anything in signals)
+			host.consume_signal(signal)
+		pending_signals += signals
 
 /datum/group_ai_group/proc/refresh_target()
 	if(isliving(current_target))
-		var/mob/living/L = current_target
-		if(L.stat < DEAD)
+		var/mob/living/living_target = current_target
+		if(living_target.stat < DEAD)
 			return
 
 	current_target = null
 
 	for(var/datum/group_ai_signal/signal as anything in pending_signals)
 		if(signal.target && isliving(signal.target))
-			var/mob/living/L = signal.target
-			if(L.stat < DEAD)
-				current_target = L
+			var/mob/living/living_target = signal.target
+			if(living_target.stat < DEAD)
+				current_target = living_target
 				return
 
 	for(var/datum/group_ai_host/host as anything in members)
@@ -85,15 +91,15 @@
 		if(QDELETED(owner))
 			continue
 
-		for(var/mob/living/L in view(host.vision_range, owner))
-			if(L == owner)
+		for(var/mob/living/living_target in view(host.vision_range, owner))
+			if(living_target == owner)
 				continue
-			if(L.stat >= DEAD)
+			if(living_target.stat >= DEAD)
 				continue
-			if(owner.faction_check_mob(L, TRUE))
+			if(owner.faction_check_mob(living_target, TRUE))
 				continue
 
-			current_target = L
+			current_target = living_target
 			return
 
 /datum/group_ai_group/proc/recalculate_mode()
@@ -117,8 +123,7 @@
 			if(QDELETED(slot) || !slot.is_valid_for_target(current_target))
 				clear_engagement_slots()
 				break
-			else
-				slot.clear_if_invalid()
+			slot.clear_if_invalid()
 		if(length(engagement_slots))
 			return
 
@@ -126,16 +131,16 @@
 	engagement_anchor = current_target
 
 	var/list/turfs = list()
-	for(var/turf/T in view(1, get_turf(current_target)))
-		if(T == get_turf(current_target))
+	for(var/turf/open_turf in view(1, get_turf(current_target)))
+		if(open_turf == get_turf(current_target))
 			continue
-		if(T.density)
+		if(open_turf.density)
 			continue
-		turfs += T
+		turfs += open_turf
 
 	var/index = 1
-	for(var/turf/T as anything in turfs)
-		var/datum/group_ai_slot/slot = new /datum/group_ai_slot(T, index++)
+	for(var/turf/open_turf as anything in turfs)
+		var/datum/group_ai_slot/slot = new /datum/group_ai_slot(open_turf, index++)
 		engagement_slots += slot
 
 	for(var/datum/group_ai_host/host as anything in members)
@@ -162,7 +167,7 @@
 
 /datum/group_ai_group/proc/get_best_slot_for_host(datum/group_ai_host/host)
 	var/mob/living/owner = host?.get_owner()
-	if(QDELETED(owner) || !length(engagement_slots))
+	if(QDELETED(owner) || !length(engagement_slots) || !host.can_claim_melee_slot)
 		return null
 
 	var/datum/group_ai_slot/best = null
@@ -189,11 +194,15 @@
 		var/datum/group_ai_host/occupant = slot.occupant
 		if(QDELETED(occupant) || occupant == requester)
 			continue
+		if(world.time < occupant.yield_until)
+			continue
+
 		var/mob/living/owner = occupant.get_owner()
 		if(QDELETED(owner))
 			continue
+
 		var/score = 0
-		if((owner.health / max(owner.maxHealth, 1)) <= 0.5)
+		if(occupant.get_health_ratio() <= 0.5)
 			score += 50
 		if(world.time < occupant.next_melee_at)
 			score += 25
@@ -202,9 +211,66 @@
 		if(score > best_score)
 			best_score = score
 			best = occupant
+
 	if(best_score <= 0)
 		return null
 	return best
+
+/datum/group_ai_group/proc/get_best_replacement_for_host(datum/group_ai_host/current_holder)
+	var/datum/group_ai_slot/slot = get_slot_for_host(current_holder)
+	if(QDELETED(slot?.position))
+		return null
+
+	var/datum/group_ai_host/best = null
+	var/best_score = -1.0e31
+	for(var/datum/group_ai_host/candidate as anything in members)
+		if(candidate == current_holder || QDELETED(candidate))
+			continue
+		if(!candidate.can_act() || !candidate.can_claim_melee_slot)
+			continue
+		if(candidate.claimed_slot && candidate.claimed_slot != slot)
+			continue
+		if(candidate.should_yield_frontline())
+			continue
+
+		var/mob/living/owner = candidate.get_owner()
+		if(QDELETED(owner))
+			continue
+
+		var/score = 0
+		if(candidate.current_role_id == current_holder.current_role_id)
+			score += 200
+		score += candidate.get_health_ratio() * 100
+		score -= get_dist(owner, slot.position) * 15
+		if(score > best_score)
+			best_score = score
+			best = candidate
+
+	return best
+
+/datum/group_ai_group/proc/try_hot_swap_slot(datum/group_ai_host/current_holder)
+	if(QDELETED(current_holder) || QDELETED(current_target))
+		return FALSE
+	if(!current_holder.should_yield_frontline())
+		return FALSE
+
+	var/datum/group_ai_host/replacement = get_best_replacement_for_host(current_holder)
+	if(QDELETED(replacement))
+		return FALSE
+
+	current_holder.yield_requested = TRUE
+	current_holder.next_slot_swap_at = world.time + current_holder.get_slot_swap_cd()
+	replacement.start_order(new /datum/group_ai_order/fill_melee_slot(replacement, current_target))
+	return TRUE
+
+/datum/group_ai_group/proc/handle_frontline_swaps()
+	if(QDELETED(current_target) || !length(engagement_slots))
+		return
+
+	for(var/datum/group_ai_host/host as anything in members)
+		if(QDELETED(host) || !host.claimed_slot)
+			continue
+		try_hot_swap_slot(host)
 
 /datum/group_ai_group/proc/claim_slot(datum/group_ai_host/host, datum/group_ai_slot/slot)
 	if(QDELETED(host) || QDELETED(slot))
@@ -214,11 +280,17 @@
 	return host.claim_slot(slot)
 
 /datum/group_ai_group/proc/request_slot_yield(datum/group_ai_host/requester)
+	if(world.time < requester.next_slot_request_at)
+		return FALSE
+
+	requester.next_slot_request_at = world.time + requester.get_slot_request_cd()
+
 	var/datum/group_ai_host/yielder = get_yield_candidate_for_host(requester)
 	if(QDELETED(yielder))
 		return FALSE
 	if(yielder.yield_requested)
 		return TRUE
+
 	yielder.yield_requested = TRUE
 	return TRUE
 
@@ -246,10 +318,8 @@
 			continue
 
 		if(host.yield_requested)
-		{
 			host.start_order(new /datum/group_ai_order/yield_melee_slot(host, current_target))
 			continue
-		}
 
 		var/datum/group_ai_role/role = get_role_datum(host)
 		if(!role)
@@ -272,8 +342,8 @@
 /datum/group_ai_group/proc/is_target_prone(atom/target)
 	if(!isliving(target))
 		return FALSE
-	var/mob/living/L = target
-	return !(L.mobility_flags & MOBILITY_STAND) || L.stat >= UNCONSCIOUS
+	var/mob/living/living_target = target
+	return !(living_target.mobility_flags & MOBILITY_STAND) || living_target.stat >= UNCONSCIOUS
 
 /datum/group_ai_group/proc/get_group_health_ratio()
 	var/health_sum = 0

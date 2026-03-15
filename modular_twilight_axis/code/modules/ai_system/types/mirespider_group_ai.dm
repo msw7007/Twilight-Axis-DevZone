@@ -275,6 +275,8 @@
 	QDEL_NULL(ai_controller)
 
 	group_ai_host = bootstrap_spider_group_ai(src, list(AIROLE_SWARMER))
+	if(group_ai_host)
+		group_ai_host.hot_swap_recent_damage_threshold = 15
 
 /mob/living/simple_animal/hostile/rogue/mirespider_lurker/Initialize()
 	. = ..()
@@ -287,6 +289,8 @@
 
 	group_ai_host = bootstrap_spider_group_ai(src, list(AIROLE_LURKER), TRUE)
 	if(group_ai_host)
+		group_ai_host.can_claim_melee_slot = FALSE
+		group_ai_host.allow_hot_swap = FALSE
 		group_ai_host.ranged_cd = 20
 		group_ai_host.special_cd = 30
 
@@ -298,6 +302,8 @@
 	QDEL_NULL(ai_controller)
 
 	group_ai_host = bootstrap_spider_group_ai(src, list(AIROLE_PARALYTIC))
+	if(group_ai_host)
+		group_ai_host.hot_swap_recent_damage_threshold = 18
 
 /mob/living/simple_animal/hostile/retaliate/rogue/mirespider/Destroy()
 	QDEL_NULL(group_ai_host)

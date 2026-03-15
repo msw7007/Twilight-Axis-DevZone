@@ -11,6 +11,9 @@
 	var/next_melee_at = 0
 	var/next_ranged_at = 0
 	var/next_special_at = 0
+	var/next_move_at = 0
+	var/next_slot_request_at = 0
+	var/next_slot_swap_at = 0
 
 	var/melee_cd = 1 SECONDS
 	var/ranged_cd = 10 SECONDS
@@ -21,7 +24,16 @@
 	var/last_melee_time = 0
 	var/datum/group_ai_slot/claimed_slot
 	var/yield_requested = FALSE
+	var/yield_until = 0
 
+	/// Frontline policy. Keep these on the host so species/role bootstrap can override them cheaply.
+	var/can_claim_melee_slot = TRUE
+	var/allow_hot_swap = TRUE
+	var/hot_swap_health_threshold = 0.35
+	var/hot_swap_recent_damage_threshold = 0
+	var/recent_damage_window = 20
+	var/recent_damage_accum = 0
+	var/last_damage_time = 0
 
 /datum/group_ai_host/New(datum/group_ai_driver/_driver)
 	..()
@@ -59,6 +71,20 @@
 	local_signals.Cut()
 	return out
 
+/datum/group_ai_host/proc/consume_signal(datum/group_ai_signal/signal)
+	if(QDELETED(signal))
+		return
+
+	if(signal.id == AISIG_TAKE_DAMAGE)
+		var/damage = signal.context?["amount"]
+		if(isnum(damage) && damage > 0)
+			recent_damage_accum += damage
+			last_damage_time = world.time
+
+/datum/group_ai_host/proc/update_temporal_state()
+	if(recent_damage_accum && world.time - last_damage_time > recent_damage_window)
+		recent_damage_accum = 0
+
 /datum/group_ai_host/proc/cancel_order()
 	if(current_order)
 		current_order.cancel()
@@ -91,6 +117,7 @@
 	return current_order.start()
 
 /datum/group_ai_host/proc/process_order(delta_time)
+	update_temporal_state()
 	if(!current_order)
 		return
 	current_order.tick(delta_time)
@@ -101,25 +128,76 @@
 	if(claimed_slot && claimed_slot.occupant == src)
 		claimed_slot.occupant = null
 	claimed_slot = null
+	yield_requested = FALSE
+
+/datum/group_ai_host/proc/get_slot_hold_cd()
+	return max(4, round(melee_cd * 0.5))
+
+/datum/group_ai_host/proc/get_slot_request_cd()
+	return 5
+
+/datum/group_ai_host/proc/get_slot_swap_cd()
+	return 8
 
 /datum/group_ai_host/proc/claim_slot(datum/group_ai_slot/slot)
 	if(QDELETED(slot))
 		return FALSE
 	if(claimed_slot == slot && slot.occupant == src)
 		return TRUE
+	if(!can_claim_melee_slot)
+		return FALSE
+
 	release_slot()
 	claimed_slot = slot
 	slot.occupant = src
+	yield_until = world.time + get_slot_hold_cd()
 	return TRUE
+
+/datum/group_ai_host/proc/get_health_ratio()
+	var/mob/living/owner = get_owner()
+	if(QDELETED(owner))
+		return 0
+	return owner.health / max(owner.maxHealth, 1)
+
+/datum/group_ai_host/proc/should_yield_frontline()
+	if(!allow_hot_swap || !claimed_slot)
+		return FALSE
+	if(world.time < next_slot_swap_at)
+		return FALSE
+	if(get_health_ratio() <= hot_swap_health_threshold)
+		return TRUE
+	if(hot_swap_recent_damage_threshold > 0 && recent_damage_accum >= hot_swap_recent_damage_threshold)
+		return TRUE
+	return FALSE
 
 /datum/group_ai_host/proc/can_act()
 	return driver?.can_act()
 
+/datum/group_ai_host/proc/can_step_now()
+	return world.time >= next_move_at
+
+/datum/group_ai_host/proc/mark_step_used()
+	next_move_at = world.time + max(1, driver?.get_move_step_delay() || 1)
+
 /datum/group_ai_host/proc/step_towards_target(atom/target)
-	return driver?.step_forward(target)
+	if(!can_act() || QDELETED(target))
+		return FALSE
+	if(!can_step_now())
+		return FALSE
+	if(!driver?.step_forward(target))
+		return FALSE
+	mark_step_used()
+	return TRUE
 
 /datum/group_ai_host/proc/step_away_from_target(atom/target)
-	return driver?.step_backward(target)
+	if(!can_act() || QDELETED(target))
+		return FALSE
+	if(!can_step_now())
+		return FALSE
+	if(!driver?.step_backward(target))
+		return FALSE
+	mark_step_used()
+	return TRUE
 
 /datum/group_ai_host/proc/do_melee(atom/target)
 	if(!can_act() || QDELETED(target))
@@ -134,6 +212,8 @@
 	last_melee_target = target
 	last_melee_time = world.time
 	next_melee_at = world.time + melee_cd + rand(0, 3)
+	if(claimed_slot)
+		yield_until = max(yield_until, world.time + get_slot_hold_cd())
 	return TRUE
 
 /datum/group_ai_host/proc/do_ranged(atom/target)

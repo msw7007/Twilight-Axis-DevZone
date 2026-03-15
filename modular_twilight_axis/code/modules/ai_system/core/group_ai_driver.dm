@@ -21,6 +21,21 @@
 		return INFINITY
 	return get_dist(owner, target)
 
+/datum/group_ai_driver/proc/get_move_step_delay()
+	if(QDELETED(owner))
+		return 1
+
+	var/step_delay = 1
+	var/move_to_delay = owner:move_to_delay
+	var/turns_per_move = owner:turns_per_move
+
+	if(isnum(move_to_delay))
+		step_delay = max(step_delay, move_to_delay)
+	if(isnum(turns_per_move))
+		step_delay = max(step_delay, turns_per_move)
+
+	return step_delay
+
 /datum/group_ai_driver/proc/set_target(atom/target)
 	return TRUE
 
