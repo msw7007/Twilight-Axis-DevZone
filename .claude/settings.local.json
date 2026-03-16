@@ -1,0 +1,10 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(find /g/Byond/erp/TA-Dev/Twilight-Axis-DevZone -name \"*.dm\" -type f -exec grep -l \"spider.*cocoon\\\\|cocoon.*structure\" {})",
+      "Bash(grep -l \"basic_melee_attack\\\\|basic_ranged_attack\" /g/Byond/erp/TA-Dev/Twilight-Axis-DevZone/code/datums/ai/behaviors/hostile/*.dm)",
+      "Bash(xargs grep:*)",
+      "Bash(grep -n \"proc/attack_animal\" /g/Byond/erp/TA-Dev/Twilight-Axis-DevZone/code/modules/mob/living/simple_animal/*.dm)"
+    ]
+  }
+}
