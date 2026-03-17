@@ -4,7 +4,17 @@
       "Bash(find /g/Byond/erp/TA-Dev/Twilight-Axis-DevZone -name \"*.dm\" -type f -exec grep -l \"spider.*cocoon\\\\|cocoon.*structure\" {})",
       "Bash(grep -l \"basic_melee_attack\\\\|basic_ranged_attack\" /g/Byond/erp/TA-Dev/Twilight-Axis-DevZone/code/datums/ai/behaviors/hostile/*.dm)",
       "Bash(xargs grep:*)",
-      "Bash(grep -n \"proc/attack_animal\" /g/Byond/erp/TA-Dev/Twilight-Axis-DevZone/code/modules/mob/living/simple_animal/*.dm)"
+      "Bash(grep -n \"proc/attack_animal\" /g/Byond/erp/TA-Dev/Twilight-Axis-DevZone/code/modules/mob/living/simple_animal/*.dm)",
+      "Bash(\"C:/Program Files \\(x86\\)/BYOND/bin/dm.exe\" roguetown.dme)",
+      "Read(//c/Program Files/BYOND/bin/**)",
+      "Read(//c/Program Files \\(x86\\)/BYOND/bin/**)",
+      "Read(//c//**)",
+      "Bash(cmd.exe /c \"where dm.exe\")",
+      "Read(//d/BYOND/bin/**)",
+      "Read(//g/BYOND/bin/**)",
+      "Bash(ls \"/c/Program Files/BYOND/bin/dm.exe\" \"/c/Program Files \\(x86\\)/BYOND/bin/dm.exe\" \"/g/BYOND/bin/dm.exe\" \"/d/BYOND/bin/dm.exe\")",
+      "Bash(/g/BYOND/bin/dm.exe roguetown.dme)",
+      "Bash(find /g/Byond/erp/TA-Dev/Twilight-Axis-DevZone/code -type f -name *span*.dm)"
     ]
   }
 }
