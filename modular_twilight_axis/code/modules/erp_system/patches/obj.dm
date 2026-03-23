@@ -21,3 +21,7 @@
 
 	var/atom/initiator = is_head ? dragged : user
 	return erp_try_start(initiator, src, user)
+
+/obj/item/storage/belt/rogue/leather/aria/equipped(mob/user, slot, initial = FALSE)
+	. = ..()
+	user.AddComponent(/datum/component/combo_core/wanderer, SB_COMBO_WINDOW, SB_MAX_HISTORY, SB_MAX_VISIBLE_NOTES)

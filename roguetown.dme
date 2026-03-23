@@ -3233,6 +3233,7 @@
 #include "modular_twilight_axis\code\modules\cargo\packsrogue\merch_armor_heavy.dm"
 #include "modular_twilight_axis\code\modules\cargo\packsrogue\merch_armor_light.dm"
 #include "modular_twilight_axis\code\modules\cargo\packsrogue\merch_armor_medium.dm"
+#include "modular_twilight_axis\code\modules\erp_system\patches\wanderer.dm"
 #include "modular_twilight_axis\code\modules\spell\spell_types\wizard\misc\shadowstep.dm"
 #include "modular_twilight_axis\code\modules\surgery\organs\feature_organs\goblin_eyes_adjust.dm"
 #include "modular_twilight_axis\code\modules\client\preferences_loadout.dm"
