@@ -977,7 +977,7 @@ GLOBAL_LIST_INIT(wanderer_combat_skills, list(
 /obj/effect/proc_holder/spell/self/wanderer/switch_stance
 	name = "Switch Stance"
 	desc = "Switch between proc stance and precise stance."
-	overlay_state = "active_strike"
+	overlay_state = "switch_stance"
 
 /obj/effect/proc_holder/spell/self/wanderer/switch_stance/Execute(mob/living/user, datum/component/combo_core/wanderer/C)
 	if(!user || !C)
@@ -987,8 +987,8 @@ GLOBAL_LIST_INIT(wanderer_combat_skills, list(
 
 /obj/effect/proc_holder/spell/self/wanderer/erotic_embrace
 	name = "Erotic Embrace"
-	desc = "Preparation / play mode."
-	overlay_state = "active_wave"
+	desc = "Turn on/off erotic pressence."
+	overlay_state = "embrace"
 
 /obj/effect/proc_holder/spell/self/wanderer/erotic_embrace/Execute(mob/living/user, datum/component/combo_core/wanderer/C)
 	if(!user || !C)
