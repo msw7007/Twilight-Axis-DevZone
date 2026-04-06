@@ -194,11 +194,16 @@ GLOBAL_VAR_INIT(farm_animals, FALSE)
 	var/obj/item/clothing/barding/bbarding
 	var/caparison_over_barding = FALSE
 	var/barding_speed_mult = 1
+	var/fly_time = 3 SECONDS //default fly delay
 
 /mob/living/simple_animal/get_mechanics_examine(mob/user)
 	. = ..()
 	if(can_buckle && max_buckled_mobs)
 		. += span_info("This can carry up to [max_buckled_mobs] rider[max_buckled_mobs == 1 ? "" : "s"].")
+		. += span_info("To mount an incapacitated or tied up mob, a rider must be present on the mount.")
+		. += span_info("To dismount an incapacitated or tied up mob, all riders must dismount, first.")
+		if(ssaddle)
+			. += span_info("Use middle-mouse button on the mount to open its inventory.")
 
 /mob/living/simple_animal/Initialize()
 	. = ..()
@@ -641,7 +646,9 @@ GLOBAL_VAR_INIT(farm_animals, FALSE)
 		playsound(src, 'sound/foley/gross.ogg', 100, FALSE)
 	if(isemptylist(butcher_results))
 		if(head_butcher)
-			var/obj/item/natural/head/head = new head_butcher(Tsec)
+			var/head_path = head_butcher
+			head_butcher = null
+			var/obj/item/natural/head/head = new head_path(Tsec)
 			var/head_quality = 0
 			switch(butchery_skill_level)
 				if(SKILL_LEVEL_NONE to SKILL_LEVEL_NOVICE)
@@ -839,7 +846,7 @@ GLOBAL_VAR_INIT(farm_animals, FALSE)
 		walk(src, 0) //stop mid walk
 
 	update_transform()
-	update_action_buttons_icon()
+	update_mob_action_buttons()
 
 /mob/living/simple_animal/update_transform()
 	var/matrix/ntransform = matrix(transform) //aka transform.Copy()
@@ -977,10 +984,37 @@ GLOBAL_VAR_INIT(farm_animals, FALSE)
 		M.visible_message(span_danger("[M] falls off [src]!"))
 	..()
 	update_icon()
-
 /mob/living/simple_animal/hostile/user_buckle_mob(mob/living/M, mob/user)
 	if(user != M)
-		return
+		if(!has_buckled_mobs())
+			return FALSE
+		var/mob/living/driver = buckled_mobs[1]
+		if(driver == user)
+			to_chat(user, span_warning("I need someone else's help to hoist [M]!"))
+			return FALSE
+		if(buckled_mobs.len >= max_buckled_mobs)
+			to_chat(user, span_warning("[src] has no more room!"))
+			return FALSE
+		if(!M || M == src)
+			return FALSE
+		if(!in_range(M, src))
+			return FALSE
+		if(!M.restrained(TRUE) && !M.incapacitated(FALSE, TRUE))
+			to_chat(user, span_warning("[M] needs to be incapacitated or chained!"))
+			return FALSE
+		if(M.buckled || M.anchored)
+			return FALSE
+		if(M.loc != loc)
+			var/turf/T = get_turf(src)
+			if(!T)
+				return FALSE
+			M.forceMove(T)
+		if(!buckle_mob(M, FALSE, FALSE))
+			return FALSE
+		M.visible_message(span_warning("[user] hoists [M] onto [src]!"),\
+			span_warning("[user] hoists me onto [src]!"))
+		return TRUE
+
 	var/datum/component/riding/riding_datum = GetComponent(/datum/component/riding/no_ocean)
 	if(!riding_datum)
 		return
@@ -998,6 +1032,26 @@ GLOBAL_VAR_INIT(farm_animals, FALSE)
 
 /mob/living/simple_animal/hostile
 	var/do_footstep = FALSE
+
+/mob/living/simple_animal/hostile/proc/dismount_incap()
+	if(!has_buckled_mobs())
+		return
+	if(LAZYLEN(buckled_mobs) != 1)
+		return
+	var/mob/living/L = buckled_mobs[1]
+	if(!istype(L))
+		return
+	if(!L.restrained(TRUE) && !L.incapacitated(FALSE, TRUE))
+		return
+	unbuckle_mob(L, TRUE)
+
+/mob/living/simple_animal/hostile/post_buckle_mob(mob/living/M)
+	. = ..()
+	dismount_incap()
+
+/mob/living/simple_animal/hostile/post_unbuckle_mob(mob/living/M)
+	. = ..()
+	dismount_incap()
 
 /mob/living/simple_animal/hostile/relaymove(mob/user, direction)
 	if (stat == DEAD)
@@ -1183,5 +1237,37 @@ GLOBAL_VAR_INIT(farm_animals, FALSE)
 		RegisterSignal(new_grid, SPATIAL_GRID_CELL_ENTERED(SPATIAL_GRID_CONTENTS_TYPE_CLIENTS), PROC_REF(on_client_enter))
 		RegisterSignal(new_grid, SPATIAL_GRID_CELL_EXITED(SPATIAL_GRID_CONTENTS_TYPE_CLIENTS), PROC_REF(on_client_exit))
 	consider_wakeup()
+
+//Flight related procs foy flying simple_animals
+/mob/living/simple_animal/proc/fly_up()
+	set category = "Winged Form"
+	set name = "Fly Up"
+
+	if(src.pulledby != null)
+		to_chat(src, span_notice("I can't fly away while being grabbed!"))
+		return
+	src.visible_message(span_notice("[src] begins to ascend!"), span_notice("You take flight..."))
+	if(do_after(src, fly_time))
+		if(src.pulledby == null)
+			src.zMove(UP, TRUE)
+			to_chat(src, span_notice("I fly up."))
+		else
+			to_chat(src, span_notice("I can't fly away while being grabbed!"))
+
+/mob/living/simple_animal/proc/fly_down()
+	set category = "Winged Form"
+	set name = "Fly Down"
+
+	if(src.pulledby != null)
+		to_chat(src, span_notice("I can't fly away while being grabbed!"))
+		return
+	src.visible_message(span_notice("[src] begins to descend!"), span_notice("You take flight..."))
+	if(do_after(src, fly_time))
+		if(src.pulledby == null)
+			src.zMove(DOWN, TRUE)
+			to_chat(src, span_notice("I fly down."))
+		else
+			to_chat(src, span_notice("I can't fly away while being grabbed!"))
+//End flight
 
 #undef MAX_FARM_ANIMALS

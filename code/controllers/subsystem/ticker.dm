@@ -160,7 +160,7 @@ SUBSYSTEM_DEF(ticker)
 	else
 		login_music = "[global.config.directory]/title_music/sounds/[pick(music)]"
 
-	login_music = pick('sound/music/title.ogg','sound/music/title2.ogg')
+	login_music = pick('sound/music/title.ogg', 'sound/music/title2.ogg', 'modular_twilight_axis/sound/music/title3.ogg', 'modular_twilight_axis/sound/music/title4.ogg', 'modular_twilight_axis/sound/music/title5.ogg')
 
 	if(!GLOB.syndicate_code_phrase)
 		GLOB.syndicate_code_phrase	= generate_code_phrase(return_list=TRUE)
@@ -342,6 +342,17 @@ SUBSYSTEM_DEF(ticker)
 	can_continue =	SSgamemode.pre_setup()
 
 	CHECK_TICK
+
+
+	// Pre-scale wretch and adventurer slots before job assignment using readied player count.
+	// Add ~10% buffer to account for immediate latejoins.
+//	var/readied_count = 0
+//	for(var/mob/dead/new_player/player in GLOB.new_player_list)
+//		if(player.ready == PLAYER_READY_TO_PLAY)
+//			readied_count++
+//	var/estimated_pop = round(readied_count * 1.1)
+	gnollslot_update()
+//	update_scaling_slots(estimated_pop)
 
 	can_continue = can_continue && SSjob.DivideOccupations(list()) 				//Distribute jobs
 
@@ -544,21 +555,11 @@ SUBSYSTEM_DEF(ticker)
 		if(L)
 			L?.notransform = FALSE
 
-/datum/controller/subsystem/ticker/proc/send_tip_of_the_round()
-	return
-/*	var/m
-	if(selected_tip)
-		m = selected_tip
-	else
-		var/list/randomtips = world.file2list("strings/tips.txt")
-//		var/list/memetips = world.file2list("strings/sillytips.txt")
-//		if(randomtips.len && prob(95))
-		m = pick(randomtips)
-//		else if(memetips.len)
-//			m = pick(memetips)
-	if(m)
-		to_chat(world, span_purple("Before we begin, remember: [html_encode(m)]"))
-*/
+/datum/controller/subsystem/ticker/proc/send_tip_of_the_round(input)
+	if(!input)
+		return
+	to_chat(world, fieldset_block(span_purple("<b>Tip of the Round</b>"), span_purple("[html_encode(input)]"), "tipoftheround"))
+
 /datum/controller/subsystem/ticker/proc/check_queue()
 	if(!queued_players.len)
 		return

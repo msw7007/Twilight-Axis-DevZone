@@ -50,7 +50,7 @@
 			to_chat(user, span_notice("I don't know enough to work without a tool."))
 			return
 		to_chat(user, span_notice("I begin making a mound for the seeds..."))
-		if(do_after(user, get_farming_do_time(user, 10 SECONDS), target = src))
+		if(do_after(user, get_farming_do_time(user, 5 SECONDS), target = src))
 			apply_farming_fatigue(user, 30)
 			soil = get_soil_on_turf(T)
 			if(!soil)
@@ -195,7 +195,8 @@
 
 /obj/item/seeds/berryrogue/poison
 	seed_identity = "berry seeds"
-	plant_def_type = /datum/plant_def/bush/berry_poison
+	plant_def_type = /datum/plant_def/bush/berry_poison //Turns into unpoisoned pepper-seeds once cooked. Simple explanation? Poison jackberries are actually whole peppercorns with fruity exteriors.
+	cooked_type = /obj/item/reagent_containers/food/snacks/grown/pepperseed //The rancid effects? Have you imagined eating a handful of grape-sized peppercorns before? That'd probably do a number on anyone.
 
 /obj/item/seeds/turnip
 	seed_identity = "turnip seeds"

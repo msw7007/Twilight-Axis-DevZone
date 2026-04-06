@@ -1,5 +1,5 @@
-#define BARKER_TOPER_CAST_TIME_REDUCTION 0.05
-#define BARKER_EMERALD_CAST_TIME_REDUCTION 0.10
+#define BARKER_TOPER_CAST_TIME_REDUCTION 0.1
+#define BARKER_EMERALD_CAST_TIME_REDUCTION 0.1
 #define BARKER_SAPPHIRE_CAST_TIME_REDUCTION 0.15
 #define BARKER_RUBY_CAST_TIME_REDUCTION 0.25
 
@@ -11,7 +11,7 @@
 	light_outer_range = 2
 	light_power = 1
 	light_color = "#f5a885"
-	possible_item_intents = list(/datum/intent/mace/strike/wood, /datum/intent/special/magicarc)
+	possible_item_intents = list(/datum/intent/mace/strike/wood)
 
 /obj/item/gun/ballistic/twilight_firearm/barker/barker_staff/getonmobprop(tag)
 	. = ..()
@@ -75,7 +75,7 @@
 	name = "rontz focused barker"
 	result = /obj/item/gun/ballistic/twilight_firearm/barker/barker_staff/rontz
 	reqs = list(/obj/item/gun/ballistic/twilight_firearm/barker = 1,
-				/obj/item/magic/manacrystal = 1,
+				/datum/reagent/medicine/manapot = 15,
 				/obj/item/candle/yellow = 3,
 				/obj/item/roguegem/ruby = 1)
 	craftdiff = 0
@@ -84,7 +84,7 @@
 	name = "gemerald focused barker"
 	result = /obj/item/gun/ballistic/twilight_firearm/barker/barker_staff/gemerald
 	reqs = list(/obj/item/gun/ballistic/twilight_firearm/barker = 1,
-				/obj/item/magic/manacrystal = 1,
+				/datum/reagent/medicine/manapot = 15,
 				/obj/item/candle/yellow = 3,
 				/obj/item/roguegem/green = 1)
 	craftdiff = 0
@@ -93,7 +93,7 @@
 	name = "sapphire focused barker"
 	result = /obj/item/gun/ballistic/twilight_firearm/barker/barker_staff/sapphire
 	reqs = list(/obj/item/gun/ballistic/twilight_firearm/barker = 1,
-				/obj/item/magic/manacrystal = 1,
+				/datum/reagent/medicine/manapot = 15,
 				/obj/item/candle/yellow = 3,
 				/obj/item/roguegem/violet = 1)
 	craftdiff = 0
@@ -102,7 +102,7 @@
 	name = "toper focused barker"
 	result = /obj/item/gun/ballistic/twilight_firearm/barker/barker_staff/toper
 	reqs = list(/obj/item/gun/ballistic/twilight_firearm/barker = 1,
-				/obj/item/magic/manacrystal = 1,
+				/datum/reagent/medicine/manapot = 15,
 				/obj/item/candle/yellow = 3,
 				/obj/item/roguegem/yellow = 1)
 	craftdiff = 0
@@ -111,7 +111,7 @@
 	name = "amythortz focused barker"
 	result = /obj/item/gun/ballistic/twilight_firearm/barker/barker_staff/toper
 	reqs = list(/obj/item/gun/ballistic/twilight_firearm/barker = 1,
-				/obj/item/magic/manacrystal = 1,
+				/datum/reagent/medicine/manapot = 15,
 				/obj/item/candle/yellow = 3,
 				/obj/item/roguegem/amethyst = 1)
 	craftdiff = 0
@@ -125,7 +125,7 @@
 
 /obj/item/gun/ballistic/twilight_firearm/barker/barker_light/dendor1
 	name = "hermit's barker"
-	desc = "Один из первых образцов огнестрельного оружия, созданный отавийскими мастерами в начале позапрошлого века. Этот оброс костями и кожей словно друидский посох, что дало ему чуть больше прочности"
+	desc = "Один из первых образцов огнестрельного оружия, созданный отаванскими мастерами в начале позапрошлого века. Этот оброс костями и кожей словно друидский посох, что дало ему чуть больше прочности"
 	icon = 'modular_twilight_axis/firearms/icons/magic/dendor1.dmi'
 	icon_state = "dendor1"
 	item_state = "dendor1"
@@ -174,7 +174,7 @@
 
 /obj/item/gun/ballistic/twilight_firearm/barker/arti_barker1
 	name = "ignited barker"
-	desc = "Один из первых образцов огнестрельного оружия, созданный отавийскими мастерами в начале позапрошлого века. Данный образец оснащён поворотной ручкой с тлеющим углём, что за вас подожжёт фитиль."
+	desc = "Один из первых образцов огнестрельного оружия, созданный отаванскими мастерами в начале позапрошлого века. Данный образец оснащён поворотной ручкой с тлеющим углём, что за вас подожжёт фитиль."
 	icon = 'modular_twilight_axis/firearms/icons/magic/barti.dmi'
 	icon_state = "barti"
 	item_state = "barti"

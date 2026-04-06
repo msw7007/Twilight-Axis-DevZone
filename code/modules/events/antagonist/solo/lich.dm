@@ -12,7 +12,7 @@
 	denominator = 80
 
 	base_antags = 1
-	maximum_antags = 2
+	maximum_antags = 1
 
 	weight = 2	//i hate you
 	max_occurrences = 1 // mashallah
@@ -23,5 +23,10 @@
 	antag_datum = /datum/antagonist/lich
 
 	restricted_roles = DEFAULT_ANTAG_BLACKLISTED_ROLES
+
+/datum/round_event_control/antagonist/solo/lich/preRunEvent()
+	if(is_storyteller_villain_blocked())
+		return EVENT_CANT_RUN
+	return ..()
 
 /datum/round_event/antagonist/solo/lich

@@ -1,5 +1,6 @@
 #define NYMPHO_AROUSAL_SOFT_CAP ERP_NYMPHO_SOFT_CAP
 #define MOAN_THRESHOLD 4.0
+#define ERP_NYMPHO_SATED_GRACE 90 MINUTES
 
 /datum/component/arousal
 	var/tmp/last_ejaculation_world_time = -1
@@ -11,6 +12,7 @@
 	var/tmp/chain_lock_until = 0
 	var/last_overload_sleep_decay_time = 0
 	var/tmp/nympho_sp_floor_until = 0
+	var/erp_last_climax_fx_time = 0
 
 /datum/component/arousal/RegisterWithParent()
 	. = ..()
@@ -121,7 +123,7 @@
 /datum/component/arousal/proc/get_nympho_hunger_level()
 	if(!is_lovefiend())
 		return 0
-	if(is_nympho_sated())
+	if(is_nympho_sated() || is_nympho_sp_floor_active())
 		return 0
 	if(satisfaction_points < ERP_NYMPHO_HARD_HUNGER_SP)
 		return 2
@@ -140,16 +142,18 @@
 		return
 
 	var/was_sated = A.sated
-	var/now_sated = is_nympho_sated()
+	var/now_sated = is_nympho_sated() || is_nympho_sp_floor_active()
 	if(was_sated == now_sated)
 		return
 
 	A.sated = now_sated
 	A.unsate_time = world.time
+
 	if(now_sated)
-		nympho_sp_floor_until = world.time + 48 MINUTES
-		if(A.sated_text)
-			to_chat(H, span_blue(A.sated_text))
+		if(is_nympho_sated())
+			nympho_sp_floor_until = world.time + ERP_NYMPHO_SATED_GRACE
+			if(A.sated_text)
+				to_chat(H, span_blue(A.sated_text))
 
 		H.remove_stress(/datum/stressevent/vice)
 		if(A.debuff)
@@ -246,9 +250,6 @@
 
 /datum/component/arousal/proc/adjust_satisfaction(delta)
 	satisfaction_points = clamp(satisfaction_points + delta, 0.0, ERP_SP_MAX)
-	if(is_nympho_sp_floor_active())
-		satisfaction_points = max(satisfaction_points, 2.0)
-
 	last_sp_decay_time = world.time
 	sync_lovefiend_sated_from_sp()
 
@@ -270,11 +271,14 @@
 /datum/component/arousal/proc/award_satisfaction_on_climax(mob/living/carbon/human/climaxer, mob/living/carbon/human/partner)
 	if(!climaxer || climaxer != parent)
 		return
+
 	var/is_masturbation = (!istype(partner) || partner == climaxer)
-	if(is_masturbation)
-		adjust_satisfaction(ERP_SP_GAIN_MASTURBATE)
-	else
-		adjust_satisfaction(ERP_SP_GAIN_PARTNER)
+	var/gain = is_masturbation ? ERP_SP_GAIN_MASTURBATE : ERP_SP_GAIN_PARTNER
+
+	if(is_lovefiend() && !is_nympho_sated() && !is_nympho_sp_floor_active())
+		gain *= 2
+
+	adjust_satisfaction(gain)
 
 /datum/component/arousal/proc/get_climax_stress_event(mob/living/carbon/human/partner, is_masturbation)
 	var/is_nympho = is_lovefiend()

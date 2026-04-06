@@ -458,8 +458,6 @@
 	/datum/status_effect/buff/refocus,
 	/datum/status_effect/buff/healing,
 	/datum/status_effect/buff/psyhealing,
-	/datum/status_effect/buff/convergence,
-	/datum/status_effect/buff/stasis,
 	/datum/status_effect/buff/order/movemovemove,
 	/datum/status_effect/buff/order/takeaim,
 	/datum/status_effect/buff/order/hold,
@@ -664,7 +662,7 @@
 	force = 0
 	force_wielded = 0
 	wdefense = 1
-	possible_item_intents = list(/datum/intent/spear/thrust/ducal_standard)
+	possible_item_intents = list(/datum/intent/spear/thrust)
 	icon = 'modular_twilight_axis/icons/roguetown/weapons/64.dmi'
 	icon_state = "matthios_standard"
 	resistance_flags = FIRE_PROOF
@@ -808,7 +806,7 @@
 	race = /datum/species/dragon_matthios
 	footstep_type = FOOTSTEP_MOB_HEAVY
 	ambushable = FALSE
-	skin_armor = new /obj/item/clothing/suit/roguetown/armor/skin_armor/twilight_dragon_skin
+	skin_armor = new /obj/item/clothing/suit/roguetown/armor/regenerating/skin/twilight_dragon_skin
 	wildshape_icon = 'modular/icons/mob/96x96/ratwood_dragon.dmi'
 	wildshape_icon_state = "dragon_cool"
 	pixel_x = -32
@@ -830,8 +828,9 @@
 		STAINT = 15
 
 		AddSpell(new /obj/effect/proc_holder/spell/self/twilight_dragonclaws)
-		AddSpell(new /obj/effect/proc_holder/spell/invoked/projectile/fireball/greater/matthios_dragon)
-		AddSpell(new /obj/effect/proc_holder/spell/invoked/projectile/spitfire/matthios_dragon)
+		mind.AddSpell(new /datum/action/cooldown/spell/projectile/spitfire)
+		mind.AddSpell(/datum/action/cooldown/spell/projectile/fireball)
+		AddSpell(new /obj/effect/proc_holder/spell/targeted/woundlick)
 		src.apply_status_effect(/datum/status_effect/buff/twilight_dragon_form)
 
 		real_name = "Dragon"
@@ -858,7 +857,6 @@
 		TRAIT_NOFALLDAMAGE1,
 	)
 	inherent_biotypes = MOB_HUMANOID
-	armor = 5
 	no_equip = list(SLOT_SHIRT, SLOT_HEAD, SLOT_WEAR_MASK, SLOT_ARMOR, SLOT_GLOVES, SLOT_SHOES, SLOT_PANTS, SLOT_CLOAK, SLOT_BELT, SLOT_BACK_R, SLOT_BACK_L, SLOT_S_STORE, SLOT_RING, SLOT_NECK)
 	nojumpsuit = 1
 	sexes = 1
@@ -898,7 +896,7 @@
 	human.remove_overlay(DAMAGE_LAYER)
 	return TRUE
 
-/obj/item/clothing/suit/roguetown/armor/skin_armor/twilight_dragon_skin
+/obj/item/clothing/suit/roguetown/armor/regenerating/skin/twilight_dragon_skin
 	slot_flags = null
 	name = "draconic scales"
 	desc = "All but impenetrable."
@@ -906,14 +904,17 @@
 	body_parts_covered = FULL_BODY
 	body_parts_inherent = FULL_BODY
 	armor = ARMOR_PLATE
-	prevent_crits = PREVENT_CRITS_NONE
 	blocksound = SOFTHIT
 	blade_dulling = DULLING_BASHCHOP
 	sewrepair = FALSE
-	max_integrity = 120
+	max_integrity = 600 //plate armor
 	item_flags = DROPDEL
 
-/datum/intent/simple/twilight_dragon
+	auto_repair_mode = TRUE
+	relative_repair_interval = 15 SECONDS
+	interrupt_damount = 15
+
+/datum/intent/simple/twilight_dragon_cut
 	name = "claw"
 	clickcd = 10
 	icon_state = "incut"
@@ -921,7 +922,7 @@
 	attack_verb = list("claws", "mauls", "eviscerates")
 	animname = "cut"
 	hitsound = "genslash"
-	penfactor = 60
+	penfactor = PEN_MEDIUM
 	reach = 2
 	candodge = TRUE
 	canparry = TRUE
@@ -929,16 +930,45 @@
 	miss_sound = "bluntswoosh"
 	item_d_type = "slash"
 
+/datum/intent/simple/twilight_dragon_chop
+	name = "claw"
+	icon_state = "inchop"
+	blade_class = BCLASS_CHOP
+	attack_verb = list("claws", "mauls", "eviscerates")
+	animname = "chop"
+	hitsound = "genslash"
+	penfactor = PEN_HEAVY
+	candodge = TRUE
+	canparry = TRUE
+	miss_text = "slashes the air!"
+	miss_sound = "bluntwooshlarge"
+	item_d_type = "slash"
+	damfactor = 1.2
+
+/datum/intent/mace/smash/twilight_dragon_smash
+	name = "thrash"
+	desc = "A powerful, smash of dragon muscle that deals normal damage but can throw a standing opponent back and slow them down, based on your strength. Ineffective below 10 strength. Slowdown & Knockback scales to your Strength up to 15 (1 - 5 tiles). Cannot be used consecutively more than every 5 seconds on the same target. Prone targets halve the knockback distance."
+	icon_state = "insmash"
+	maxrange = 5
+	chargetime = 1
+	penfactor = PEN_LIGHT
+
+/datum/intent/mace/strike/twilight_dragon_strike
+	name = "armor rending strike"
+	miss_text = "strikes the air!"
+	miss_sound = "bluntwooshlarge"
+	attack_verb = list("punches", "strikes", "tears")
+
 /obj/item/rogueweapon/twilight_dragon_claw
 	name = "dragon claw"
 	desc = "It is said that true dragons used to infuse their claws with metal alloys to make them more dangerous in combat. Regardless of whether that's true, those talons, blessed by Matthios, are no less powerful."
 	item_state = null
 	lefthand_file = null
 	righthand_file = null
-	icon = 'icons/roguetown/weapons/misc32.dmi'
+	icon = 'modular_twilight_axis/icons/roguetown/weapons/32.dmi'
 	max_blade_int = 600
 	max_integrity = 600
-	force = 25
+	force = 28
 	block_chance = 0
 	wdefense = 6
 	blade_dulling = DULLING_SHAFT_WOOD
@@ -950,7 +980,7 @@
 	sharpness = IS_SHARP
 	parrysound = "bladedmedium"
 	swingsound = list('sound/combat/hits/blunt/genblunt (1).ogg','sound/combat/hits/blunt/genblunt (2).ogg','sound/combat/hits/blunt/genblunt (3).ogg','sound/combat/hits/blunt/flailhit.ogg')
-	possible_item_intents = list(/datum/intent/simple/twilight_dragon)
+	possible_item_intents = list(/datum/intent/simple/twilight_dragon_cut, /datum/intent/simple/twilight_dragon_chop, /datum/intent/mace/smash/twilight_dragon_smash, /datum/intent/mace/strike/twilight_dragon_strike)
 	parrysound = list('sound/combat/parry/parrygen.ogg')
 	embedding = list("embedded_pain_multiplier" = 0, "embed_chance" = 0, "embedded_fall_chance" = 0)
 	item_flags = DROPDEL
