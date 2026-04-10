@@ -357,6 +357,18 @@
 	target_items = list(/obj/item/rogueweapon/greataxe/steel)
 	result_item = /obj/item/rogueweapon/greataxe/steel/gilded
 
+//Zydras donator items - Ironclad baddie
+/obj/item/enchantingkit/zydrashauberk
+	name = "Mailled Hauberk morphing elixir"
+	target_items = list(/obj/item/clothing/suit/roguetown/armor/chainmail/hauberk/iron/heavy)
+	result_item = /obj/item/clothing/suit/roguetown/armor/chainmail/hauberk/iron/heavy/zycuirass
+
+/obj/item/enchantingkit/zydrasgreataxe
+	name = "Greataxe morphing elixir"
+	target_items = list(/obj/item/rogueweapon/greataxe)
+	result_item = /obj/item/rogueweapon/greataxe/zygreataxe
+
+/*
 //Zydras donator items - Iconoclast pyromaniac
 /obj/item/enchantingkit/zydrasiconocrown
 	name = "Barred Helmet morphing elixir"
@@ -375,6 +387,7 @@
 		/obj/item/clothing/suit/roguetown/armor/chainmail/hauberk/ = /obj/item/clothing/suit/roguetown/armor/chainmail/hauberk/zydrasiconosash)
 	result_item = null
 	icon_loadout = /obj/item/clothing/suit/roguetown/armor/chainmail/hauberk/zydrasiconosash
+*/
 
 //Eiren - Zweihander and sabres
 /obj/item/enchantingkit/weapon/eiren
@@ -607,6 +620,33 @@
 		/obj/item/rogueweapon/sword/long
 	)
 	result_item = /obj/item/rogueweapon/nerocavalier/flsword
+
+/obj/item/enchantingkit/aisuwand
+	name = "Crystalline Wand morphing elixir"
+	desc = "A small container of special morphing dust, perfect to make a specifc item. Required: Wand"
+	target_items = list(/obj/item/rogueweapon/wand)
+	result_item = /obj/item/rogueweapon/wand/aisu
+
+/obj/item/enchantingkit/weapon/regnum
+	name = "'Regnum' morphing elixir"
+	desc = "A small container of special morphing dust, perfect to make a specifc item. Required: Longsword Or Judgement"
+	target_items = list(
+		/obj/item/rogueweapon/sword/long,
+		/obj/item/rogueweapon/sword/long/judgement
+	)
+	result_item = /obj/item/rogueweapon/example/regnum
+
+/obj/item/enchantingkit/weapon/aeternum
+	name = "'Aeternum' morphing elixir"
+	desc = "A small container of special morphing dust, perfect to make a specifc item. Required: Greatsword, Claymore, Or Zweihander"
+	target_items = list(
+		/obj/item/rogueweapon/greatsword,
+		/obj/item/rogueweapon/greatsword/zwei,
+		/obj/item/rogueweapon/greatsword/grenz,
+		/obj/item/rogueweapon/greatsword/grenz/flamberge,
+		/obj/item/rogueweapon/greatsword/grenz/flamberge/blacksteel
+	)
+	result_item = /obj/item/rogueweapon/example/aeternum
 
 /////////////////////////////
 // ! Triumph-Exc. Kits !   //
