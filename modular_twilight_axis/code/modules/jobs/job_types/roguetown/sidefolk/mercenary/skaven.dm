@@ -1,12 +1,12 @@
 /datum/component/storage/concrete/roguetown/backpack/vermin
 	screen_max_rows = 3
 	screen_max_columns = 3
-	max_w_class = WEIGHT_CLASS_SMALL
-	not_while_equipped = TRUE
+	max_w_class = WEIGHT_CLASS_TINY
+	not_while_equipped = FALSE
 
 /datum/component/storage/concrete/roguetown/backpack/vermin/New(datum/P, ...)
 	. = ..()
-	can_hold = typecacheof(list(
+	set_holdable(list(
 		/obj/item/ammo_casing/caseless/verminsphere
 	))
 
@@ -164,14 +164,12 @@
 
 /obj/item/ammo_casing/caseless/verminsphere
 	name = "verminsphere"
-	desc = "Нестабильная сфера с вермин-реактивом. Подходит и для броска, и для зарядки верминтроуера."
+	desc = "Нестабильная сфера с вермин-реактивом. Подходит и для броска, и для питания верминтроуера."
 	icon = 'modular_twilight_axis/firearms/icons/ammo.dmi'
 	icon_state = "musketball_proj"
 	color = "#7dff65"
-	caliber = "verminsphere"
-	projectile_type = /obj/projectile/bullet/verminfire_shot
 	throwforce = 10
-	w_class = WEIGHT_CLASS_SMALL
+	w_class = WEIGHT_CLASS_TINY
 
 /obj/item/ammo_casing/caseless/verminsphere/throw_impact(atom/hit_atom, datum/thrownthing/throwingdatum)
 	. = ..()
@@ -185,6 +183,7 @@
 	desc = "Специальный рюкзак на 9 верминсфер. Ничего иного он принимать не должен."
 	icon = 'modular_twilight_axis/firearms/icons/ammo.dmi'
 	icon_state = "pouch1"
+	slot_flags = ITEM_SLOT_BACK_L|ITEM_SLOT_BACK_R
 	w_class = WEIGHT_CLASS_BULKY
 	component_type = /datum/component/storage/concrete/roguetown/backpack/vermin
 
@@ -199,28 +198,56 @@
 	return current
 
 /obj/item/storage/backpack/rogue/vermin_pack/proc/take_sphere(atom/newloc)
+	var/datum/component/storage/STR = GetComponent(/datum/component/storage)
+	if(!STR)
+		return null
+
 	for(var/obj/item/ammo_casing/caseless/verminsphere/S in contents)
-		if(newloc)
-			S.forceMove(newloc)
-		else
-			S.forceMove(drop_location())
+		var/atom/target_loc = newloc ? newloc : get_turf(src)
+		STR.remove_from_storage(S, target_loc)
 		return S
+
 	return null
+
+/obj/item/storage/backpack/rogue/vermin_pack/proc/take_multiple_spheres(count, atom/newloc)
+	var/list/taken = list()
+	var/datum/component/storage/STR = GetComponent(/datum/component/storage)
+	if(!STR)
+		return taken
+
+	var/atom/target_loc = newloc ? newloc : get_turf(src)
+
+	for(var/i in 1 to count)
+		var/obj/item/ammo_casing/caseless/verminsphere/found = null
+		for(var/obj/item/ammo_casing/caseless/verminsphere/S in contents)
+			found = S
+			break
+
+		if(!found)
+			break
+
+		STR.remove_from_storage(found, target_loc)
+		taken += found
+
+	return taken
 
 /obj/item/storage/backpack/rogue/vermin_pack/proc/has_spheres()
 	return count_spheres() > 0
+
+/obj/item/storage/backpack/rogue/vermin_pack/proc/has_at_least(count)
+	return count_spheres() >= count
 
 /obj/projectile/bullet/verminfire_shot
 	name = "verminfire"
 	icon = 'modular_twilight_axis/firearms/icons/ammo.dmi'
 	icon_state = "musketball_proj"
 	color = "#66ff55"
-	damage = 16
+	damage = 22
 	damage_type = BURN
-	range = 5
+	range = 6
 	speed = 0.2
 	flag = "magic"
-	armor_penetration = 10
+	armor_penetration = 14
 
 /obj/projectile/bullet/verminfire_shot/on_hit(atom/target, blocked = FALSE)
 	. = ..()
@@ -324,31 +351,29 @@
 
 /obj/item/gun/ballistic/revolver/grenadelauncher/verminthrower
 	name = "verminthrower"
-	desc = "Нестабильный верминтроуер. Жрёт верминсферы как боеприпас."
+	desc = "Нестабильный верминтроуер. Питается верминсферами."
 	icon = 'modular_twilight_axis/firearms/icons/32.dmi'
 	icon_state = "pistol2"
 	item_state = "pistol2"
 	var/icon_state_ready = "pistol2-1"
 	var/default_icon_state = "pistol2"
-	possible_item_intents = list(/datum/intent/shoot/verminthrower, /datum/intent/arc/verminthrower, INTENT_GENERIC)
-	mag_type = /obj/item/ammo_box/magazine/internal/shot/verminthrower
+	possible_item_intents = list(
+		/datum/intent/shoot/verminthrower,
+		/datum/intent/strike/verminthrower,
+		/datum/intent/arc/verminthrower,
+		INTENT_GENERIC
+	)
 	slot_flags = ITEM_SLOT_HIP
 	w_class = WEIGHT_CLASS_BULKY
-	spread = 8
-	recoil = 2
 	force = 8
-	cartridge_wording = "verminsphere"
 	load_sound = 'modular_twilight_axis/firearms/sound/musketload.ogg'
 	fire_sound = 'modular_twilight_axis/firearms/sound/fyrepowder/arquefire.ogg'
 	vary_fire_sound = TRUE
 	fire_sound_volume = 150
 	anvilrepair = null
 	smeltresult = /obj/item/ingot/steel
-	var/misfire_chance = 10
 	var/reload_time = 5
-	damfactor = 0.75
-	var/critfactor = 0.5
-	var/npcdamfactor = 1.5
+	var/misfire_chance = 10
 	var/cocked = FALSE
 	var/overload = FALSE
 
@@ -361,28 +386,16 @@
 			if("onbelt")
 				return list("shrink" = 0.3,"sx" = -2,"sy" = -5,"nx" = 4,"ny" = -5,"wx" = 0,"wy" = -5,"ex" = 2,"ey" = -5,"nturn" = 0,"sturn" = 0,"wturn" = 0,"eturn" = 0,"nflip" = 0,"sflip" = 0,"wflip" = 0,"eflip" = 0,"northabove" = 0,"southabove" = 1,"eastabove" = 1,"westabove" = 0)
 
-/obj/item/gun/ballistic/revolver/grenadelauncher/verminthrower/shoot_with_empty_chamber()
-	if(cocked)
-		playsound(src.loc, 'modular_twilight_axis/firearms/sound/musketcock.ogg', 100, FALSE)
-	cocked = FALSE
-	update_icon()
-
 /obj/item/gun/ballistic/revolver/grenadelauncher/verminthrower/attack_self(mob/living/user)
 	if(!cocked)
-		to_chat(user, span_info("I prime the verminthrower."))
-		var/adj_reload_time = reload_time
-		if(ishuman(user))
-			var/mob/living/carbon/human/H = user
-			var/skill = H.get_skill_level(/datum/skill/combat/twilight_firearms)
-			if(skill)
-				adj_reload_time = max(1, reload_time / skill)
-		if(move_after(user, adj_reload_time SECONDS, target = user))
+		to_chat(user, span_info("I ready the verminthrower."))
+		if(move_after(user, 0.5 SECONDS, target = user))
 			cocked = TRUE
 			playsound(user, 'modular_twilight_axis/firearms/sound/musketcock.ogg', 100, FALSE)
 	else
 		overload = !overload
 		if(overload)
-			to_chat(user, span_warning("I crank the verminthrower into overload. This is a terrible idea."))
+			to_chat(user, span_warning("I crank the verminthrower into overload."))
 		else
 			to_chat(user, span_notice("I return the verminthrower to a safer pressure level."))
 	update_icon()
@@ -402,17 +415,12 @@
 
 /obj/item/gun/ballistic/revolver/grenadelauncher/verminthrower/examine(mob/user)
 	. = ..()
-	. += span_info("Режимы: базовый поток верминфайра и спрей.")
+	. += span_info("Режимы: конус (1 сфера), линия (2 сферы), широкий полукруг (2 сферы).")
 	if(overload)
 		. += span_warning("Перегрузка включена.")
 
 /obj/item/gun/ballistic/revolver/grenadelauncher/verminthrower/proc/apply_overload_effects(mob/living/user)
-	if(!overload)
-		return
-	user.adjustToxLoss(2)
-	user.adjust_fire_stacks(1)
-	if(prob(25))
-		user.ignite_mob()
+	return
 
 /obj/item/gun/ballistic/revolver/grenadelauncher/verminthrower/proc/find_vermin_pack(mob/living/user)
 	if(!user)
@@ -421,164 +429,195 @@
 		return P
 	return null
 
-/obj/item/gun/ballistic/revolver/grenadelauncher/verminthrower/proc/try_auto_load_from_pack(mob/living/user)
-	if(chambered)
-		return TRUE
+/obj/item/gun/ballistic/revolver/grenadelauncher/verminthrower/proc/get_required_spheres(mob/living/user)
+	if(istype(user.used_intent, /datum/intent/strike/verminthrower))
+		return 2
+	if(istype(user.used_intent, /datum/intent/arc/verminthrower))
+		return 2
+	return 1
 
+/obj/item/gun/ballistic/revolver/grenadelauncher/verminthrower/proc/consume_spheres_or_fail(mob/living/user, count)
 	var/obj/item/storage/backpack/rogue/vermin_pack/P = find_vermin_pack(user)
-	if(!P || !P.has_spheres())
+	if(!P)
+		to_chat(user, span_warning("I need a vermin pack with spheres."))
 		return FALSE
 
-	var/obj/item/ammo_casing/caseless/verminsphere/S = P.take_sphere(src)
-	if(!S)
+	if(!P.has_at_least(count))
+		to_chat(user, span_warning("I do not have enough verminspheres."))
 		return FALSE
 
-	attackby(S, user, null)
+	var/list/taken = P.take_multiple_spheres(count, src)
+	if(length(taken) < count)
+		for(var/obj/item/I in taken)
+			I.forceMove(P)
+		to_chat(user, span_warning("I do not have enough verminspheres."))
+		return FALSE
 
-	if(chambered)
-		return TRUE
+	for(var/obj/item/I in taken)
+		qdel(I)
 
-	S.forceMove(P)
-	return FALSE
+	return TRUE
 
-/obj/item/gun/ballistic/revolver/grenadelauncher/verminthrower/proc/consume_round_or_fail(mob/living/user)
-	if(chambered)
-		return TRUE
-	if(try_auto_load_from_pack(user))
-		return TRUE
-	to_chat(user, span_warning("[src] has no verminsphere loaded."))
-	return FALSE
+/obj/item/gun/ballistic/revolver/grenadelauncher/verminthrower/proc/can_fire_now(mob/living/user)
+	if(!cocked)
+		to_chat(user, span_warning("The pressure chamber is not primed."))
+		return FALSE
 
-/obj/item/gun/ballistic/revolver/grenadelauncher/verminthrower/proc/spend_chambered_round()
-	if(chambered)
-		qdel(chambered)
-		chambered = null
+	var/required = get_required_spheres(user)
+	if(!consume_spheres_or_fail(user, required))
+		return FALSE
 
-/obj/item/gun/ballistic/revolver/grenadelauncher/verminthrower/proc/apply_stream_effect_to_mob(mob/living/user, mob/living/L, turf/T, damage_mult)
-	if(L == user)
-		return
-
-	L.adjust_fire_stacks(overload ? 2 : 1)
-	L.ignite_mob()
-	L.adjustToxLoss(round(3 * damage_mult))
-
-	if(prob(overload ? 35 : 20))
-		new /obj/effect/vermin_gas_cloud(T)
-
-/obj/item/gun/ballistic/revolver/grenadelauncher/verminthrower/proc/do_stream_fire(mob/living/user)
-	var/damage_mult = overload ? 1.35 : 1
-	var/duration = 3 SECONDS
-	var/interval = 2
-	var/max_ticks = max(1, round(duration / interval))
-
-	for(var/i in 1 to max_ticks)
-		if(!user || user.stat || user.incapacitated())
-			break
-
-		var/current_dir = user.dir
-		var/turf/user_turf = get_turf(user)
-		var/user_angle = dir2angle(current_dir)
-
-		for(var/p in 1 to 6)
-			new /obj/effect/temp_visual/verminfire_particle(user_turf, current_dir)
-
-		playsound(user_turf, 'sound/items/firelight.ogg', 40, TRUE)
-
-		for(var/turf/T in view(3, user_turf))
-			var/dist = get_dist(user_turf, T)
-			if(dist == 0)
-				continue
-
-			var/target_angle = Get_Angle(user_turf, T)
-			var/angle_diff = abs(closer_angle_difference(user_angle, target_angle))
-
-			if(angle_diff <= 30)
-				for(var/mob/living/L in T.contents)
-					apply_stream_effect_to_mob(user, L, T, damage_mult)
-
-		if(overload)
-			apply_overload_effects(user)
-
-		sleep(interval)
-
-/obj/item/gun/ballistic/revolver/grenadelauncher/verminthrower/proc/prepare_spray_fire(atom/target, mob/living/user)
-	for(var/obj/item/ammo_casing/CB in get_ammo_list(FALSE, TRUE))
-		var/obj/projectile/bullet/verminfire_shot/BB = CB.BB
-		if(!istype(BB))
-			continue
-		BB.damage = overload ? 22 : 16
-		BB.range = overload ? 6 : 5
-		BB.armor_penetration = overload ? 18 : 10
-
-	spread = overload ? 20 : 14
-	if(overload)
-		misfire_chance = 18
-	else
-		misfire_chance = initial(misfire_chance)
-
-	if(prob(misfire_chance))
+	if(prob(overload ? 18 : misfire_chance))
 		to_chat(user, span_warning("[src] violently misfires!"))
+		user.adjust_fire_stacks(3)
+		user.ignite_mob()
 		explosion(src, light_impact_range = 1, heavy_impact_range = 1, smoke = TRUE)
 		qdel(src)
 		return FALSE
 
-	var/dir = get_dir(src, target)
-	var/datum/effect_system/smoke_spread/smoke = new
-	smoke.set_up(1, get_step(src, dir))
-	smoke.start()
+	cocked = FALSE
+	update_icon()
+	return TRUE
+
+/obj/item/gun/ballistic/revolver/grenadelauncher/verminthrower/afterattack(atom/target, mob/living/user, proximity_flag, click_parameters)
+	. = ..()
+	if(!user || user.stat || user.incapacitated())
+		return
+	if(!can_fire_now(user))
+		return
+
+	if(istype(user.used_intent, /datum/intent/strike/verminthrower))
+		do_line_fire(user)
+		return
+
+	if(istype(user.used_intent, /datum/intent/arc/verminthrower))
+		do_wide_spray_fire(user)
+		return
+
+	do_cone_fire(user)
+
+/obj/item/gun/ballistic/revolver/grenadelauncher/verminthrower/proc/do_cone_fire(mob/living/user)
+	var/damage_mult = overload ? 1.35 : 1
+	var/duration = 5 SECONDS
+	var/interval = 2
+	var/max_ticks = max(1, round(duration / interval))
+
+	spawn(0)
+		for(var/i in 1 to max_ticks)
+			if(!user || user.stat || user.incapacitated())
+				break
+
+			var/current_dir = user.dir
+			var/turf/user_turf = get_turf(user)
+			var/user_angle = dir2angle(current_dir)
+
+			for(var/p in 1 to 6)
+				new /obj/effect/temp_visual/verminfire_particle(user_turf, current_dir)
+
+			playsound(user_turf, 'sound/items/firelight.ogg', 40, TRUE)
+
+			for(var/turf/T in view(3, user_turf))
+				var/dist = get_dist(user_turf, T)
+				if(dist == 0)
+					continue
+
+				var/target_angle = Get_Angle(user_turf, T)
+				var/angle_diff = abs(closer_angle_difference(user_angle, target_angle))
+
+				if(angle_diff <= 30)
+					for(var/mob/living/L in T.contents)
+						if(L == user)
+							continue
+						L.adjust_fire_stacks(overload ? 2 : 1)
+						L.ignite_mob()
+						L.adjustToxLoss(round(3 * damage_mult))
+						if(prob(overload ? 35 : 20))
+							new /obj/effect/vermin_gas_cloud(T)
+
+			if(overload)
+				apply_overload_effects(user)
+
+			sleep(interval)
+
+/obj/item/gun/ballistic/revolver/grenadelauncher/verminthrower/proc/do_line_fire(mob/living/user)
+	var/turf/T = get_turf(user)
+	var/range = overload ? 8 : 7
+
+	playsound(get_turf(user), fire_sound, fire_sound_volume, vary_fire_sound)
+
+	for(var/i in 1 to range)
+		T = get_step(T, user.dir)
+		if(!T)
+			break
+
+		new /obj/effect/temp_visual/verminfire_particle(T, user.dir)
+
+		for(var/mob/living/L in T.contents)
+			if(L == user)
+				continue
+			L.adjust_fire_stacks(overload ? 3 : 2)
+			L.ignite_mob()
+			L.adjustToxLoss(overload ? 6 : 4)
+
+		if(prob(overload ? 45 : 25))
+			new /obj/effect/vermin_gas_cloud(T)
 
 	if(overload)
 		apply_overload_effects(user)
 
-	return TRUE
+/obj/item/gun/ballistic/revolver/grenadelauncher/verminthrower/proc/do_wide_spray_fire(mob/living/user)
+	var/damage_mult = overload ? 1.15 : 1
+	var/turf/user_turf = get_turf(user)
+	var/user_angle = dir2angle(user.dir)
 
-/obj/item/gun/ballistic/revolver/grenadelauncher/verminthrower/process_fire(atom/target, mob/living/user, message = TRUE, params = null, zone_override = "", bonus_spread = 0)
-	if(!cocked)
-		to_chat(user, span_warning("The pressure chamber is not primed."))
-		return
+	for(var/p in 1 to 12)
+		new /obj/effect/temp_visual/verminfire_particle(user_turf, user.dir)
 
-	if(!consume_round_or_fail(user))
-		return
+	playsound(user_turf, 'sound/items/firelight.ogg', 50, TRUE)
 
-	cocked = FALSE
-	update_icon()
+	for(var/turf/T in view(3, user_turf))
+		var/dist = get_dist(user_turf, T)
+		if(dist == 0)
+			continue
 
-	if(istype(user.used_intent, /datum/intent/arc/verminthrower))
-		if(!prepare_spray_fire(target, user))
-			return
-		return ..()
+		var/target_angle = Get_Angle(user_turf, T)
+		var/angle_diff = abs(closer_angle_difference(user_angle, target_angle))
 
-	spend_chambered_round()
-	do_stream_fire(user)
+		if(angle_diff <= 75)
+			if(prob(70))
+				new /obj/effect/vermin_gas_cloud(T)
 
-/obj/item/ammo_box/magazine/internal/shot/verminthrower
-	ammo_type = /obj/item/ammo_casing/caseless/verminsphere
-	caliber = "verminsphere"
-	max_ammo = 1
-	start_empty = TRUE
+			for(var/mob/living/L in T.contents)
+				if(L == user)
+					continue
+				L.adjust_fire_stacks(overload ? 2 : 1)
+				if(prob(60))
+					L.ignite_mob()
+				L.adjustToxLoss(round(2 * damage_mult))
+
+	if(overload)
+		apply_overload_effects(user)
 
 /datum/intent/shoot/verminthrower
+	chargetime = 5
 	chargedrain = 0
 
 /datum/intent/shoot/verminthrower/get_chargetime()
-	if(mastermob && chargetime)
-		var/newtime = chargetime + 55
-		newtime -= (mastermob.get_skill_level(/datum/skill/combat/twilight_firearms) * 12)
-		newtime -= mastermob.STAPER
-		return max(1, newtime)
-	return chargetime
+	return 5
+
+/datum/intent/strike/verminthrower
+	chargetime = 5
+	chargedrain = 0
+
+/datum/intent/strike/verminthrower/get_chargetime()
+	return 5
 
 /datum/intent/arc/verminthrower
-	chargetime = 1
+	chargetime = 5
 	chargedrain = 0
 
 /datum/intent/arc/verminthrower/get_chargetime()
-	if(mastermob && chargetime)
-		var/newtime = chargetime + 70
-		newtime -= (mastermob.get_skill_level(/datum/skill/combat/twilight_firearms) * 10)
-		newtime -= mastermob.STAPER
-		return max(1, newtime)
-	return chargetime
+	return 5
 
 /obj/machinery/vermin_refinery
 	name = "vermin refinery"
