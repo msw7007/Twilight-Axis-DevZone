@@ -155,7 +155,7 @@
 
 /obj/item/paper/vermin_refinery_blueprints
 	name = "vermin refinery blueprints"
-	info = "Чертежи вермин-перегонщика.\n\nПринимает очищенный люкс.\nКаждую минуту производит 1 верминстоун, если в буфере достаточно люкса.\n\nКрафт:\n- 3 верминстоуна -> верминтроуер\n- 1 верминстоун -> 3 верминсферы\n- 10 верминстоунов -> end rocket"
+	info = "Чертежи вермин-перегонщика.\n\nПринимает очищенный люкс.\nКаждую минуту производит 1 верминстоун, если в буфере достаточно люкса.\n\nКрафт:\n- 3 верминстоуна -> верминтроуер\n- 1 верминстоун -> 3 верминсферы\n- 10 верминстоунов -> end rocket\n- 3 стали, 2 бревна, 2 доски -> end rocket rack"
 
 /obj/item/verminstone
 	name = "verminstone"
@@ -713,80 +713,257 @@
 
 	addtimer(CALLBACK(src, PROC_REF(process_cycle)), cycle_time)
 
-/obj/item/artillery_shell/end_rocket
+/mob/living/var/list/vermin_linked_racks
+
+/mob/living/proc/add_vermin_rack(obj/structure/vermin_rocket_rack/R)
+	if(!R)
+		return
+	if(!vermin_linked_racks)
+		vermin_linked_racks = list()
+	if(!(R in vermin_linked_racks))
+		vermin_linked_racks += R
+
+/mob/living/proc/remove_vermin_rack(obj/structure/vermin_rocket_rack/R)
+	if(!vermin_linked_racks || !R)
+		return
+	vermin_linked_racks -= R
+
+/mob/living/proc/get_first_loaded_vermin_rack()
+	if(!vermin_linked_racks)
+		return null
+
+	for(var/obj/structure/vermin_rocket_rack/R in vermin_linked_racks.Copy())
+		if(QDELETED(R))
+			vermin_linked_racks -= R
+			continue
+		if(R.loaded_rocket)
+			return R
+
+	return null
+
+/mob/living/proc/ensure_vermin_launch_spell()
+	var/datum/action/cooldown/spell/verminengineer_launch/existing = locate() in actions
+	if(existing)
+		return
+
+	var/datum/action/cooldown/spell/verminengineer_launch/S = new
+	S.Grant(src)
+
+/datum/action/cooldown/spell/verminengineer_launch
+	name = "Launch End Rocket"
+	desc = "Указать примерную точку падения первой заряженной вермин-ракетной установки."
+	button_icon = 'icons/mob/actions/mage_kinesis.dmi'
+	button_icon_state = "gravity"
+	sound = 'modular_twilight_axis/awful_artillery/sound/launch.ogg'
+	spell_color = COLOR_LIME
+	glow_intensity = GLOW_INTENSITY_MEDIUM
+
+	click_to_activate = TRUE
+	cast_range = SPELL_RANGE_GROUND
+
+	charge_required = TRUE
+	charge_time = CHARGETIME_MAJOR
+	charge_drain = 1
+	charge_slowdown = CHARGING_SLOWDOWN_MEDIUM
+	charge_sound = 'sound/magic/charging.ogg'
+	cooldown_time = 5 SECONDS
+
+	weapon_cast_penalized = FALSE
+	spell_requirements = SPELL_REQUIRES_HUMAN | SPELL_REQUIRES_SAME_Z
+
+/datum/action/cooldown/spell/verminengineer_launch/cast(atom/cast_on)
+	. = ..()
+	var/mob/living/user = owner
+	if(!istype(user))
+		return FALSE
+
+	var/turf/T = get_turf(cast_on)
+	if(!T)
+		return FALSE
+
+	var/obj/structure/vermin_rocket_rack/R = user.get_first_loaded_vermin_rack()
+	if(!R)
+		to_chat(user, span_warning("У меня нет загруженной ракетной установки."))
+		return FALSE
+
+	return R.launch_to_target(user, T)
+
+/obj/item/end_rocket
 	name = "end rocket"
+	desc = "Нестабильная вермин-ракета. Лучше не стоять рядом, когда её запускают."
 	icon = 'modular_twilight_axis/awful_artillery/icons/artillery.dmi'
 	icon_state = "cannonball"
 	color = "#74ff5d"
 	w_class = WEIGHT_CLASS_BULKY
 
-/obj/item/artillery_shell/end_rocket/shell_action()
-	var/turf/T = GET_TURF_ABOVE(get_turf(src))
-	if(!T)
-		T = get_turf(src)
+/obj/item/end_rocket/proc/shell_action(turf/impact_turf)
+	if(!impact_turf)
+		impact_turf = get_turf(src)
+	if(!impact_turf)
+		return
 
-	while(GET_TURF_ABOVE(T))
-		T = GET_TURF_ABOVE(T)
+	explosion(impact_turf, 2, 4, 8, flame_range = 0, smoke = TRUE, ignorecap = TRUE)
+	new /obj/effect/vermin_gas_cloud(impact_turf)
 
-	if(!T)
-		T = get_turf(src)
+	var/radius = 4.5
+	var/radius_sq = radius * radius
 
-	while(GET_TURF_BELOW(T) && istype(T, /turf/open/transparent))
-		T = GET_TURF_BELOW(T)
+	for(var/turf/open/T in range(5, impact_turf))
+		var/dx = T.x - impact_turf.x
+		var/dy = T.y - impact_turf.y
 
-	for(var/mob/M in GLOB.player_list)
-		M.playsound_local(src, 'modular_twilight_axis/awful_artillery/sound/far_explosion.ogg', 100, FALSE, pressure_affected = FALSE)
+		if((dx * dx) + (dy * dy) > radius_sq)
+			continue
 
-	if(T)
-		explosion(T, 6, 12, 24, flame_range = 5, smoke = TRUE, ignorecap = TRUE)
-		new /obj/effect/vermin_gas_cloud(T)
+		var/dist_sq = (dx * dx) + (dy * dy)
 
-		for(var/turf/open/AT in range(2, T))
-			if(prob(80))
-				new /obj/effect/vermin_gas_cloud(AT)
-			if(prob(60))
-				new /obj/effect/hotspot/verminfire(AT, 125, 1000 + T0C, 18, 3)
+		if(prob(70))
+			new /obj/effect/vermin_gas_cloud(T)
 
-		for(var/mob/living/L in range(2, T))
-			L.adjust_fire_stacks(4)
-			L.ignite_mob()
-			L.adjustToxLoss(10)
+		var/fire_level = 1
+		if(dist_sq <= 2.25)
+			fire_level = 3
+		else if(dist_sq <= 12.25)
+			fire_level = 2
+
+		var/obj/effect/hotspot/verminfire/F = locate(/obj/effect/hotspot/verminfire) in T
+		if(F)
+			F.life = max(F.life, 20)
+			F.firelevel = max(F.firelevel, fire_level)
+			F.icon_state = "[F.firelevel]"
+		else
+			new /obj/effect/hotspot/verminfire(T, 125, 1000 + T0C, 20, fire_level)
+
+	for(var/mob/living/L in range(5, impact_turf))
+		var/turf/LT = get_turf(L)
+		if(!LT)
+			continue
+
+		var/dx = LT.x - impact_turf.x
+		var/dy = LT.y - impact_turf.y
+
+		if((dx * dx) + (dy * dy) > radius_sq)
+			continue
+
+		L.adjust_fire_stacks(4)
+		L.ignite_mob()
+		L.adjustToxLoss(10)
 
 	qdel(src)
 
-/obj/structure/artillery/end_rocket_rack
+/obj/structure/vermin_rocket_rack
 	name = "end rocket rack"
-	desc = "Пусковая установка End Rocket."
+	desc = "Примитивная вермин-ракетная установка. Наводится вручную через выданный спелл."
 	icon = 'modular_twilight_axis/awful_artillery/icons/artillery.dmi'
 	icon_state = "mortar"
-	elevation = 50
-	elevation_min = 35
-	elevation_max = 70
-	ammo_type = /obj/item/artillery_shell/end_rocket
-	charge_min = 1
-	charge_max = 3
-	cooldown = 30 SECONDS
-	base_velocity = 8
-	charge_velocity_step = 20
+	anchored = TRUE
+	density = TRUE
+	var/obj/item/end_rocket/loaded_rocket = null
+	var/mob/living/owner_loader = null
 
-/obj/structure/artillery/end_rocket_rack/fire_artillery(mob/user)
+/obj/structure/vermin_rocket_rack/examine(mob/user)
+	. = ..()
+	if(loaded_rocket)
+		. += span_notice("Внутри уже заряжена ракета.")
+	else
+		. += span_info("Установка пуста.")
+
+/obj/structure/vermin_rocket_rack/Destroy()
+	if(owner_loader)
+		owner_loader.remove_vermin_rack(src)
+	owner_loader = null
+	loaded_rocket = null
+	return ..()
+
+/obj/structure/vermin_rocket_rack/attackby(obj/item/I, mob/user, params)
+	if(istype(I, /obj/item/end_rocket))
+		if(loaded_rocket)
+			to_chat(user, span_warning("Установка уже заряжена."))
+			return
+
+		if(!do_after(user, 20, target = src))
+			return
+
+		I.forceMove(src)
+		loaded_rocket = I
+		owner_loader = user
+
+		if(isliving(user))
+			var/mob/living/L = user
+			L.add_vermin_rack(src)
+			L.ensure_vermin_launch_spell()
+
+		to_chat(user, span_notice("Я заряжаю ракету в [src]."))
+		playsound(src, 'modular_twilight_axis/awful_artillery/sound/loading.ogg', 100, FALSE)
+		return
+
+	return ..()
+
+/obj/structure/vermin_rocket_rack/proc/get_scatter_for_distance(dist)
+	if(dist <= 0)
+		return 0
+	return round(dist / 10)
+
+/obj/structure/vermin_rocket_rack/proc/get_scattered_target(turf/original_target)
+	if(!original_target)
+		return null
+
+	var/scatter = get_scatter_for_distance(get_dist(src, original_target))
+	if(scatter <= 0)
+		return original_target
+
+	var/final_x = original_target.x + rand(-scatter, scatter)
+	var/final_y = original_target.y + rand(-scatter, scatter)
+
+	final_x = max(1, min(world.maxx, final_x))
+	final_y = max(1, min(world.maxy, final_y))
+
+	var/turf/final_target = locate(final_x, final_y, original_target.z)
+	if(!final_target)
+		return original_target
+
+	return final_target
+
+/obj/structure/vermin_rocket_rack/proc/launch_to_target(mob/living/user, turf/original_target)
+	if(!loaded_rocket)
+		to_chat(user, span_warning("[src] не заряжена."))
+		return FALSE
+
+	if(!original_target)
+		to_chat(user, span_warning("Не удалось определить цель."))
+		return FALSE
+
+	var/turf/final_target = get_scattered_target(original_target)
+	if(!final_target)
+		to_chat(user, span_warning("Не удалось определить финальную точку падения."))
+		return FALSE
+
 	for(var/mob/M in GLOB.player_list)
 		to_chat(M, span_userdanger("NUCLEAR LAUNCH DETECTED."))
 		M.playsound_local(src, 'modular_twilight_axis/awful_artillery/sound/launch.ogg', 100, FALSE, pressure_affected = FALSE)
-	. = ..()
 
-/datum/crafting_recipe/roguetown/engineering/vermin_refinery
-	name = "vermin refinery"
-	result = /obj/machinery/vermin_refinery
-	reqs = list(
-		/obj/item/ingot/steel = 2,
-		/obj/item/grown/log/tree = 2,
-		/obj/item/natural/wood/plank = 2
-	)
-	verbage_simple = "assemble"
-	verbage = "assembles"
-	craftdiff = 3
-	time = 20 SECONDS
+	var/obj/item/end_rocket/R = loaded_rocket
+	loaded_rocket = null
+
+	if(owner_loader)
+		owner_loader.remove_vermin_rack(src)
+	owner_loader = null
+
+	var/x_mid = src.x + ((final_target.x - src.x) * 0.5)
+	var/y_mid = src.y + ((final_target.y - src.y) * 0.5)
+	var/z_mid = src.z + ((final_target.z - src.z) * 0.5)
+	var/turf/turf_mid = locate(floor(x_mid), floor(y_mid), floor(z_mid))
+	if(turf_mid)
+		playsound(turf_mid, 'modular_twilight_axis/awful_artillery/sound/flyby.ogg', 100, FALSE, 50)
+
+	R.forceMove(final_target)
+	R.shell_action(final_target)
+
+	visible_message(span_danger("[src] launches an End Rocket!"))
+	log_game("[user] launched [src] toward [final_target.x],[final_target.y],[final_target.z]")
+	message_admins("End Rocket launched from [ADMIN_VERBOSEJMP(src)] toward [ADMIN_VERBOSEJMP(final_target)] by [key_name_admin(user)]")
+
+	return TRUE
 
 /datum/crafting_recipe/roguetown/engineering/verminthrower
 	name = "verminthrower"
@@ -816,9 +993,22 @@
 	new /obj/item/ammo_casing/caseless/verminsphere(location)
 	new /obj/item/ammo_casing/caseless/verminsphere(location)
 
+/datum/crafting_recipe/roguetown/engineering/vermin_refinery
+	name = "vermin refinery"
+	result = /obj/machinery/vermin_refinery
+	reqs = list(
+		/obj/item/ingot/steel = 2,
+		/obj/item/grown/log/tree = 2,
+		/obj/item/natural/wood/plank = 2
+	)
+	verbage_simple = "assemble"
+	verbage = "assembles"
+	craftdiff = 3
+	time = 20 SECONDS
+
 /datum/crafting_recipe/roguetown/engineering/end_rocket
 	name = "end rocket"
-	result = /obj/item/artillery_shell/end_rocket
+	result = /obj/item/end_rocket
 	reqs = list(
 		/obj/item/verminstone = 10
 	)
@@ -829,7 +1019,7 @@
 
 /datum/crafting_recipe/roguetown/engineering/end_rocket_rack
 	name = "end rocket rack"
-	result = /obj/structure/artillery/end_rocket_rack
+	result = /obj/structure/vermin_rocket_rack
 	reqs = list(
 		/obj/item/ingot/steel = 3,
 		/obj/item/grown/log/tree = 2,
@@ -856,4 +1046,3 @@
 	var/slots = max(0, scaling["final_slots"])
 	vermin_job.total_positions = max(vermin_job.current_positions, slots)
 	vermin_job.spawn_positions = max(vermin_job.current_positions, slots)
-	
