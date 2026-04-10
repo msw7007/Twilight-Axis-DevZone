@@ -1,3 +1,7 @@
+/************************************************************/
+/* verminengineer.dm                                        */
+/************************************************************/
+
 /datum/component/storage/concrete/roguetown/backpack/vermin
 	screen_max_rows = 3
 	screen_max_columns = 3
@@ -164,7 +168,7 @@
 
 /obj/item/ammo_casing/caseless/verminsphere
 	name = "verminsphere"
-	desc = "Нестабильная сфера с вермин-реактивом. Подходит и для броска, и для питания верминтроуера."
+	desc = "Нестабильная сфера с вермин-реактивом. При броске выпускает только ядовитый газ."
 	icon = 'modular_twilight_axis/firearms/icons/ammo.dmi'
 	icon_state = "musketball_proj"
 	color = "#7dff65"
@@ -237,74 +241,6 @@
 /obj/item/storage/backpack/rogue/vermin_pack/proc/has_at_least(count)
 	return count_spheres() >= count
 
-/obj/projectile/bullet/verminfire_shot
-	name = "verminfire"
-	icon = 'modular_twilight_axis/firearms/icons/ammo.dmi'
-	icon_state = "musketball_proj"
-	color = "#66ff55"
-	damage = 22
-	damage_type = BURN
-	range = 6
-	speed = 0.2
-	flag = "magic"
-	armor_penetration = 14
-
-/obj/projectile/bullet/verminfire_shot/on_hit(atom/target, blocked = FALSE)
-	. = ..()
-	if(isliving(target))
-		var/mob/living/L = target
-		L.adjust_fire_stacks(2)
-		L.ignite_mob()
-		L.adjustToxLoss(4)
-		if(prob(35))
-			new /obj/effect/temp_visual/verminfire_flash(get_turf(L))
-
-	var/turf/T = get_turf(target)
-	if(T && prob(35))
-		new /obj/effect/vermin_gas_cloud(T)
-
-/obj/effect/temp_visual/verminfire_flash
-	name = "verminfire"
-	icon = 'icons/effects/effects.dmi'
-	icon_state = "mech_fire"
-	color = "#66ff55"
-	duration = 8
-	layer = ABOVE_MOB_LAYER
-	appearance_flags = RESET_TRANSFORM | PIXEL_SCALE
-
-/obj/effect/temp_visual/verminfire_particle
-	name = "verminfire breath"
-	icon = 'icons/effects/effects.dmi'
-	icon_state = "mech_fire"
-	color = "#66ff55"
-	duration = 8
-	layer = ABOVE_MOB_LAYER
-	appearance_flags = RESET_TRANSFORM | PIXEL_SCALE
-
-/obj/effect/temp_visual/verminfire_particle/Initialize(mapload, direction)
-	. = ..()
-	var/dist = 3
-	var/p_x = 0
-	var/p_y = 0
-	var/side_variance = rand(-48, 48)
-	var/forward_dist = 32 * dist
-
-	switch(direction)
-		if(NORTH)
-			p_y = forward_dist
-			p_x = side_variance
-		if(SOUTH)
-			p_y = -forward_dist
-			p_x = side_variance
-		if(EAST)
-			p_x = forward_dist
-			p_y = side_variance
-		if(WEST)
-			p_x = -forward_dist
-			p_y = side_variance
-
-	animate(src, pixel_x = p_x, pixel_y = p_y, alpha = 0, time = duration, easing = SINE_EASING)
-
 /obj/effect/vermin_gas_cloud
 	name = "vermin gas"
 	desc = "Тошнотворное зелёное облако вермин-газа."
@@ -345,8 +281,98 @@
 
 /obj/effect/vermin_gas_cloud/proc/apply_gas_effect(mob/living/L)
 	L.adjustToxLoss(3)
-	L.adjust_fire_stacks(1)
-	if(prob(20))
+	if(prob(10))
+		L.adjust_fire_stacks(1)
+
+/obj/effect/temp_visual/verminfire_particle
+	name = "verminfire breath"
+	icon = 'icons/effects/effects.dmi'
+	icon_state = "mech_fire"
+	color = "#66ff55"
+	duration = 8
+	layer = ABOVE_MOB_LAYER
+	appearance_flags = RESET_TRANSFORM | PIXEL_SCALE
+
+/obj/effect/temp_visual/verminfire_particle/Initialize(mapload, direction)
+	. = ..()
+	var/dist = 3
+	var/p_x = 0
+	var/p_y = 0
+	var/side_variance = rand(-48, 48)
+	var/forward_dist = 32 * dist
+
+	switch(direction)
+		if(NORTH)
+			p_y = forward_dist
+			p_x = side_variance
+		if(SOUTH)
+			p_y = -forward_dist
+			p_x = side_variance
+		if(EAST)
+			p_x = forward_dist
+			p_y = side_variance
+		if(WEST)
+			p_x = -forward_dist
+			p_y = side_variance
+
+	animate(src, pixel_x = p_x, pixel_y = p_y, alpha = 0, time = duration, easing = SINE_EASING)
+
+/obj/effect/hotspot/verminfire
+	icon = 'icons/effects/fire.dmi'
+	icon_state = "1"
+	light_color = "#66ff55"
+	color = "#66ff55"
+	temperature = 1000 + T0C
+	firelevel = 1
+	life = 20
+	var/anim_dir = 1
+
+/obj/effect/hotspot/verminfire/Initialize(mapload, starting_volume, starting_temperature, life, starting_level = 1)
+	. = ..(mapload, starting_volume, starting_temperature, life)
+	if(!isnull(starting_level))
+		firelevel = clamp(starting_level, 1, 3)
+	icon_state = "[firelevel]"
+	color = "#66ff55"
+	set_light(l_color = "#66ff55")
+
+/obj/effect/hotspot/verminfire/update_color()
+	color = "#66ff55"
+	set_light(l_color = "#66ff55")
+
+/obj/effect/hotspot/verminfire/process()
+	if(just_spawned)
+		just_spawned = FALSE
+		return
+
+	var/turf/open/location = loc
+	if(!istype(location))
+		qdel(src)
+		return
+
+	life--
+	if(life <= 0)
+		qdel(src)
+		return
+
+	step_fire_animation()
+	perform_exposure()
+	return
+
+/obj/effect/hotspot/verminfire/proc/step_fire_animation()
+	firelevel += anim_dir
+	if(firelevel >= 3)
+		firelevel = 3
+		anim_dir = -1
+	else if(firelevel <= 1)
+		firelevel = 1
+		anim_dir = 1
+	icon_state = "[firelevel]"
+
+/obj/effect/hotspot/verminfire/Crossed(atom/movable/AM, oldLoc)
+	..()
+	if(isliving(AM))
+		var/mob/living/L = AM
+		L.adjust_fire_stacks(max(1, firelevel))
 		L.ignite_mob()
 
 /obj/item/gun/ballistic/revolver/grenadelauncher/verminthrower
@@ -373,9 +399,11 @@
 	anvilrepair = null
 	smeltresult = /obj/item/ingot/steel
 	var/reload_time = 5
-	var/misfire_chance = 10
 	var/cocked = FALSE
 	var/overload = FALSE
+	var/heat_stacks = 0
+	var/max_heat_stacks = 10
+	var/heat_decay_delay = 5 SECONDS
 
 /obj/item/gun/ballistic/revolver/grenadelauncher/verminthrower/getonmobprop(tag)
 	. = ..()
@@ -416,11 +444,9 @@
 /obj/item/gun/ballistic/revolver/grenadelauncher/verminthrower/examine(mob/user)
 	. = ..()
 	. += span_info("Режимы: конус (1 сфера), линия (2 сферы), широкий полукруг (2 сферы).")
+	. += span_info("Heat: [heat_stacks] / [max_heat_stacks].")
 	if(overload)
 		. += span_warning("Перегрузка включена.")
-
-/obj/item/gun/ballistic/revolver/grenadelauncher/verminthrower/proc/apply_overload_effects(mob/living/user)
-	return
 
 /obj/item/gun/ballistic/revolver/grenadelauncher/verminthrower/proc/find_vermin_pack(mob/living/user)
 	if(!user)
@@ -458,6 +484,22 @@
 
 	return TRUE
 
+/obj/item/gun/ballistic/revolver/grenadelauncher/verminthrower/proc/get_misfire_chance()
+	if(heat_stacks <= 0)
+		return 0
+
+	var/per_stack = overload ? 7.5 : 5
+	return min(100, round(heat_stacks * per_stack))
+
+/obj/item/gun/ballistic/revolver/grenadelauncher/verminthrower/proc/add_heat_stacks(amount = 1)
+	heat_stacks = min(max_heat_stacks, heat_stacks + amount)
+	addtimer(CALLBACK(src, PROC_REF(decay_heat_stacks), amount), heat_decay_delay)
+
+/obj/item/gun/ballistic/revolver/grenadelauncher/verminthrower/proc/decay_heat_stacks(amount = 1)
+	if(QDELETED(src))
+		return
+	heat_stacks = max(0, heat_stacks - amount)
+
 /obj/item/gun/ballistic/revolver/grenadelauncher/verminthrower/proc/can_fire_now(mob/living/user)
 	if(!cocked)
 		to_chat(user, span_warning("The pressure chamber is not primed."))
@@ -467,7 +509,8 @@
 	if(!consume_spheres_or_fail(user, required))
 		return FALSE
 
-	if(prob(overload ? 18 : misfire_chance))
+	var/misfire_chance_final = get_misfire_chance()
+	if(misfire_chance_final > 0 && prob(misfire_chance_final))
 		to_chat(user, span_warning("[src] violently misfires!"))
 		user.adjust_fire_stacks(3)
 		user.ignite_mob()
@@ -479,24 +522,46 @@
 	update_icon()
 	return TRUE
 
+/obj/item/gun/ballistic/revolver/grenadelauncher/verminthrower/proc/spawn_vermin_fire(turf/open/T, level = 1, fire_life = 20)
+	if(!istype(T))
+		return
+
+	var/obj/effect/hotspot/verminfire/F = locate(/obj/effect/hotspot/verminfire) in T
+	if(F)
+		F.life = max(F.life, fire_life)
+		F.firelevel = max(F.firelevel, clamp(level, 1, 3))
+		F.icon_state = "[F.firelevel]"
+		return
+
+	new /obj/effect/hotspot/verminfire(T, 125, 1000 + T0C, fire_life, level)
+
 /obj/item/gun/ballistic/revolver/grenadelauncher/verminthrower/afterattack(atom/target, mob/living/user, proximity_flag, click_parameters)
 	. = ..()
 	if(!user || user.stat || user.incapacitated())
 		return
+	if(!target)
+		return
 	if(!can_fire_now(user))
 		return
 
+	var/fire_dir = get_dir(user, target)
+	if(fire_dir)
+		user.setDir(fire_dir)
+
 	if(istype(user.used_intent, /datum/intent/strike/verminthrower))
-		do_line_fire(user)
+		add_heat_stacks(2)
+		do_line_fire(user, fire_dir)
 		return
 
 	if(istype(user.used_intent, /datum/intent/arc/verminthrower))
-		do_wide_spray_fire(user)
+		add_heat_stacks(2)
+		do_wide_spray_fire(user, fire_dir)
 		return
 
-	do_cone_fire(user)
+	add_heat_stacks(1)
+	do_cone_fire(user, fire_dir)
 
-/obj/item/gun/ballistic/revolver/grenadelauncher/verminthrower/proc/do_cone_fire(mob/living/user)
+/obj/item/gun/ballistic/revolver/grenadelauncher/verminthrower/proc/do_cone_fire(mob/living/user, fire_dir)
 	var/damage_mult = overload ? 1.35 : 1
 	var/duration = 5 SECONDS
 	var/interval = 2
@@ -507,16 +572,15 @@
 			if(!user || user.stat || user.incapacitated())
 				break
 
-			var/current_dir = user.dir
 			var/turf/user_turf = get_turf(user)
-			var/user_angle = dir2angle(current_dir)
+			var/user_angle = dir2angle(fire_dir)
 
 			for(var/p in 1 to 6)
-				new /obj/effect/temp_visual/verminfire_particle(user_turf, current_dir)
+				new /obj/effect/temp_visual/verminfire_particle(user_turf, fire_dir)
 
 			playsound(user_turf, 'sound/items/firelight.ogg', 40, TRUE)
 
-			for(var/turf/T in view(3, user_turf))
+			for(var/turf/open/T in view(3, user_turf))
 				var/dist = get_dist(user_turf, T)
 				if(dist == 0)
 					continue
@@ -531,26 +595,22 @@
 						L.adjust_fire_stacks(overload ? 2 : 1)
 						L.ignite_mob()
 						L.adjustToxLoss(round(3 * damage_mult))
-						if(prob(overload ? 35 : 20))
-							new /obj/effect/vermin_gas_cloud(T)
-
-			if(overload)
-				apply_overload_effects(user)
 
 			sleep(interval)
 
-/obj/item/gun/ballistic/revolver/grenadelauncher/verminthrower/proc/do_line_fire(mob/living/user)
-	var/turf/T = get_turf(user)
-	var/range = overload ? 8 : 7
+/obj/item/gun/ballistic/revolver/grenadelauncher/verminthrower/proc/do_line_fire(mob/living/user, fire_dir)
+	var/turf/open/T = get_turf(user)
+	if(!istype(T))
+		return
 
 	playsound(get_turf(user), fire_sound, fire_sound_volume, vary_fire_sound)
 
-	for(var/i in 1 to range)
-		T = get_step(T, user.dir)
-		if(!T)
+	for(var/i in 1 to 10)
+		T = get_step(T, fire_dir)
+		if(!istype(T))
 			break
 
-		new /obj/effect/temp_visual/verminfire_particle(T, user.dir)
+		spawn_vermin_fire(T, overload ? 3 : 2, 18)
 
 		for(var/mob/living/L in T.contents)
 			if(L == user)
@@ -559,23 +619,14 @@
 			L.ignite_mob()
 			L.adjustToxLoss(overload ? 6 : 4)
 
-		if(prob(overload ? 45 : 25))
-			new /obj/effect/vermin_gas_cloud(T)
-
-	if(overload)
-		apply_overload_effects(user)
-
-/obj/item/gun/ballistic/revolver/grenadelauncher/verminthrower/proc/do_wide_spray_fire(mob/living/user)
+/obj/item/gun/ballistic/revolver/grenadelauncher/verminthrower/proc/do_wide_spray_fire(mob/living/user, fire_dir)
 	var/damage_mult = overload ? 1.15 : 1
 	var/turf/user_turf = get_turf(user)
-	var/user_angle = dir2angle(user.dir)
-
-	for(var/p in 1 to 12)
-		new /obj/effect/temp_visual/verminfire_particle(user_turf, user.dir)
+	var/user_angle = dir2angle(fire_dir)
 
 	playsound(user_turf, 'sound/items/firelight.ogg', 50, TRUE)
 
-	for(var/turf/T in view(3, user_turf))
+	for(var/turf/open/T in view(3, user_turf))
 		var/dist = get_dist(user_turf, T)
 		if(dist == 0)
 			continue
@@ -584,19 +635,14 @@
 		var/angle_diff = abs(closer_angle_difference(user_angle, target_angle))
 
 		if(angle_diff <= 75)
-			if(prob(70))
-				new /obj/effect/vermin_gas_cloud(T)
+			spawn_vermin_fire(T, overload ? 2 : 1, 15)
 
 			for(var/mob/living/L in T.contents)
 				if(L == user)
 					continue
 				L.adjust_fire_stacks(overload ? 2 : 1)
-				if(prob(60))
-					L.ignite_mob()
+				L.ignite_mob()
 				L.adjustToxLoss(round(2 * damage_mult))
-
-	if(overload)
-		apply_overload_effects(user)
 
 /datum/intent/shoot/verminthrower
 	chargetime = 5
@@ -695,11 +741,11 @@
 		explosion(T, 6, 12, 24, flame_range = 5, smoke = TRUE, ignorecap = TRUE)
 		new /obj/effect/vermin_gas_cloud(T)
 
-		for(var/turf/AT in range(2, T))
+		for(var/turf/open/AT in range(2, T))
 			if(prob(80))
 				new /obj/effect/vermin_gas_cloud(AT)
 			if(prob(60))
-				new /obj/effect/temp_visual/verminfire_flash(AT)
+				new /obj/effect/hotspot/verminfire(AT, 125, 1000 + T0C, 18, 3)
 
 		for(var/mob/living/L in range(2, T))
 			L.adjust_fire_stacks(4)
@@ -810,3 +856,4 @@
 	var/slots = max(0, scaling["final_slots"])
 	vermin_job.total_positions = max(vermin_job.current_positions, slots)
 	vermin_job.spawn_positions = max(vermin_job.current_positions, slots)
+	
