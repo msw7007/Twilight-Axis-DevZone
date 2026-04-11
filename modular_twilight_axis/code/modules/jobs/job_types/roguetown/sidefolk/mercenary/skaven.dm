@@ -1,7 +1,3 @@
-/************************************************************/
-/* verminengineer.dm                                        */
-/************************************************************/
-
 /datum/component/storage/concrete/roguetown/backpack/vermin
 	screen_max_rows = 3
 	screen_max_columns = 3
