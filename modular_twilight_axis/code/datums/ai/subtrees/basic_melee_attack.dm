@@ -13,7 +13,7 @@
 
 	if(isliving(target))
 		var/mob/living/L = target
-		if(human_npc_target_already_bound(L))
+		if(human_npc_should_preserve_capture_target(L))
 			return
 
 	return ..()

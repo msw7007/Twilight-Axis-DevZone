@@ -1,2 +1,4 @@
 #define HUMAN_NPC_ANTI_GRAB_STR_LIMIT 12
 #define HUMAN_NPC_ANTI_GRAB_CON_LIMIT 12
+
+#define BB_HUMAN_NPC_CAPTURE_LOOT "human_npc_capture_loot"

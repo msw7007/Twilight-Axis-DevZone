@@ -11,29 +11,41 @@
 /datum/ai_controller/human_npc/proc/_insert_bind_capture_subtrees()
 	var/datum/ai_planning_subtree/bind_rope_subtree = GLOB.ai_subtrees[/datum/ai_planning_subtree/human_npc_bind_capture/rope]
 	var/datum/ai_planning_subtree/bind_chain_subtree = GLOB.ai_subtrees[/datum/ai_planning_subtree/human_npc_bind_capture/chain]
+	var/datum/ai_planning_subtree/captive_loot_subtree = GLOB.ai_subtrees[/datum/ai_planning_subtree/find_captive_loot]
 
 	if(!bind_rope_subtree || !bind_chain_subtree)
 		return
 
 	var/list/new_subtrees = list()
-	var/inserted = FALSE
+	var/inserted_bind = FALSE
+	var/inserted_loot = FALSE
 
 	for(var/datum/ai_planning_subtree/tree as anything in planning_subtrees)
-		if(!inserted)
+		if(!inserted_bind)
 			if(istype(tree, /datum/ai_planning_subtree/ranged_attack_subtree) || istype(tree, /datum/ai_planning_subtree/basic_melee_attack_subtree/human_npc))
 				if(!(bind_rope_subtree in new_subtrees))
 					new_subtrees += bind_rope_subtree
 				if(!(bind_chain_subtree in new_subtrees))
 					new_subtrees += bind_chain_subtree
-				inserted = TRUE
-		if(tree == bind_rope_subtree || tree == bind_chain_subtree)
+				inserted_bind = TRUE
+
+		if(!inserted_loot && captive_loot_subtree && istype(tree, /datum/ai_planning_subtree/equip_item))
+			if(!(captive_loot_subtree in new_subtrees))
+				new_subtrees += captive_loot_subtree
+			inserted_loot = TRUE
+
+		if(tree == bind_rope_subtree || tree == bind_chain_subtree || tree == captive_loot_subtree)
 			continue
+
 		new_subtrees += tree
 
-	if(!inserted)
+	if(!inserted_bind)
 		if(!(bind_rope_subtree in new_subtrees))
 			new_subtrees += bind_rope_subtree
 		if(!(bind_chain_subtree in new_subtrees))
 			new_subtrees += bind_chain_subtree
+
+	if(captive_loot_subtree && !(captive_loot_subtree in new_subtrees))
+		new_subtrees += captive_loot_subtree
 
 	planning_subtrees = new_subtrees

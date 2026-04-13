@@ -14,6 +14,9 @@
 	if(!human_npc_is_valid_bind_target(target))
 		return
 
+	if(human_npc_has_nearby_active_hostiles(pawn, target))
+		return
+
 	controller.queue_behavior(bind_behavior, BB_BASIC_MOB_CURRENT_TARGET)
 	return SUBTREE_RETURN_FINISH_PLANNING
 
