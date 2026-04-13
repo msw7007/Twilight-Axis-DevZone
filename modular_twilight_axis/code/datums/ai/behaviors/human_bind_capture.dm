@@ -62,6 +62,10 @@
 		if(binding_item.loc == pawn || binding_item.loc == get_turf(pawn))
 			qdel(binding_item)
 
+	if(ishuman(target) && human_npc_target_already_bound(target))
+		var/mob/living/carbon/human/human_target = target
+		human_npc_strip_bound_target_equipment(human_target, get_turf(human_target))
+
 	if(restored_item && !QDELETED(restored_item))
 		if(restored_item.loc == get_turf(pawn) || restored_item.loc == pawn.loc)
 			pawn.put_in_hands(restored_item)
