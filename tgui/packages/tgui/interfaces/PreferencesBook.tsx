@@ -24,7 +24,8 @@ type Data = {
     selected_region: string;
   };
   header: {
-    player_quality?: string;
+    player_quality_text?: string;
+    player_quality_color?: string;
     real_name: string;
     nickname: string;
     nickname_color: string;
@@ -74,6 +75,9 @@ export const PreferencesBook = () => {
   const handleOpenCharacterSlot = () =>
     act('open_pref_menu', { which: 'changeslot' });
 
+  const handleOpenPQ = () =>
+    act('open_pref_menu', { which: 'pq' });
+
   const handleSavePrefs = () =>
     act('save_prefs');
 
@@ -94,8 +98,11 @@ export const PreferencesBook = () => {
             <Section title="Header">
               <Stack align="center">
                 <Stack.Item>
-                  <Button onClick={handleOpenCharacterSlot}>
-                    PQ: {header?.player_quality || 'Unknown'}
+                  <Button
+                    onClick={handleOpenPQ}
+                    textColor={header?.player_quality_color || '#ffffff'}
+                  >
+                    PQ: {header?.player_quality_text || 'Unknown'}
                   </Button>
                 </Stack.Item>
                 <Stack.Item grow>
@@ -277,7 +284,7 @@ const CharacterPage = () => {
     act('open_pref_menu', { which: 'combat_music' });
 
   const handleOpenUnrevivable = () =>
-    act('open_pref_menu', { which: 'unrevivable' });
+    act('toggle_unrevivable');
 
   const handleSelectBodyRegion = (regionId: string) =>
     act('select_body_region', { region: regionId });

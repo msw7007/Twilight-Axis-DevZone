@@ -101,8 +101,37 @@
 	return data
 
 /datum/preferences/proc/build_preferences_header_data(mob/user)
+	var/pq_text = "Unknown"
+	var/pq_color = "#ffffff"
+	var/pq_html = "[get_playerquality(user.ckey, text = TRUE)]"
+	var/color_pos = findtext(pq_html, "color:")
+	if(color_pos)
+		var/color_start = color_pos + length("color:")
+		while((color_start <= length(pq_html)) && (copytext(pq_html, color_start, color_start + 1) in list(" ", "\t", "'", "\"")))
+			color_start++
+
+		var/color_end = color_start
+		while(color_end <= length(pq_html) && !(copytext(pq_html, color_end, color_end + 1) in list(";", "'", "\"")))
+			color_end++
+
+		var/extracted_color = trim(copytext(pq_html, color_start, color_end))
+		if(length(extracted_color))
+			pq_color = extracted_color
+
+	var/text_start = findtext(pq_html, ">")
+	if(text_start)
+		text_start++
+		var/text_end = findtext(pq_html, "<", text_start)
+		if(text_end > text_start)
+			pq_text = html_decode(copytext(pq_html, text_start, text_end))
+		else
+			pq_text = html_decode(pq_html)
+	else
+		pq_text = html_decode(pq_html)
+
 	return list(
-		"player_quality" = get_playerquality(user.ckey, text = TRUE),
+		"player_quality_text" = pq_text,
+		"player_quality_color" = pq_color,
 		"real_name" = real_name,
 		"nickname" = nickname,
 		"nickname_color" = highlight_color ? "#[highlight_color]" : "#FF0000",
@@ -307,7 +336,10 @@
 		if("open_pref_menu")
 			var/which = params["which"]
 			if(user && which)
-				return open_preferences_tgui_menu(user, which)
+				var/result = open_preferences_tgui_menu(user, which)
+				if(result && ui)
+					SStgui.update_uis(src)
+				return result
 
 		if("open_theme_picker")
 			if(user)
@@ -327,6 +359,17 @@
 			save_character()
 			if(ui)
 				ui.close()
+			return TRUE
+
+		if("toggle_unrevivable")
+			dnr_pref = !dnr_pref
+			save_preferences()
+			save_character()
+
+			if(ui)
+				ui.send_update()
+			SStgui.update_uis(src)
+
 			return TRUE
 
 	return FALSE
@@ -387,7 +430,7 @@
 			return process_link(user, list("preference" = "changeslot"))
 
 		if("pq")
-			return FALSE
+			check_pq_menu(user.ckey)
 
 		if("name")
 			return process_link(user, list("preference" = "name", "task" = "input"))
@@ -436,9 +479,6 @@
 
 		if("combat_music")
 			return process_link(user, list("preference" = "combat_music", "task" = "input"))
-
-		if("unrevivable")
-			return process_link(user, list("preference" = "dnr"))
 
 		if("race")
 			return process_link(user, list("preference" = "species", "task" = "input"))
