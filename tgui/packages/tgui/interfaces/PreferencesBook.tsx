@@ -1,4 +1,3 @@
-
 import { useBackend } from 'tgui/backend';
 import { Window } from 'tgui/layouts';
 import {
@@ -46,6 +45,30 @@ type FamiliarPanel = {
   in_queue?: boolean;
 };
 
+type ViceEntry = {
+  index: number;
+  name: string;
+  desc?: string;
+};
+
+type VicePanel = {
+  items: ViceEntry[];
+  can_add?: boolean;
+};
+
+type VirtueChoiceEntry = {
+  index: number;
+  name: string;
+  tooltip?: string;
+};
+
+type VirtuePanel = {
+  name?: string;
+  desc?: string;
+  picked_choices: VirtueChoiceEntry[];
+  can_add_choice?: boolean;
+};
+
 type Data = {
   main_tabs: TabData[];
   sub_tabs: Record<string, TabData[]>;
@@ -67,10 +90,10 @@ type Data = {
     voice_pack: string;
   };
   character_page: {
-    identity: Record<string, string | number>;
-    voice: Record<string, string | number>;
-    lore: Record<string, string | number>;
-    prefs: Record<string, string | number>;
+    identity: Record<string, string | number | boolean>;
+    voice: Record<string, string | number | boolean>;
+    lore: Record<string, string | number | boolean>;
+    prefs: Record<string, string | number | boolean>;
     descriptors: string[];
     selected_region: {
       id: string;
@@ -85,6 +108,9 @@ type Data = {
   };
   culinary_panel?: CulinaryPanel;
   familiar_panel?: FamiliarPanel;
+  vice_panel?: VicePanel;
+  virtue_panel?: VirtuePanel;
+  virtue_two_panel?: VirtuePanel;
 };
 
 export const PreferencesBook = () => {
@@ -135,8 +161,7 @@ export const PreferencesBook = () => {
                 <Stack.Item>
                   <Button
                     onClick={handleOpenPQ}
-                    textColor={header?.player_quality_color || '#ffffff'}
-                  >
+                    textColor={header?.player_quality_color || '#ffffff'}>
                     PQ: {header?.player_quality_text || 'Unknown'}
                   </Button>
                 </Stack.Item>
@@ -161,8 +186,7 @@ export const PreferencesBook = () => {
                   <Button
                     fluid
                     onClick={handleOpenNicknameColor}
-                    textColor={header?.nickname_color || '#ffffff'}
-                  >
+                    textColor={header?.nickname_color || '#ffffff'}>
                     Change color
                   </Button>
                 </Stack.Item>
@@ -173,25 +197,18 @@ export const PreferencesBook = () => {
           <Stack.Item>
             <Section title="Book">
               <Tabs fluid>
-                {main_tabs.map((tab) => {
-                  const handleClickMainTab = () => handleSetMainTab(tab.id);
-
-                  return (
-                    <Tabs.Tab
-                      key={tab.id}
-                      selected={currentMainTab === tab.id}
-                      onClick={handleClickMainTab}
-                    >
-                      {tab.name}
-                    </Tabs.Tab>
-                  );
-                })}
+                {main_tabs.map((tab) => (
+                  <Tabs.Tab
+                    key={tab.id}
+                    selected={currentMainTab === tab.id}
+                    onClick={() => handleSetMainTab(tab.id)}>
+                    {tab.name}
+                  </Tabs.Tab>
+                ))}
               </Tabs>
 
               <Box mt={1}>
-                {currentMainTab === 'character' && (
-                  <CharacterPage />
-                )}
+                {currentMainTab === 'character' && <CharacterPage />}
                 {currentMainTab === 'loadout' && (
                   <PlaceholderPage
                     title="Loadout"
@@ -208,26 +225,19 @@ export const PreferencesBook = () => {
                     onButtonClick={handleOpenRoles}
                   />
                 )}
-                {currentMainTab === 'settings' && (
-                  <SettingsPage />
-                )}
+                {currentMainTab === 'settings' && <SettingsPage />}
               </Box>
 
               <Box mt={2}>
                 <Tabs fluid>
-                  {currentSubTabs.map((tab) => {
-                    const handleClickSubTab = () => handleSetSubTab(tab.id);
-
-                    return (
-                      <Tabs.Tab
-                        key={tab.id}
-                        selected={currentSubTab === tab.id}
-                        onClick={handleClickSubTab}
-                      >
-                        {tab.name}
-                      </Tabs.Tab>
-                    );
-                  })}
+                  {currentSubTabs.map((tab) => (
+                    <Tabs.Tab
+                      key={tab.id}
+                      selected={currentSubTab === tab.id}
+                      onClick={() => handleSetSubTab(tab.id)}>
+                      {tab.name}
+                    </Tabs.Tab>
+                  ))}
                 </Tabs>
               </Box>
             </Section>
@@ -243,95 +253,30 @@ const PlaceholderPage = (props: {
   text: string;
   buttonText: string;
   onButtonClick: () => void;
-}) => {
-  const handleButtonClick = props.onButtonClick;
-
-  return (
-    <Section title={props.title}>
-      <NoticeBox>{props.text}</NoticeBox>
-      <Box mt={1}>
-        <Button onClick={handleButtonClick}>{props.buttonText}</Button>
-      </Box>
-    </Section>
-  );
-};
+}) => (
+  <Section title={props.title}>
+    <NoticeBox>{props.text}</NoticeBox>
+    <Box mt={1}>
+      <Button onClick={props.onButtonClick}>{props.buttonText}</Button>
+    </Box>
+  </Section>
+);
 
 const CharacterPage = () => {
   const { act, data } = useBackend<Data>();
-  const { body_regions = [], character_page, book, expanded_panel, culinary_panel, familiar_panel } = data;
+  const {
+    body_regions = [],
+    character_page,
+    book,
+    expanded_panel,
+    culinary_panel,
+    familiar_panel,
+    vice_panel,
+    virtue_panel,
+    virtue_two_panel,
+  } = data;
   const selected = character_page?.selected_region;
-
-  const handleSetRealName = (value: string) =>
-    act('set_pref', { pref_id: 'real_name', value });
-
-  const handleOpenAge = () =>
-    act('open_pref_menu', { which: 'age' });
-
-  const handleOpenBodyType = () =>
-    act('open_pref_menu', { which: 'body_type' });
-
-  const handleOpenClothingType = () =>
-    act('open_pref_menu', { which: 'clothing_type' });
-
-  const handleOpenTitlesPref = () =>
-    act('open_pref_menu', { which: 'titles_pref' });
-
-  const handleOpenPronouns = () =>
-    act('open_pref_menu', { which: 'pronouns' });
-
-  const handleOpenRace = () =>
-    act('open_pref_menu', { which: 'race' });
-
-  const handleOpenSubrace = () =>
-    act('open_pref_menu', { which: 'subrace' });
-
-  const handleOpenRaceBonus = () =>
-    act('open_pref_menu', { which: 'race_bonus' });
-
-  const handleOpenLanguage = () =>
-    act('open_pref_menu', { which: 'language' });
-
-  const handleOpenOrigin = () =>
-    act('open_pref_menu', { which: 'origin' });
-
-  const handleOpenVoicePack = () =>
-    act('open_pref_menu', { which: 'voice_pack' });
-
-  const handleOpenVoiceType = () =>
-    act('open_pref_menu', { which: 'voice_type' });
-
-  const handleOpenVoiceColor = () =>
-    act('open_pref_menu', { which: 'voice_color' });
-
-  const handleOpenVoicePitch = () =>
-    act('open_pref_menu', { which: 'voice_pitch' });
-
-  const handleOpenFaith = () =>
-    act('open_pref_menu', { which: 'faith' });
-
-  const handleOpenPatron = () =>
-    act('open_pref_menu', { which: 'patron' });
-
-  const handleOpenDomhand = () =>
-    act('open_pref_menu', { which: 'domhand' });
-
-  const handleOpenCombatMusic = () =>
-    act('open_pref_menu', { which: 'combat_music' });
-
-  const handleOpenUnrevivable = () =>
-    act('toggle_unrevivable');
-
-  const handleSelectBodyRegion = (regionId: string) =>
-    act('select_body_region', { region: regionId });
-
-  const handleOpenRegionOption = (optionId: string) =>
-    act('open_pref_menu', { which: optionId });
-
-  const handleToggleFood = () =>
-    act('toggle_panel', { panel: 'food' });
-
-  const handleToggleFamiliar = () =>
-    act('toggle_panel', { panel: 'familiar' });
+  const showVirtueTwo = Boolean(character_page?.prefs?.show_virtue_two);
 
   return (
     <Stack fill>
@@ -340,139 +285,45 @@ const CharacterPage = () => {
           <Field
             label="Name"
             value={String(character_page?.identity?.real_name || '')}
-            onChange={handleSetRealName}
+            onChange={(value) => act('set_pref', { pref_id: 'real_name', value })}
           />
-          <ActionField
-            label="Age"
-            value={String(character_page?.identity?.age || '')}
-            onClick={handleOpenAge}
-          />
-          <ActionField
-            label="Body Type"
-            value={String(character_page?.identity?.body_type || '')}
-            onClick={handleOpenBodyType}
-          />
-          <ActionField
-            label="Clothing"
-            value={String(character_page?.identity?.clothing_type || '')}
-            onClick={handleOpenClothingType}
-          />
-          <ActionField
-            label="Title"
-            value={String(character_page?.identity?.titles_pref || '')}
-            onClick={handleOpenTitlesPref}
-          />
-          <ActionField
-            label="Pronouns"
-            value={String(character_page?.identity?.pronouns || '')}
-            onClick={handleOpenPronouns}
-          />
-          <ActionField
-            label="Race"
-            value={String(character_page?.identity?.race || '')}
-            onClick={handleOpenRace}
-          />
-          <ActionField
-            label="Subrace"
-            value={String(character_page?.identity?.subrace || '')}
-            onClick={handleOpenSubrace}
-          />
-          <ActionField
-            label="Race Bonus"
-            value={String(character_page?.identity?.race_bonus || '')}
-            onClick={handleOpenRaceBonus}
-          />
-          <ActionField
-            label="Language"
-            value={String(character_page?.identity?.language || '')}
-            onClick={handleOpenLanguage}
-          />
-          <ActionField
-            label="Origin"
-            value={String(character_page?.identity?.origin || '')}
-            onClick={handleOpenOrigin}
-          />
+          <ActionField label="Age" value={String(character_page?.identity?.age || '')} onClick={() => act('open_pref_menu', { which: 'age' })} />
+          <ActionField label="Body Type" value={String(character_page?.identity?.body_type || '')} onClick={() => act('open_pref_menu', { which: 'body_type' })} />
+          <ActionField label="Clothing" value={String(character_page?.identity?.clothing_type || '')} onClick={() => act('open_pref_menu', { which: 'clothing_type' })} />
+          <ActionField label="Title" value={String(character_page?.identity?.titles_pref || '')} onClick={() => act('open_pref_menu', { which: 'titles_pref' })} />
+          <ActionField label="Pronouns" value={String(character_page?.identity?.pronouns || '')} onClick={() => act('open_pref_menu', { which: 'pronouns' })} />
+          <ActionField label="Race" value={String(character_page?.identity?.race || '')} onClick={() => act('open_pref_menu', { which: 'race' })} />
+          <ActionField label="Subrace" value={String(character_page?.identity?.subrace || '')} onClick={() => act('open_pref_menu', { which: 'subrace' })} />
+          <ActionField label="Race Bonus" value={String(character_page?.identity?.race_bonus || '')} onClick={() => act('open_pref_menu', { which: 'race_bonus' })} />
+          <ActionField label="Language" value={String(character_page?.identity?.language || '')} onClick={() => act('open_pref_menu', { which: 'language' })} />
+          <ActionField label="Origin" value={String(character_page?.identity?.origin || '')} onClick={() => act('open_pref_menu', { which: 'origin' })} />
         </Section>
 
         <Section title="Voice / Lore" mt={1}>
-          <ActionField
-            label="Voice Pack"
-            value={String(character_page?.voice?.voice_pack || '')}
-            onClick={handleOpenVoicePack}
-          />
-          <ActionField
-            label="Voice Identity"
-            value={String(character_page?.voice?.voice_type || '')}
-            onClick={handleOpenVoiceType}
-          />
-          <ColorActionField
-            label="Voice Color"
-            colorValue={String(character_page?.voice?.voice_color || '#ffffff')}
-            onClick={handleOpenVoiceColor}
-          />
-          <ActionField
-            label="Voice Pitch"
-            value={String(character_page?.voice?.voice_pitch || '')}
-            onClick={handleOpenVoicePitch}
-          />
-          <ActionField
-            label="Faith"
-            value={String(character_page?.lore?.faith || '')}
-            onClick={handleOpenFaith}
-          />
-          <ActionField
-            label="God"
-            value={String(character_page?.lore?.god || '')}
-            onClick={handleOpenPatron}
-          />
-          <ActionField
-            label="Dominance"
-            value={String(character_page?.lore?.dominance || '')}
-            onClick={handleOpenDomhand}
-          />
-          <ActionField
-            label="Combat Music"
-            value={String(character_page?.voice?.combat_music || '')}
-            onClick={handleOpenCombatMusic}
-          />
-          <ActionField
-            label="Unrevivable"
-            value={String(character_page?.lore?.unrevivable || '')}
-            onClick={handleOpenUnrevivable}
-          />
-          <ActionField
-            label="Food"
-            value={String(character_page?.prefs?.food || '')}
-            onClick={handleToggleFood}
-          />
-          <EmbeddedFoodPanel
-            expanded={expanded_panel === 'food'}
-            culinaryPanel={culinary_panel}
-          />
-          <ActionField
-            label="Familiar"
-            value={String(character_page?.prefs?.familiar || '')}
-            onClick={handleToggleFamiliar}
-          />
-          <EmbeddedFamiliarPanel
-            expanded={expanded_panel === 'familiar'}
-            familiarPanel={familiar_panel}
-          />
-          <Field
-            label="Statpack"
-            value={String(character_page?.prefs?.statpack || '')}
-            readOnly
-          />
-          <Field
-            label="Vice"
-            value={String(character_page?.prefs?.vice || '')}
-            readOnly
-          />
-          <Field
-            label="Virtue"
-            value={String(character_page?.prefs?.virtue || '')}
-            readOnly
-          />
+          <ActionField label="Voice Pack" value={String(character_page?.voice?.voice_pack || '')} onClick={() => act('open_pref_menu', { which: 'voice_pack' })} />
+          <ActionField label="Voice Identity" value={String(character_page?.voice?.voice_type || '')} onClick={() => act('open_pref_menu', { which: 'voice_type' })} />
+          <ColorActionField label="Voice Color" colorValue={String(character_page?.voice?.voice_color || '#ffffff')} onClick={() => act('open_pref_menu', { which: 'voice_color' })} />
+          <ActionField label="Voice Pitch" value={String(character_page?.voice?.voice_pitch || '')} onClick={() => act('open_pref_menu', { which: 'voice_pitch' })} />
+          <ActionField label="Faith" value={String(character_page?.lore?.faith || '')} onClick={() => act('open_pref_menu', { which: 'faith' })} />
+          <ActionField label="God" value={String(character_page?.lore?.god || '')} onClick={() => act('open_pref_menu', { which: 'patron' })} />
+          <ActionField label="Dominance" value={String(character_page?.lore?.dominance || '')} onClick={() => act('open_pref_menu', { which: 'domhand' })} />
+          <ActionField label="Combat Music" value={String(character_page?.voice?.combat_music || '')} onClick={() => act('open_pref_menu', { which: 'combat_music' })} />
+          <ActionField label="Unrevivable" value={String(character_page?.lore?.unrevivable || '')} onClick={() => act('toggle_unrevivable')} />
+          <ActionField label="Food" value={String(character_page?.prefs?.food || '')} onClick={() => act('toggle_panel', { panel: 'food' })} />
+          <EmbeddedFoodPanel expanded={expanded_panel === 'food'} culinaryPanel={culinary_panel} />
+          <ActionField label="Familiar" value={String(character_page?.prefs?.familiar || '')} onClick={() => act('toggle_panel', { panel: 'familiar' })} />
+          <EmbeddedFamiliarPanel expanded={expanded_panel === 'familiar'} familiarPanel={familiar_panel} />
+          <ActionField label="Statpack" value={String(character_page?.prefs?.statpack || '')} onClick={() => act('open_pref_menu', { which: 'statpack' })} />
+          <ActionField label="Vice" value={String(character_page?.prefs?.vice || '')} onClick={() => act('toggle_panel', { panel: 'vice' })} />
+          <EmbeddedVicePanel expanded={expanded_panel === 'vice'} vicePanel={vice_panel} />
+          <ActionField label="Virtue I" value={String(character_page?.prefs?.virtue || '')} onClick={() => act('open_pref_menu', { which: 'virtue' })} />
+          <EmbeddedVirtuePanel expanded={expanded_panel === 'virtue'} panel={virtue_panel} prefix="virtue" />
+          {showVirtueTwo && (
+            <>
+              <ActionField label="Virtue II" value={String(character_page?.prefs?.virtue_two || '')} onClick={() => act('open_pref_menu', { which: 'virtue_two' })} />
+              <EmbeddedVirtuePanel expanded={expanded_panel === 'virtue_two'} panel={virtue_two_panel} prefix="virtue_two" />
+            </>
+          )}
         </Section>
       </Stack.Item>
 
@@ -498,37 +349,27 @@ const CharacterPage = () => {
 
           <Section title={`Region: ${selected?.name || 'None'}`} mt={1}>
             <Box mb={1}>
-              {body_regions.map((region) => {
-                const handleClickRegion = () => handleSelectBodyRegion(region.id);
-
-                return (
-                  <Button
-                    key={region.id}
-                    selected={region.id === book?.selected_region}
-                    mr={0.5}
-                    mb={0.5}
-                    onClick={handleClickRegion}
-                  >
-                    {region.name}
-                  </Button>
-                );
-              })}
+              {body_regions.map((region) => (
+                <Button
+                  key={region.id}
+                  selected={region.id === book?.selected_region}
+                  mr={0.5}
+                  mb={0.5}
+                  onClick={() => act('select_body_region', { region: region.id })}>
+                  {region.name}
+                </Button>
+              ))}
             </Box>
             <Box mt={1}>
-              {(selected?.options || []).map((option) => {
-                const handleClickOption = () => handleOpenRegionOption(option.id);
-
-                return (
-                  <Button
-                    key={option.id}
-                    mr={0.5}
-                    mb={0.5}
-                    onClick={handleClickOption}
-                  >
-                    {option.name}
-                  </Button>
-                );
-              })}
+              {(selected?.options || []).map((option) => (
+                <Button
+                  key={option.id}
+                  mr={0.5}
+                  mb={0.5}
+                  onClick={() => act('open_pref_menu', { which: option.id })}>
+                  {option.name}
+                </Button>
+              ))}
             </Box>
           </Section>
         </Section>
@@ -537,86 +378,38 @@ const CharacterPage = () => {
   );
 };
 
-const EmbeddedFoodPanel = (props: {
-  expanded: boolean;
-  culinaryPanel?: CulinaryPanel;
-}) => {
+const EmbeddedFoodPanel = (props: { expanded: boolean; culinaryPanel?: CulinaryPanel }) => {
   const { act } = useBackend<Data>();
   const culinary = props.culinaryPanel;
-
   if (!props.expanded || !culinary) {
     return null;
   }
-
-  const pickerTitle =
-    culinary.picker_target_label || 'Select option';
-
-  const pickerOptions =
-    culinary.picker_mode === 'drink'
-      ? culinary.drink_options
-      : culinary.food_options;
-
+  const pickerTitle = culinary.picker_target_label || 'Select option';
+  const pickerOptions = culinary.picker_mode === 'drink' ? culinary.drink_options : culinary.food_options;
   return (
     <Section title="Culinary Preferences" mt={1}>
-      <CompactFoodRow
-        label="Favourite Food"
-        entry={culinary.fav_food}
-        onClick={() => act('culinary_open_picker', { mode: 'food', target: 'fav_food' })}
-      />
-      <CompactFoodRow
-        label="Favourite Drink"
-        entry={culinary.fav_drink}
-        onClick={() => act('culinary_open_picker', { mode: 'drink', target: 'fav_drink' })}
-      />
-      <CompactFoodRow
-        label="Hated Food"
-        entry={culinary.hated_food}
-        onClick={() => act('culinary_open_picker', { mode: 'food', target: 'hated_food' })}
-      />
-      <CompactFoodRow
-        label="Hated Drink"
-        entry={culinary.hated_drink}
-        onClick={() => act('culinary_open_picker', { mode: 'drink', target: 'hated_drink' })}
-      />
-
+      <CompactFoodRow label="Favourite Food" entry={culinary.fav_food} onClick={() => act('culinary_open_picker', { target: 'fav_food' })} />
+      <CompactFoodRow label="Favourite Drink" entry={culinary.fav_drink} onClick={() => act('culinary_open_picker', { target: 'fav_drink' })} />
+      <CompactFoodRow label="Hated Food" entry={culinary.hated_food} onClick={() => act('culinary_open_picker', { target: 'hated_food' })} />
+      <CompactFoodRow label="Hated Drink" entry={culinary.hated_drink} onClick={() => act('culinary_open_picker', { target: 'hated_drink' })} />
       <Box mt={1}>
-        <Button onClick={() => act('culinary_reset')}>
-          Reset defaults
-        </Button>
+        <Button onClick={() => act('culinary_reset')}>Reset defaults</Button>
       </Box>
-
       {!!culinary.picker_target && (
         <Section title={pickerTitle} mt={1}>
           <Box mb={1}>
-            <Button onClick={() => act('culinary_close_picker')}>
-              Close
-            </Button>
+            <Button onClick={() => act('culinary_close_picker')}>Close</Button>
           </Box>
-
           <Stack vertical>
             {pickerOptions.map((option) => (
               <Stack.Item key={option.path || option.name}>
-                <Button
-                  fluid
-                  onClick={() => act('culinary_select', { path: option.path })}
-                >
+                <Button fluid onClick={() => act('culinary_select', { path: option.path })}>
                   <Stack align="center">
                     <Stack.Item basis="28px">
-                      {option.icon ? (
-                        <img
-                          src={option.icon}
-                          style={{ width: '22px', height: '22px', objectFit: 'contain' }}
-                        />
-                      ) : (
-                        '-'
-                      )}
+                      {option.icon ? <img src={option.icon} style={{ width: '22px', height: '22px', objectFit: 'contain' }} /> : '-'}
                     </Stack.Item>
-                    <Stack.Item grow>
-                      {option.name}
-                    </Stack.Item>
-                    <Stack.Item>
-                      ({option.quality || '-'})
-                    </Stack.Item>
+                    <Stack.Item grow>{option.name}</Stack.Item>
+                    <Stack.Item>({option.quality || '-'})</Stack.Item>
                   </Stack>
                 </Button>
               </Stack.Item>
@@ -628,24 +421,13 @@ const EmbeddedFoodPanel = (props: {
   );
 };
 
-const CompactFoodRow = (props: {
-  label: string;
-  entry?: CulinaryEntry;
-  onClick: () => void;
-}) => (
+const CompactFoodRow = (props: { label: string; entry?: CulinaryEntry; onClick: () => void }) => (
   <Stack align="center" mb={0.5}>
     <Stack.Item basis="120px">
       <b>{props.label}</b>
     </Stack.Item>
     <Stack.Item basis="30px">
-      {props.entry?.icon ? (
-        <img
-          src={props.entry.icon}
-          style={{ width: '22px', height: '22px', objectFit: 'contain' }}
-        />
-      ) : (
-        '-'
-      )}
+      {props.entry?.icon ? <img src={props.entry.icon} style={{ width: '22px', height: '22px', objectFit: 'contain' }} /> : '-'}
     </Stack.Item>
     <Stack.Item grow>
       <Button fluid onClick={props.onClick}>
@@ -655,67 +437,27 @@ const CompactFoodRow = (props: {
   </Stack>
 );
 
-const EmbeddedFamiliarPanel = (props: {
-  expanded: boolean;
-  familiarPanel?: FamiliarPanel;
-}) => {
+const EmbeddedFamiliarPanel = (props: { expanded: boolean; familiarPanel?: FamiliarPanel }) => {
   const { act } = useBackend<Data>();
   const fam = props.familiarPanel;
-
   if (!props.expanded || !fam) {
     return null;
   }
-
   return (
     <Section title="Familiar Preferences" mt={1}>
-      <ActionField
-        label="Name"
-        value={fam.name || 'Set name'}
-        onClick={() => act('familiar_edit', { field: 'familiar_name' })}
-      />
-      <ActionField
-        label="Pronouns"
-        value={fam.pronouns || 'they/them'}
-        onClick={() => act('familiar_pick_pronouns')}
-      />
-      <ActionField
-        label="Type"
-        value={fam.specie_name || 'None selected'}
-        onClick={() => act('familiar_pick_specie')}
-      />
-      {!!fam.lore_blurb && (
-        <NoticeBox mt={1}>
-          {fam.lore_blurb}
-        </NoticeBox>
-      )}
-      <ActionField
-        label="Headshot"
-        value={fam.headshot ? 'Change headshot' : 'Set headshot'}
-        onClick={() => act('familiar_edit', { field: 'familiar_headshot' })}
-      />
+      <ActionField label="Name" value={fam.name || 'Set name'} onClick={() => act('familiar_edit', { field: 'familiar_name' })} />
+      <ActionField label="Pronouns" value={fam.pronouns || 'they/them'} onClick={() => act('familiar_pick_pronouns')} />
+      <ActionField label="Type" value={fam.specie_name || 'None selected'} onClick={() => act('familiar_pick_specie')} />
+      {!!fam.lore_blurb && <NoticeBox mt={1}>{fam.lore_blurb}</NoticeBox>}
+      <ActionField label="Headshot" value={fam.headshot ? 'Change headshot' : 'Set headshot'} onClick={() => act('familiar_edit', { field: 'familiar_headshot' })} />
       {!!fam.headshot && (
         <Box mt={1} textAlign="center">
-          <img
-            src={fam.headshot}
-            style={{ maxWidth: '120px', maxHeight: '120px', objectFit: 'contain' }}
-          />
+          <img src={fam.headshot} style={{ maxWidth: '120px', maxHeight: '120px', objectFit: 'contain' }} />
         </Box>
       )}
-      <ActionField
-        label="Flavortext"
-        value={fam.flavortext ? 'Edit flavortext' : 'Set flavortext'}
-        onClick={() => act('familiar_edit', { field: 'familiar_flavortext' })}
-      />
-      <ActionField
-        label="OOC Notes"
-        value={fam.ooc_notes ? 'Edit OOC notes' : 'Set OOC notes'}
-        onClick={() => act('familiar_edit', { field: 'familiar_ooc_notes' })}
-      />
-      <ActionField
-        label="OOC Extra"
-        value={fam.ooc_extra_link ? 'Edit extra media' : 'Set extra media'}
-        onClick={() => act('familiar_edit', { field: 'familiar_ooc_extra' })}
-      />
+      <ActionField label="Flavortext" value={fam.flavortext ? 'Edit flavortext' : 'Set flavortext'} onClick={() => act('familiar_edit', { field: 'familiar_flavortext' })} />
+      <ActionField label="OOC Notes" value={fam.ooc_notes ? 'Edit OOC notes' : 'Set OOC notes'} onClick={() => act('familiar_edit', { field: 'familiar_ooc_notes' })} />
+      <ActionField label="OOC Extra" value={fam.ooc_extra_link ? 'Edit extra media' : 'Set extra media'} onClick={() => act('familiar_edit', { field: 'familiar_ooc_extra' })} />
       <Box mt={1}>
         <Button onClick={() => act('familiar_toggle_queue')}>
           {fam.in_queue ? 'Leave Queue' : 'Join Queue'}
@@ -725,25 +467,74 @@ const EmbeddedFamiliarPanel = (props: {
   );
 };
 
+const EmbeddedVicePanel = (props: { expanded: boolean; vicePanel?: VicePanel }) => {
+  const { act } = useBackend<Data>();
+  const panel = props.vicePanel;
+  if (!props.expanded || !panel) {
+    return null;
+  }
+  return (
+    <Section title="Vices" mt={1}>
+      <Box mb={1}>
+        <Button disabled={!panel.can_add} onClick={() => act('vice_add')}>
+          Add vice
+        </Button>
+      </Box>
+      {panel.items.map((item) => (
+        <Section key={item.index} title={item.name} mt={1}>
+          <Box>{item.desc || '-'}</Box>
+          <Box mt={1}>
+            <Button onClick={() => act('vice_remove', { index: item.index })}>Remove</Button>
+          </Box>
+        </Section>
+      ))}
+    </Section>
+  );
+};
+
+const EmbeddedVirtuePanel = (props: { expanded: boolean; panel?: VirtuePanel; prefix: 'virtue' | 'virtue_two' }) => {
+  const { act } = useBackend<Data>();
+  const panel = props.panel;
+  if (!props.expanded || !panel) {
+    return null;
+  }
+  const addAction = props.prefix === 'virtue' ? 'virtue_add_choice' : 'virtue_two_add_choice';
+  const removeAction = props.prefix === 'virtue' ? 'virtue_remove_choice' : 'virtue_two_remove_choice';
+  const tooltipAction = props.prefix === 'virtue' ? 'virtue_tooltip' : 'virtue_two_tooltip';
+  return (
+    <Section title={panel.name || 'Virtue'} mt={1}>
+      {!!panel.desc && <NoticeBox>{panel.desc}</NoticeBox>}
+      <Box mt={1}>
+        <Button disabled={!panel.can_add_choice} onClick={() => act(addAction)}>
+          Add variation
+        </Button>
+      </Box>
+      {(panel.picked_choices || []).map((choice) => (
+        <Stack key={choice.index} align="center" mt={0.5}>
+          <Stack.Item grow>
+            <Box>{choice.name}</Box>
+          </Stack.Item>
+          {!!choice.tooltip && (
+            <Stack.Item>
+              <Button onClick={() => act(tooltipAction, { tooltip: choice.name })}>?</Button>
+            </Stack.Item>
+          )}
+          <Stack.Item>
+            <Button onClick={() => act(removeAction, { index: choice.index })}>Remove</Button>
+          </Stack.Item>
+        </Stack>
+      ))}
+    </Section>
+  );
+};
+
 const BodyPreview = (props: { selectedRegion: string }) => {
   const { act } = useBackend<Data>();
-
-  const renderBodyButton = (id: string, label: string) => {
-    const handleSelectRegion = () =>
-      act('select_body_region', { region: id });
-
-    return (
-      <Button
-        fluid
-        selected={props.selectedRegion === id}
-        onClick={handleSelectRegion}
-        mb={0.5}
-      >
-        {label}
-      </Button>
-    );
-  };
-
+  const renderBodyButton = (id: string, label: string) => (
+    <Button fluid selected={props.selectedRegion === id} onClick={() => act('select_body_region', { region: id })} mb={0.5}>
+      {label}
+    </Button>
+  );
   return (
     <Stack vertical align="center">
       <Stack.Item width="220px">{renderBodyButton('head', 'Head')}</Stack.Item>
@@ -763,30 +554,6 @@ const SettingsPage = () => {
   const { book, settings_page } = data;
   const subTab = book?.sub_tab || 'general';
 
-  const handleToggleAmbientOcclusion = () =>
-    act('toggle_bool', { pref_id: 'ambientocclusion' });
-
-  const handleToggleWidescreen = () =>
-    act('toggle_bool', { pref_id: 'widescreenpref' });
-
-  const handleToggleAutoFitViewport = () =>
-    act('toggle_bool', { pref_id: 'auto_fit_viewport' });
-
-  const handleOpenThemePicker = () =>
-    act('open_theme_picker');
-
-  const handleSetOocColor = (value: string) =>
-    act('set_pref', { pref_id: 'ooccolor', value });
-
-  const handleSetAsayColor = (value: string) =>
-    act('set_pref', { pref_id: 'asaycolor', value });
-
-  const handleSetUiStyle = (value: string) =>
-    act('set_pref', { pref_id: 'UI_style', value });
-
-  const handleToggleChatOnMap = () =>
-    act('toggle_bool', { pref_id: 'chat_on_map' });
-
   if (subTab === 'keybinds') {
     return (
       <Section title="Keybinds">
@@ -799,108 +566,45 @@ const SettingsPage = () => {
     <Stack fill>
       <Stack.Item basis="50%">
         <Section title="General">
-          <BooleanField
-            label="Ambient Occlusion"
-            value={Boolean(settings_page?.general?.ambientocclusion)}
-            onClick={handleToggleAmbientOcclusion}
-          />
-          <BooleanField
-            label="Widescreen"
-            value={Boolean(settings_page?.general?.widescreenpref)}
-            onClick={handleToggleWidescreen}
-          />
-          <BooleanField
-            label="Auto fit viewport"
-            value={Boolean(settings_page?.general?.auto_fit_viewport)}
-            onClick={handleToggleAutoFitViewport}
-          />
-          <Field
-            label="Pixel size"
-            value={String(settings_page?.general?.pixel_size || '')}
-            readOnly
-          />
+          <BooleanField label="Ambient Occlusion" value={Boolean(settings_page?.general?.ambientocclusion)} onClick={() => act('toggle_bool', { pref_id: 'ambientocclusion' })} />
+          <BooleanField label="Widescreen" value={Boolean(settings_page?.general?.widescreenpref)} onClick={() => act('toggle_bool', { pref_id: 'widescreenpref' })} />
+          <BooleanField label="Auto fit viewport" value={Boolean(settings_page?.general?.auto_fit_viewport)} onClick={() => act('toggle_bool', { pref_id: 'auto_fit_viewport' })} />
+          <Field label="Pixel size" value={String(settings_page?.general?.pixel_size || '')} readOnly />
           <Box mt={1}>
-            <Button onClick={handleOpenThemePicker}>Open theme picker</Button>
+            <Button onClick={() => act('open_theme_picker')}>Open theme picker</Button>
           </Box>
         </Section>
       </Stack.Item>
       <Stack.Item grow basis={0}>
         <Section title="OOC / UI">
-          <Field
-            label="OOC color"
-            value={String(settings_page?.ooc?.ooccolor || '')}
-            onChange={handleSetOocColor}
-          />
-          <Field
-            label="ASAY color"
-            value={String(settings_page?.ooc?.asaycolor || '')}
-            onChange={handleSetAsayColor}
-          />
-          <Field
-            label="UI style"
-            value={String(settings_page?.ooc?.UI_style || '')}
-            onChange={handleSetUiStyle}
-          />
-          <BooleanField
-            label="Chat on map"
-            value={Boolean(settings_page?.ooc?.chat_on_map)}
-            onClick={handleToggleChatOnMap}
-          />
+          <Field label="OOC color" value={String(settings_page?.ooc?.ooccolor || '')} onChange={(value) => act('set_pref', { pref_id: 'ooccolor', value })} />
+          <Field label="ASAY color" value={String(settings_page?.ooc?.asaycolor || '')} onChange={(value) => act('set_pref', { pref_id: 'asaycolor', value })} />
+          <Field label="UI style" value={String(settings_page?.ooc?.UI_style || '')} onChange={(value) => act('set_pref', { pref_id: 'UI_style', value })} />
+          <BooleanField label="Chat on map" value={Boolean(settings_page?.ooc?.chat_on_map)} onClick={() => act('toggle_bool', { pref_id: 'chat_on_map' })} />
         </Section>
       </Stack.Item>
     </Stack>
   );
 };
 
-const Field = (props: {
-  label: string;
-  value: string;
-  onChange?: (value: string) => void;
-  readOnly?: boolean;
-}) => {
-  const handleChange = (value: string) => {
-    props.onChange?.(String(value));
-  };
-
-  return (
-    <Stack align="center" mb={0.5}>
-      <Stack.Item basis="120px">
-        <b>{props.label}</b>
-      </Stack.Item>
-      <Stack.Item grow>
-        {props.readOnly ? (
-          <Box
-            p={0.5}
-            style={{
-              border: '1px solid rgba(255, 255, 255, 0.2)',
-              borderRadius: '4px',
-              minHeight: '24px',
-              lineHeight: '24px',
-            }}
-          >
-            {props.value || '-'}
-          </Box>
-        ) : (
-          <Input
-            fluid
-            value={props.value}
-            onChange={handleChange}
-          />
-        )}
-      </Stack.Item>
-    </Stack>
-  );
-};
-
-const BooleanField = (props: {
-  label: string;
-  value: boolean;
-  onClick: () => void;
-}) => (
+const Field = (props: { label: string; value: string; onChange?: (value: string) => void; readOnly?: boolean }) => (
   <Stack align="center" mb={0.5}>
-    <Stack.Item basis="180px">
-      <b>{props.label}</b>
+    <Stack.Item basis="120px"><b>{props.label}</b></Stack.Item>
+    <Stack.Item grow>
+      {props.readOnly ? (
+        <Box p={0.5} style={{ border: '1px solid rgba(255, 255, 255, 0.2)', borderRadius: '4px', minHeight: '24px', lineHeight: '24px' }}>
+          {props.value || '-'}
+        </Box>
+      ) : (
+        <Input fluid value={props.value} onChange={(value) => props.onChange?.(String(value))} />
+      )}
     </Stack.Item>
+  </Stack>
+);
+
+const BooleanField = (props: { label: string; value: boolean; onClick: () => void }) => (
+  <Stack align="center" mb={0.5}>
+    <Stack.Item basis="180px"><b>{props.label}</b></Stack.Item>
     <Stack.Item>
       <Button selected={props.value} onClick={props.onClick}>
         {props.value ? 'On' : 'Off'}
@@ -909,44 +613,22 @@ const BooleanField = (props: {
   </Stack>
 );
 
-const ActionField = (props: {
-  label: string;
-  value: string;
-  onClick: () => void;
-}) => {
-  const handleClick = props.onClick;
+const ActionField = (props: { label: string; value: string; onClick: () => void }) => (
+  <Stack align="center" mb={0.5}>
+    <Stack.Item basis="120px"><b>{props.label}</b></Stack.Item>
+    <Stack.Item grow>
+      <Button fluid onClick={props.onClick}>{props.value || '-'}</Button>
+    </Stack.Item>
+  </Stack>
+);
 
-  return (
-    <Stack align="center" mb={0.5}>
-      <Stack.Item basis="120px">
-        <b>{props.label}</b>
-      </Stack.Item>
-      <Stack.Item grow>
-        <Button fluid onClick={handleClick}>
-          {props.value || '-'}
-        </Button>
-      </Stack.Item>
-    </Stack>
-  );
-};
-
-const ColorActionField = (props: {
-  label: string;
-  colorValue: string;
-  onClick: () => void;
-}) => {
-  const handleClick = props.onClick;
-
-  return (
-    <Stack align="center" mb={0.5}>
-      <Stack.Item basis="120px">
-        <b>{props.label}</b>
-      </Stack.Item>
-      <Stack.Item grow>
-        <Button fluid onClick={handleClick} textColor={props.colorValue || '#ffffff'}>
-          Change color
-        </Button>
-      </Stack.Item>
-    </Stack>
-  );
-};
+const ColorActionField = (props: { label: string; colorValue: string; onClick: () => void }) => (
+  <Stack align="center" mb={0.5}>
+    <Stack.Item basis="120px"><b>{props.label}</b></Stack.Item>
+    <Stack.Item grow>
+      <Button fluid onClick={props.onClick} textColor={props.colorValue || '#ffffff'}>
+        Change color
+      </Button>
+    </Stack.Item>
+  </Stack>
+);

@@ -1,4 +1,3 @@
-
 /**
  * Preferences TGUI hub
  * Backend kept neutral; frontend may style it as a book.
@@ -11,7 +10,7 @@
 	var/prefs_ui_main_tab = "character"
 	var/prefs_ui_sub_tab = "appearance"
 	var/prefs_ui_selected_region = "head"
-	var/prefs_ui_expanded_panel = null // "food" / "familiar"
+	var/prefs_ui_expanded_panel = null // "food" / "familiar" / "vice" / "virtue" / "virtue_two"
 	var/prefs_ui_food_mode = null // "food" / "drink"
 	var/prefs_ui_food_target = null // culinary preference key
 
@@ -108,6 +107,9 @@
 	data["settings_page"] = build_preferences_settings_page_data(user)
 	data["culinary_panel"] = build_preferences_culinary_panel_data()
 	data["familiar_panel"] = build_preferences_familiar_panel_data()
+	data["vice_panel"] = build_preferences_vice_panel_data()
+	data["virtue_panel"] = build_preferences_virtue_panel_data(virtue)
+	data["virtue_two_panel"] = build_preferences_virtue_panel_data(virtuetwo)
 
 	return data
 
@@ -208,8 +210,10 @@
 			"food" = "Configured",
 			"familiar" = "Configured",
 			"statpack" = statpack ? "[statpack.name]" : "None",
-			"vice" = virtue ? "[virtue]" : "None",
-			"virtue" = virtuetwo ? "[virtuetwo]" : "None",
+			"vice" = charflaws?.len ? "[charflaws.len] selected" : "None",
+			"virtue" = virtue ? "[virtue.name]" : "None",
+			"virtue_two" = virtuetwo ? "[virtuetwo.name]" : "None",
+			"show_virtue_two" = (statpack?.virtuous ? TRUE : FALSE),
 		),
 		"descriptors" = descriptor_entries ? descriptor_entries.Copy() : list(),
 		"selected_region" = build_preferences_region_editor_data(user, prefs_ui_selected_region),
@@ -427,6 +431,47 @@
 	)
 	return data
 
+/datum/preferences/proc/build_preferences_vice_panel_data()
+	var/list/items = list()
+	if(charflaws)
+		for(var/i = 1 to charflaws.len)
+			var/datum/charflaw/F = charflaws[i]
+			items += list(list(
+				"index" = i,
+				"name" = F?.name ? F.name : "Unknown",
+				"desc" = F?.desc ? F.desc : "",
+			))
+	return list(
+		"items" = items,
+		"can_add" = (charflaws?.len < MAX_VICES),
+	)
+
+/datum/preferences/proc/build_preferences_virtue_panel_data(datum/virtue/V)
+	if(!V)
+		return list(
+			"name" = "None",
+			"desc" = "",
+			"picked_choices" = list(),
+			"can_add_choice" = FALSE,
+		)
+
+	var/list/picked = list()
+	if(V.picked_choices)
+		for(var/i = 1 to V.picked_choices.len)
+			var/choice_name = V.picked_choices[i]
+			picked += list(list(
+				"index" = i,
+				"name" = "[choice_name]",
+				"tooltip" = V.choice_tooltips?[choice_name],
+			))
+
+	return list(
+		"name" = V.name ? V.name : "None",
+		"desc" = V.desc ? V.desc : "",
+		"picked_choices" = picked,
+		"can_add_choice" = (V.extra_choices && length(V.picked_choices) < V.max_choices),
+	)
+
 /datum/preferences/ui_act(action, list/params, datum/tgui/ui, datum/ui_state/state)
 	. = ..()
 	if(.)
@@ -492,8 +537,20 @@
 
 		if("culinary_open_picker")
 			prefs_ui_expanded_panel = "food"
-			prefs_ui_food_mode = params["mode"]
-			prefs_ui_food_target = params["target"]
+			var/target = params["target"]
+			switch(target)
+				if("fav_food")
+					prefs_ui_food_target = CULINARY_FAVOURITE_FOOD
+					prefs_ui_food_mode = "food"
+				if("fav_drink")
+					prefs_ui_food_target = CULINARY_FAVOURITE_DRINK
+					prefs_ui_food_mode = "drink"
+				if("hated_food")
+					prefs_ui_food_target = CULINARY_HATED_FOOD
+					prefs_ui_food_mode = "food"
+				if("hated_drink")
+					prefs_ui_food_target = CULINARY_HATED_DRINK
+					prefs_ui_food_mode = "drink"
 			if(ui)
 				ui.send_update()
 			return TRUE
@@ -545,7 +602,7 @@
 
 			switch(field)
 				if("familiar_name")
-					var/new_name = input(user, "Choose your Familiar character's name:", "Identity", familiar_prefs.familiar_name) as text|null
+					var/new_name = tgui_input_text(user, "Choose your Familiar character's name:", "IDENTITY", familiar_prefs.familiar_name, encode = FALSE)
 					if(isnull(new_name))
 						return TRUE
 					if(new_name)
@@ -558,7 +615,7 @@
 				if("familiar_headshot")
 					to_chat(user, span_notice("Please use a relatively SFW image of the head and shoulder area."))
 					to_chat(user, span_notice("Ensure it's a direct image link."))
-					var/new_headshot_link = input(user, "Input the headshot link (https):", "Headshot", familiar_prefs.familiar_headshot_link) as text|null
+					var/new_headshot_link = tgui_input_text(user, "Input the headshot link (https):", "Headshot", familiar_prefs.familiar_headshot_link, encode = FALSE)
 					if(isnull(new_headshot_link))
 						return TRUE
 					if(new_headshot_link == "")
@@ -568,7 +625,7 @@
 						to_chat(user, span_notice("Successfully updated Familiar headshot picture."))
 				if("familiar_flavortext")
 					to_chat(user, span_notice("Flavortext should not include nonphysical nonsensory attributes such as backstory or internal thoughts."))
-					var/new_flavortext = input(user, "Input your Familiar character description:", "Flavortext", familiar_prefs.familiar_flavortext) as message|null
+					var/new_flavortext = tgui_input_text(user, "Input your Familiar character description:", "Flavortext", familiar_prefs.familiar_flavortext, multiline = TRUE, encode = FALSE, bigmodal = TRUE)
 					if(isnull(new_flavortext))
 						return TRUE
 					if(new_flavortext == "")
@@ -580,7 +637,7 @@
 						ft = replacetext(ft, "\n", "<BR>")
 						familiar_prefs.familiar_flavortext_display = ft
 				if("familiar_ooc_notes")
-					var/new_ooc_notes = input(user, "Input your OOC preferences:", "OOC notes", familiar_prefs.familiar_ooc_notes) as message|null
+					var/new_ooc_notes = tgui_input_text(user, "Input your OOC preferences:", "OOC notes", familiar_prefs.familiar_ooc_notes, multiline = TRUE, encode = FALSE, bigmodal = TRUE)
 					if(isnull(new_ooc_notes))
 						return TRUE
 					if(new_ooc_notes == "")
@@ -592,7 +649,7 @@
 						ooc = replacetext(ooc, "\n", "<BR>")
 						familiar_prefs.familiar_ooc_notes_display = ooc
 				if("familiar_ooc_extra")
-					var/link = input(user, "Input the accessory link (https)", "Familiar OOC Extra", familiar_prefs.familiar_ooc_extra_link) as text|null
+					var/link = tgui_input_text(user, "Input the accessory link (https)", "Familiar OOC Extra", familiar_prefs.familiar_ooc_extra_link, encode = FALSE)
 					if(isnull(link))
 						return TRUE
 					if(link == "")
@@ -621,19 +678,16 @@
 		if("familiar_pick_pronouns")
 			if(!familiar_prefs)
 				return FALSE
-
 			var/list/pronoun_options = list(
 				"he/him" = HE_HIM,
 				"she/her" = SHE_HER,
 				"they/them" = THEY_THEM,
 				"it/its" = IT_ITS,
 			)
-
 			var/choice = tgui_input_list(user, "Select your familiar's pronouns:", "PRONOUNS", pronoun_options)
 			if(choice)
 				familiar_prefs.familiar_pronouns = pronoun_options[choice]
 				save_preferences()
-
 			if(ui)
 				ui.send_update()
 			SStgui.update_uis(src)
@@ -642,7 +696,6 @@
 		if("familiar_pick_specie")
 			if(!familiar_prefs)
 				return FALSE
-
 			var/list/all_types = GLOB.familiar_types.Copy()
 			var/choice = tgui_input_list(user, "Select a Familiar type:", "FAMILIAR TYPE", all_types)
 			if(choice)
@@ -650,7 +703,6 @@
 				if(specie_path)
 					familiar_prefs.familiar_specie = specie_path
 					save_preferences()
-
 			if(ui)
 				ui.send_update()
 			SStgui.update_uis(src)
@@ -668,6 +720,111 @@
 					to_chat(user, span_notice("You have been added to the Familiar queue."))
 			if(ui)
 				ui.send_update()
+			return TRUE
+
+		if("vice_add")
+			for(var/datum/charflaw/_existing in charflaws)
+				if(istype(_existing, /datum/charflaw/noflaw))
+					charflaws.Remove(_existing)
+					break
+			if(charflaws.len >= MAX_VICES)
+				to_chat(user, "I can't be any more flawed.")
+				return TRUE
+			var/list/cf_list = GLOB.character_flaws.Copy()
+			for(var/key in cf_list)
+				if(cf_list[key] == /datum/charflaw/noflaw)
+					cf_list.Remove(key)
+					break
+			for(var/datum/charflaw/cf in charflaws)
+				for(var/key in cf_list)
+					if(cf_list[key] == cf.type && !istype(cf, /datum/charflaw/randflaw))
+						cf_list.Remove(key)
+						break
+			var/result = tgui_input_list(user, "What burden will you bear? (You can select up to 3 vices)", "FLAWS", cf_list)
+			if(result)
+				result = cf_list[result]
+				var/datum/charflaw/C = new result()
+				charflaws.Add(C)
+				if(C.desc)
+					to_chat(user, span_info(C.desc))
+				save_preferences()
+				if(ui)
+					ui.send_update()
+			return TRUE
+
+		if("vice_remove")
+			var/index = text2num(params["index"])
+			if(index && (index >= 1) && (index <= charflaws.len))
+				var/datum/charflaw/cf_to_remove = charflaws[index]
+				charflaws.Remove(cf_to_remove)
+				to_chat(user, span_notice("Vice removed: [cf_to_remove.name]."))
+			if(!charflaws.len)
+				var/datum/charflaw/no_flaw = new /datum/charflaw/noflaw()
+				charflaws.Add(no_flaw)
+				to_chat(user, span_info("No vices selected. 'No Flaw' has been automatically selected."))
+			save_preferences()
+			if(ui)
+				ui.send_update()
+			return TRUE
+
+		if("virtue_add_choice")
+			if(virtue && length(virtue.picked_choices) < virtue.max_choices)
+				var/list/subchoices = virtue.extra_choices.Copy()
+				for(var/choice in subchoices)
+					if(choice in virtue.picked_choices)
+						subchoices.Remove(choice)
+				var/result = tgui_input_list(user, "What strength shall you wield?", "VIRTUES", subchoices)
+				if(result)
+					virtue.picked_choices.Add(result)
+					save_preferences()
+					if(ui)
+						ui.send_update()
+			return TRUE
+
+		if("virtue_remove_choice")
+			var/index = text2num(params["index"])
+			if(virtue && index && index >= 1 && index <= virtue.picked_choices.len)
+				var/v_to_remove = virtue.picked_choices[index]
+				virtue.picked_choices.Remove(v_to_remove)
+				save_preferences()
+				if(ui)
+					ui.send_update()
+			return TRUE
+
+		if("virtue_tooltip")
+			var/tooltip = params["tooltip"]
+			if(virtue?.choice_tooltips?[tooltip])
+				to_chat(user, span_notice(virtue.choice_tooltips[tooltip]))
+			return TRUE
+
+		if("virtue_two_add_choice")
+			if(virtuetwo && length(virtuetwo.picked_choices) < virtuetwo.max_choices)
+				var/list/subchoices = virtuetwo.extra_choices.Copy()
+				for(var/choice in subchoices)
+					if(choice in virtuetwo.picked_choices)
+						subchoices.Remove(choice)
+				var/result = tgui_input_list(user, "What strength shall you wield?", "VIRTUES", subchoices)
+				if(result)
+					virtuetwo.picked_choices.Add(result)
+					save_preferences()
+					if(ui)
+						ui.send_update()
+			return TRUE
+
+		if("virtue_two_remove_choice")
+			var/index = text2num(params["index"])
+			if(virtuetwo && index && index >= 1 && index <= virtuetwo.picked_choices.len)
+				var/v_to_remove = virtuetwo.picked_choices[index]
+				virtuetwo.picked_choices.Remove(v_to_remove)
+				save_preferences()
+				if(ui)
+					ui.send_update()
+			return TRUE
+
+		if("virtue_two_tooltip")
+			var/tooltip = params["tooltip"]
+			if(virtuetwo?.choice_tooltips?[tooltip])
+				to_chat(user, span_notice(virtuetwo.choice_tooltips[tooltip]))
 			return TRUE
 
 		if("open_loadout")
@@ -688,7 +845,10 @@
 			var/which = params["which"]
 			if(user && which)
 				var/result = open_preferences_tgui_menu(user, which)
-				if(result && ui)
+				if(result)
+					save_preferences()
+					if(ui)
+						ui.send_update()
 					SStgui.update_uis(src)
 				return result
 
@@ -716,11 +876,9 @@
 			dnr_pref = !dnr_pref
 			save_preferences()
 			save_character()
-
 			if(ui)
 				ui.send_update()
 			SStgui.update_uis(src)
-
 			return TRUE
 
 	return FALSE
@@ -729,19 +887,14 @@
 	switch(pref_id)
 		if("real_name")
 			real_name = sanitize_name(value)
-
 		if("nickname")
 			nickname = copytext_char("[value]", 1, MAX_NAME_LEN)
-
 		if("nickname_color")
 			highlight_color = sanitize_hexcolor(value, 6, TRUE, "#FF0000")
-
 		if("ooccolor")
 			ooccolor = sanitize_hexcolor(value, 6, TRUE, GLOB.normal_ooc_colour)
-
 		if("asaycolor")
 			asaycolor = sanitize_hexcolor(value, 6, TRUE, "#ff4500")
-
 		if("UI_style")
 			if(value in GLOB.available_ui_styles)
 				UI_style = value
@@ -789,7 +942,6 @@
 						if(!name)
 							name = "Slot[i]"
 						choices[name] = i
-
 			var/choice = tgui_input_list(user, "CHOOSE A HERO", "ROGUETOWN", choices)
 			if(choice)
 				choice = choices[choice]
@@ -816,19 +968,19 @@
 			return FALSE
 
 		if("nickname")
-			var/new_name = tgui_input_text(user, "Choose your character's nickname (For Highlighting):", "NICKNAME", nickname, encode = FALSE)
-			if(isnull(new_name))
+			var/new_nickname = tgui_input_text(user, "Choose your character's nickname (For Highlighting):", "NICKNAME", nickname, encode = FALSE)
+			if(isnull(new_nickname))
 				return FALSE
-			if(new_name)
-				new_name = reject_bad_name(new_name)
-				if(new_name)
-					nickname = new_name
+			if(new_nickname)
+				new_nickname = reject_bad_name(new_nickname)
+				if(new_nickname)
+					nickname = new_nickname
 					return TRUE
 				to_chat(user, "<font color='red'>Invalid name. Your name should be at least 2 and at most [MAX_NAME_LEN] characters long. It may only contain the characters A-Z, a-z, -, ', . and ,.</font>")
 			return FALSE
 
 		if("nickname_color")
-			var/new_color = color_pick_sanitized(user, "Choose your character's nickname highlight color:", "Character Preference", "#"+highlight_color)
+			var/new_color = color_pick_sanitized(user, "Choose your character's nickname highlight color:", "Character Preference", "#" + highlight_color)
 			if(new_color)
 				highlight_color = sanitize_hexcolor(new_color)
 				return TRUE
@@ -838,16 +990,13 @@
 			var/new_age = tgui_input_list(user, "Choose your character's age (18-[pref_species.max_age])", "YILS LIVED", pref_species.possible_ages)
 			if(new_age)
 				age = new_age
-
 				var/list/hairs
 				if((age == AGE_OLD) && (OLDGREY in pref_species.species_traits))
 					hairs = pref_species.get_oldhc_list()
 				else
 					hairs = pref_species.get_hairc_list()
-
 				hair_color = hairs[pick(hairs)]
 				facial_hair_color = hair_color
-
 				switch(age)
 					if(AGE_ADULT)
 						to_chat(user, "You preside in your 'prime', whatever this may be, and gain no bonus nor endure any penalty for your time spent alive.")
@@ -855,7 +1004,6 @@
 						to_chat(user, "Muscles ache and joints begin to slow as Aeon's grasp begins to settle upon your shoulders. (-1 SPD, +1 WIL +1 FOR)")
 					if(AGE_OLD)
 						to_chat(user, "In a place as lethal as PSYDONIA, the elderly are all but marvels... or beneficiaries of the habitually privileged. (-1 STR, -2 SPE, -1 PER, -2 CON, +2 INT, +1 FOR)")
-
 				ResetJobs()
 				to_chat(user, "<font color='red'>Classes reset.</font>")
 				return TRUE
@@ -918,7 +1066,7 @@
 			return FALSE
 
 		if("voice_color")
-			var/new_voice = input(user, "Choose your character's voice color:", "Character Preference", "#"+voice_color) as color|null
+			var/new_voice = input(user, "Choose your character's voice color:", "Character Preference", "#" + voice_color) as color|null
 			if(new_voice)
 				if(color_hex2num(new_voice) < 230)
 					to_chat(user, "<font color='red'>This voice color is too dark for mortals.</font>")
@@ -944,7 +1092,6 @@
 				if(!faith.name)
 					continue
 				faiths_named[faith.name] = faith
-
 			var/faith_input = tgui_input_list(user, "The world rots. Which truth you bear?", "FAITH", faiths_named)
 			if(faith_input)
 				var/datum/faith/faith = faiths_named[faith_input]
@@ -962,7 +1109,6 @@
 				if(!patron.name)
 					continue
 				patrons_named[patron.name] = patron
-
 			var/god_input = tgui_input_list(user, "The first amongst many.", "PATRON", patrons_named)
 			if(god_input)
 				selected_patron = patrons_named[god_input]
@@ -982,12 +1128,8 @@
 
 		if("combat_music")
 			if(!combat_music_helptext_shown)
-				to_chat(user, span_notice("<span class='bold'>Combat Music Override</span>\n") + \
-				"Options other than \"Default\" override whatever the game dynamically sets for you, \
-				which is influenced by your job class, villain status, or certain events.\n\
-				You can change this later through \"Combat Mode Music\" in the Options tab.\"</span>")
+				to_chat(user, span_notice("<span class='bold'>Combat Music Override</span>\n") + "Options other than \"Default\" override whatever the game dynamically sets for you, which is influenced by your job class, villain status, or certain events.\nYou can change this later through \"Combat Mode Music\" in the Options tab.\"</span>")
 				combat_music_helptext_shown = TRUE
-
 			var/track_select = tgui_input_list(user, "To you, the Signal sounds like:", "COMBAT MUSIC", GLOB.cmode_tracks_by_name, combat_music?.name)
 			if(track_select)
 				combat_music = GLOB.cmode_tracks_by_name[track_select]
@@ -1014,9 +1156,7 @@
 				else
 					continue
 				species[race.base_name] += race
-
 			species = sortList(species)
-
 			var/result = tgui_input_list(user, "By what shape are you bound?", "RACE", species)
 			if(result)
 				var/datum/species/race_chosen = species[result]
@@ -1037,10 +1177,9 @@
 				else
 					continue
 				species[race.sub_name] += race
-
-			var/result = tgui_input_list(user, "By what shape are you bound?", "SUBRACE", species)
-			if(result)
-				var/datum/species/subrace_chosen = species[result]
+			var/sub_result = tgui_input_list(user, "By what shape are you bound?", "SUBRACE", species)
+			if(sub_result)
+				var/datum/species/subrace_chosen = species[sub_result]
 				set_new_race(subrace_chosen, user)
 				return TRUE
 			return FALSE
@@ -1071,14 +1210,12 @@
 				/datum/language/otavan,
 				/datum/language/aavnic,
 			)
-
 			var/list/choices = list("None")
 			for(var/language in selectable_languages)
 				if(language in pref_species.languages)
 					continue
 				var/datum/language/a_language = new language()
 				choices[a_language.name] = language
-
 			var/chosen_language = tgui_input_list(user, "Choose your character's extra language:", "EXTRA LANGUAGE", choices)
 			if(chosen_language)
 				if(chosen_language == "None")
@@ -1094,12 +1231,94 @@
 			return TRUE
 
 		if("statpack")
+			var/list/statpacks_available = list()
+			for(var/path as anything in GLOB.statpacks)
+				var/datum/statpack/S = GLOB.statpacks[path]
+				if(!S.name)
+					continue
+				var/index = S.name
+				if(length(S.stat_array))
+					index += " \n[S.generate_modifier_string()]"
+				statpacks_available[index] = S
+			statpacks_available = sort_list(statpacks_available)
+			var/statpack_input = tgui_input_list(user, "How shall your strengths manifest?", "STATPACK", statpacks_available, statpack)
+			if(statpack_input)
+				var/datum/statpack/statpack_chosen = statpacks_available[statpack_input]
+				statpack = statpack_chosen
+				to_chat(user, "<font color='purple'>[statpack.name]</font>")
+				to_chat(user, "<font color='purple'>[statpack.description_string()]</font>")
+				if(!statpack.virtuous)
+					if(virtue && !istype(virtue, /datum/virtue/none))
+						virtue = new /datum/virtue/none
+					if(virtuetwo && !istype(virtuetwo, /datum/virtue/none))
+						virtuetwo = new /datum/virtue/none
+				return TRUE
 			return FALSE
 
 		if("vice")
-			return FALSE
+			prefs_ui_expanded_panel = (prefs_ui_expanded_panel == "vice" ? null : "vice")
+			return TRUE
 
 		if("virtue")
+			var/list/virtue_choices = list()
+			for(var/path as anything in GLOB.virtues)
+				var/datum/virtue/V = GLOB.virtues[path]
+				if(!V.name)
+					continue
+				if((V.name == virtue.name || V.name == virtuetwo.name) && !istype(V, /datum/virtue/none))
+					if(!V.stackable)
+						continue
+				if(istype(V, /datum/virtue/origin))
+					continue
+				if(V.unlisted)
+					continue
+				if(istype(V, /datum/virtue/heretic) && !istype(selected_patron, /datum/patron/inhumen))
+					continue
+				if(V.restricted == TRUE)
+					if(pref_species.type in V.races)
+						continue
+				if(V.virtuous_only && !statpack?.virtuous)
+					continue
+				virtue_choices[V.name] = V
+			virtue_choices = sort_list(virtue_choices)
+			var/virtue_result = tgui_input_list(user, "What strength shall you wield?", "VIRTUES", virtue_choices)
+			if(virtue_result)
+				var/datum/virtue/virtue_chosen = virtue_choices[virtue_result]
+				virtue = new virtue_chosen.type
+				to_chat(user, process_virtue_text(virtue_chosen))
+				prefs_ui_expanded_panel = "virtue"
+				return TRUE
+			return FALSE
+
+		if("virtue_two")
+			if(!statpack?.virtuous)
+				return FALSE
+			var/list/virtue_two_choices = list()
+			for(var/path as anything in GLOB.virtues)
+				var/datum/virtue/V2 = GLOB.virtues[path]
+				if(!V2.name)
+					continue
+				if((V2.name == virtue.name || V2.name == virtuetwo.name) && !istype(V2, /datum/virtue/none))
+					if(!V2.stackable)
+						continue
+				if(istype(V2, /datum/virtue/origin))
+					continue
+				if(V2.unlisted)
+					continue
+				if(istype(V2, /datum/virtue/heretic) && !istype(selected_patron, /datum/patron/inhumen))
+					continue
+				if(V2.restricted == TRUE)
+					if(pref_species.type in V2.races)
+						continue
+				virtue_two_choices[V2.name] = V2
+			virtue_two_choices = sort_list(virtue_two_choices)
+			var/virtue_two_result = tgui_input_list(user, "What strength shall you wield?", "VIRTUES", virtue_two_choices)
+			if(virtue_two_result)
+				var/datum/virtue/virtue_two_chosen = virtue_two_choices[virtue_two_result]
+				virtuetwo = new virtue_two_chosen.type
+				to_chat(user, process_virtue_text(virtue_two_chosen))
+				prefs_ui_expanded_panel = "virtue_two"
+				return TRUE
 			return FALSE
 
 		if("descriptors")
@@ -1113,30 +1332,6 @@
 		if("customizers")
 			ShowCustomizers(user)
 			return TRUE
-
-		// if("hairstyle")
-		// 	var/list/listy = pref_species.get_hair_list()
-		// 	var/new_hair = tgui_input_list(user, "Choose your character's hairstyle:", "HAIR", listy)
-		// 	if(new_hair)
-		// 		hairstyle = new_hair
-		// 		return TRUE
-		// 	return FALSE
-
-		// if("facial_hairstyle")
-		// 	var/list/listy = pref_species.get_facial_hair_list()
-		// 	var/new_facial_hair = tgui_input_list(user, "Choose your character's facial hairstyle:", "FACIAL HAIR", listy)
-		// 	if(new_facial_hair)
-		// 		facial_hairstyle = new_facial_hair
-		// 		return TRUE
-		// 	return FALSE
-
-		// if("eyes")
-		// 	var/list/listy = GLOB.eye_colors
-		// 	var/new_eyes = tgui_input_list(user, "Choose your character's eye color:", "EYES", listy)
-		// 	if(new_eyes)
-		// 		eye_color = listy[new_eyes]
-		// 		return TRUE
-		// 	return FALSE
 
 		if("s_tone")
 			var/list/listy = pref_species.get_skin_list()
@@ -1170,8 +1365,6 @@
 /datum/preferences/proc/open_pq_tgui(mob/user)
 	if(!user || !user.client)
 		return FALSE
-
 	var/datum/pq_viewer/V = new(user.ckey)
 	V.ui_interact(user)
-
 	return TRUE
