@@ -1,3 +1,4 @@
+
 import { useBackend } from 'tgui/backend';
 import { Window } from 'tgui/layouts';
 import {
@@ -14,6 +15,37 @@ type TabData = { id: string; name: string };
 type RegionData = { id: string; name: string };
 type RegionOption = { id: string; name: string };
 
+type CulinaryEntry = {
+  name: string;
+  quality?: string;
+  icon?: string;
+  path?: string;
+};
+
+type CulinaryPanel = {
+  fav_food: CulinaryEntry;
+  fav_drink: CulinaryEntry;
+  hated_food: CulinaryEntry;
+  hated_drink: CulinaryEntry;
+  picker_mode?: string;
+  picker_target?: string;
+  picker_target_label?: string;
+  food_options: CulinaryEntry[];
+  drink_options: CulinaryEntry[];
+};
+
+type FamiliarPanel = {
+  name?: string;
+  pronouns?: string;
+  headshot?: string;
+  flavortext?: string;
+  ooc_notes?: string;
+  ooc_extra_link?: string;
+  specie_name?: string;
+  lore_blurb?: string;
+  in_queue?: boolean;
+};
+
 type Data = {
   main_tabs: TabData[];
   sub_tabs: Record<string, TabData[]>;
@@ -23,6 +55,7 @@ type Data = {
     sub_tab: string;
     selected_region: string;
   };
+  expanded_panel?: string | null;
   header: {
     player_quality_text?: string;
     player_quality_color?: string;
@@ -50,6 +83,8 @@ type Data = {
     ooc: Record<string, string | number | boolean>;
     keybinds_notice: string;
   };
+  culinary_panel?: CulinaryPanel;
+  familiar_panel?: FamiliarPanel;
 };
 
 export const PreferencesBook = () => {
@@ -223,7 +258,7 @@ const PlaceholderPage = (props: {
 
 const CharacterPage = () => {
   const { act, data } = useBackend<Data>();
-  const { body_regions = [], character_page, book } = data;
+  const { body_regions = [], character_page, book, expanded_panel, culinary_panel, familiar_panel } = data;
   const selected = character_page?.selected_region;
 
   const handleSetRealName = (value: string) =>
@@ -291,6 +326,12 @@ const CharacterPage = () => {
 
   const handleOpenRegionOption = (optionId: string) =>
     act('open_pref_menu', { which: optionId });
+
+  const handleToggleFood = () =>
+    act('toggle_panel', { panel: 'food' });
+
+  const handleToggleFamiliar = () =>
+    act('toggle_panel', { panel: 'familiar' });
 
   return (
     <Stack fill>
@@ -399,15 +440,23 @@ const CharacterPage = () => {
             value={String(character_page?.lore?.unrevivable || '')}
             onClick={handleOpenUnrevivable}
           />
-          <Field
+          <ActionField
             label="Food"
             value={String(character_page?.prefs?.food || '')}
-            readOnly
+            onClick={handleToggleFood}
           />
-          <Field
+          <EmbeddedFoodPanel
+            expanded={expanded_panel === 'food'}
+            culinaryPanel={culinary_panel}
+          />
+          <ActionField
             label="Familiar"
             value={String(character_page?.prefs?.familiar || '')}
-            readOnly
+            onClick={handleToggleFamiliar}
+          />
+          <EmbeddedFamiliarPanel
+            expanded={expanded_panel === 'familiar'}
+            familiarPanel={familiar_panel}
           />
           <Field
             label="Statpack"
@@ -485,6 +534,194 @@ const CharacterPage = () => {
         </Section>
       </Stack.Item>
     </Stack>
+  );
+};
+
+const EmbeddedFoodPanel = (props: {
+  expanded: boolean;
+  culinaryPanel?: CulinaryPanel;
+}) => {
+  const { act } = useBackend<Data>();
+  const culinary = props.culinaryPanel;
+
+  if (!props.expanded || !culinary) {
+    return null;
+  }
+
+  const pickerTitle =
+    culinary.picker_target_label || 'Select option';
+
+  const pickerOptions =
+    culinary.picker_mode === 'drink'
+      ? culinary.drink_options
+      : culinary.food_options;
+
+  return (
+    <Section title="Culinary Preferences" mt={1}>
+      <CompactFoodRow
+        label="Favourite Food"
+        entry={culinary.fav_food}
+        onClick={() => act('culinary_open_picker', { mode: 'food', target: 'fav_food' })}
+      />
+      <CompactFoodRow
+        label="Favourite Drink"
+        entry={culinary.fav_drink}
+        onClick={() => act('culinary_open_picker', { mode: 'drink', target: 'fav_drink' })}
+      />
+      <CompactFoodRow
+        label="Hated Food"
+        entry={culinary.hated_food}
+        onClick={() => act('culinary_open_picker', { mode: 'food', target: 'hated_food' })}
+      />
+      <CompactFoodRow
+        label="Hated Drink"
+        entry={culinary.hated_drink}
+        onClick={() => act('culinary_open_picker', { mode: 'drink', target: 'hated_drink' })}
+      />
+
+      <Box mt={1}>
+        <Button onClick={() => act('culinary_reset')}>
+          Reset defaults
+        </Button>
+      </Box>
+
+      {!!culinary.picker_target && (
+        <Section title={pickerTitle} mt={1}>
+          <Box mb={1}>
+            <Button onClick={() => act('culinary_close_picker')}>
+              Close
+            </Button>
+          </Box>
+
+          <Stack vertical>
+            {pickerOptions.map((option) => (
+              <Stack.Item key={option.path || option.name}>
+                <Button
+                  fluid
+                  onClick={() => act('culinary_select', { path: option.path })}
+                >
+                  <Stack align="center">
+                    <Stack.Item basis="28px">
+                      {option.icon ? (
+                        <img
+                          src={option.icon}
+                          style={{ width: '22px', height: '22px', objectFit: 'contain' }}
+                        />
+                      ) : (
+                        '-'
+                      )}
+                    </Stack.Item>
+                    <Stack.Item grow>
+                      {option.name}
+                    </Stack.Item>
+                    <Stack.Item>
+                      ({option.quality || '-'})
+                    </Stack.Item>
+                  </Stack>
+                </Button>
+              </Stack.Item>
+            ))}
+          </Stack>
+        </Section>
+      )}
+    </Section>
+  );
+};
+
+const CompactFoodRow = (props: {
+  label: string;
+  entry?: CulinaryEntry;
+  onClick: () => void;
+}) => (
+  <Stack align="center" mb={0.5}>
+    <Stack.Item basis="120px">
+      <b>{props.label}</b>
+    </Stack.Item>
+    <Stack.Item basis="30px">
+      {props.entry?.icon ? (
+        <img
+          src={props.entry.icon}
+          style={{ width: '22px', height: '22px', objectFit: 'contain' }}
+        />
+      ) : (
+        '-'
+      )}
+    </Stack.Item>
+    <Stack.Item grow>
+      <Button fluid onClick={props.onClick}>
+        {props.entry?.name || 'None'}{props.entry?.quality ? ` (${props.entry.quality})` : ''}
+      </Button>
+    </Stack.Item>
+  </Stack>
+);
+
+const EmbeddedFamiliarPanel = (props: {
+  expanded: boolean;
+  familiarPanel?: FamiliarPanel;
+}) => {
+  const { act } = useBackend<Data>();
+  const fam = props.familiarPanel;
+
+  if (!props.expanded || !fam) {
+    return null;
+  }
+
+  return (
+    <Section title="Familiar Preferences" mt={1}>
+      <ActionField
+        label="Name"
+        value={fam.name || 'Set name'}
+        onClick={() => act('familiar_edit', { field: 'familiar_name' })}
+      />
+      <ActionField
+        label="Pronouns"
+        value={fam.pronouns || 'they/them'}
+        onClick={() => act('familiar_pick_pronouns')}
+      />
+      <ActionField
+        label="Type"
+        value={fam.specie_name || 'None selected'}
+        onClick={() => act('familiar_pick_specie')}
+      />
+      {!!fam.lore_blurb && (
+        <NoticeBox mt={1}>
+          {fam.lore_blurb}
+        </NoticeBox>
+      )}
+      <ActionField
+        label="Headshot"
+        value={fam.headshot ? 'Change headshot' : 'Set headshot'}
+        onClick={() => act('familiar_edit', { field: 'familiar_headshot' })}
+      />
+      {!!fam.headshot && (
+        <Box mt={1} textAlign="center">
+          <img
+            src={fam.headshot}
+            style={{ maxWidth: '120px', maxHeight: '120px', objectFit: 'contain' }}
+          />
+        </Box>
+      )}
+      <ActionField
+        label="Flavortext"
+        value={fam.flavortext ? 'Edit flavortext' : 'Set flavortext'}
+        onClick={() => act('familiar_edit', { field: 'familiar_flavortext' })}
+      />
+      <ActionField
+        label="OOC Notes"
+        value={fam.ooc_notes ? 'Edit OOC notes' : 'Set OOC notes'}
+        onClick={() => act('familiar_edit', { field: 'familiar_ooc_notes' })}
+      />
+      <ActionField
+        label="OOC Extra"
+        value={fam.ooc_extra_link ? 'Edit extra media' : 'Set extra media'}
+        onClick={() => act('familiar_edit', { field: 'familiar_ooc_extra' })}
+      />
+      <Box mt={1}>
+        <Button onClick={() => act('familiar_toggle_queue')}>
+          {fam.in_queue ? 'Leave Queue' : 'Join Queue'}
+        </Button>
+      </Box>
+    </Section>
   );
 };
 

@@ -1,3 +1,4 @@
+
 import { useBackend } from 'tgui/backend';
 import { Window } from 'tgui/layouts';
 import {
@@ -26,9 +27,10 @@ export const PreferencesPQ = () => {
   return (
     <Window title="Player Quality" width={420} height={520}>
       <Window.Content scrollable>
-
         <Section title="Overview">
-          <Box bold>{data.pq_text}</Box>
+          <Box bold textColor={data.pq_color || '#ffffff'}>
+            {data.pq_text}
+          </Box>
           <Box>PQ Value: {data.pq_value}</Box>
         </Section>
 
@@ -49,7 +51,6 @@ export const PreferencesPQ = () => {
             )}
           </Stack>
         </Section>
-
       </Window.Content>
     </Window>
   );

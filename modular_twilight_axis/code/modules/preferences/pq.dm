@@ -1,3 +1,4 @@
+
 /datum/pq_viewer
 	var/target_ckey
 
@@ -20,7 +21,6 @@
 	var/canonical_ckey = replacetext(replacetext(replacetext(replacetext(lowertext(target_ckey), " ", ""), "_", ""), ".", ""), "-", "")
 	var/folder_prefix = copytext(canonical_ckey, 1, 2)
 
-	// --- PQ TEXT + COLOR ---
 	var/pq_html = "[get_playerquality(canonical_ckey, TRUE, TRUE)]"
 	var/pq_color = "#ffffff"
 
@@ -36,16 +36,13 @@
 
 		pq_color = trim(copytext(pq_html, start, end))
 
-	// --- META ---
 	data["pq_text"] = strip_html_tags(pq_html)
 	data["pq_color"] = pq_color
 	data["pq_value"] = get_playerquality(canonical_ckey, FALSE, TRUE)
-
 	data["commends"] = get_commends(canonical_ckey)
 	data["round_points"] = get_roundpoints(canonical_ckey)
 	data["rounds_survived"] = get_roundsplayed(canonical_ckey)
 
-	// --- FILE ENTRIES ---
 	var/list/entries = list()
 	var/file_path = "data/player_saves/[folder_prefix]/[canonical_ckey]/playerquality.txt"
 
@@ -66,7 +63,7 @@
 	var/inside = FALSE
 
 	for(var/i = 1 to length(text))
-		var/c = copytext(text, i, i+1)
+		var/c = copytext(text, i, i + 1)
 		if(c == "<")
 			inside = TRUE
 			continue
