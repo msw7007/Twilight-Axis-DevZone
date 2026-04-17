@@ -1,3 +1,4 @@
+
 import { useBackend } from 'tgui/backend';
 import { Window } from 'tgui/layouts';
 import {
@@ -121,38 +122,8 @@ export const PreferencesBook = () => {
   const currentSubTab = book?.sub_tab || 'appearance';
   const currentSubTabs = sub_tabs[currentMainTab] || [];
 
-  const handleSetMainTab = (tabId: string) =>
-    act('set_main_tab', { tab: tabId });
-
-  const handleSetSubTab = (tabId: string) =>
-    act('set_sub_tab', { sub_tab: tabId });
-
-  const handleOpenLoadout = () =>
-    act('open_loadout');
-
-  const handleOpenRoles = () =>
-    act('open_roles');
-
-  const handleOpenCharacterSlot = () =>
-    act('open_pref_menu', { which: 'changeslot' });
-
-  const handleOpenPQ = () =>
-    act('open_pref_menu', { which: 'pq' });
-
-  const handleSavePrefs = () =>
-    act('save_prefs');
-
-  const handleDonePrefs = () =>
-    act('done_prefs');
-
-  const handleSetNickname = (value: string) =>
-    act('set_pref', { pref_id: 'nickname', value });
-
-  const handleOpenNicknameColor = () =>
-    act('open_pref_menu', { which: 'nickname_color' });
-
   return (
-    <Window title="Character Book" width={1220} height={820}>
+    <Window title="Character Book" width={1360} height={860}>
       <Window.Content scrollable>
         <Stack vertical fill>
           <Stack.Item>
@@ -160,32 +131,36 @@ export const PreferencesBook = () => {
               <Stack align="center">
                 <Stack.Item>
                   <Button
-                    onClick={handleOpenPQ}
+                    onClick={() => act('open_pref_menu', { which: 'pq' })}
                     textColor={header?.player_quality_color || '#ffffff'}>
                     PQ: {header?.player_quality_text || 'Unknown'}
                   </Button>
                 </Stack.Item>
                 <Stack.Item grow>
-                  <Button fluid onClick={handleOpenCharacterSlot}>
+                  <Button fluid onClick={() => act('open_pref_menu', { which: 'changeslot' })}>
                     {header?.real_name || 'Unnamed'}
                   </Button>
                 </Stack.Item>
                 <Stack.Item>
-                  <Button onClick={handleSavePrefs}>SAVE</Button>
+                  <Button onClick={() => act('save_prefs')}>SAVE</Button>
                 </Stack.Item>
                 <Stack.Item>
-                  <Button onClick={handleDonePrefs}>DONE</Button>
+                  <Button onClick={() => act('done_prefs')}>DONE</Button>
                 </Stack.Item>
                 <Stack.Item basis="150px">
                   <b>OOC Nickname</b>
                 </Stack.Item>
                 <Stack.Item grow>
-                  <Input fluid value={header?.nickname || ''} onChange={handleSetNickname} />
+                  <Input
+                    fluid
+                    value={header?.nickname || ''}
+                    onChange={(value) => act('set_pref', { pref_id: 'nickname', value })}
+                  />
                 </Stack.Item>
                 <Stack.Item basis="140px">
                   <Button
                     fluid
-                    onClick={handleOpenNicknameColor}
+                    onClick={() => act('open_pref_menu', { which: 'nickname_color' })}
                     textColor={header?.nickname_color || '#ffffff'}>
                     Change color
                   </Button>
@@ -201,7 +176,7 @@ export const PreferencesBook = () => {
                   <Tabs.Tab
                     key={tab.id}
                     selected={currentMainTab === tab.id}
-                    onClick={() => handleSetMainTab(tab.id)}>
+                    onClick={() => act('set_main_tab', { tab: tab.id })}>
                     {tab.name}
                   </Tabs.Tab>
                 ))}
@@ -214,7 +189,7 @@ export const PreferencesBook = () => {
                     title="Loadout"
                     text="Phase 1: leave page in the book, open existing loadout UI from here."
                     buttonText="Open current loadout menu"
-                    onButtonClick={handleOpenLoadout}
+                    onButtonClick={() => act('open_loadout')}
                   />
                 )}
                 {currentMainTab === 'roles' && (
@@ -222,7 +197,7 @@ export const PreferencesBook = () => {
                     title="Roles"
                     text="Phase 1: leave page in the book, route to current class / role selection flow."
                     buttonText="Open current role menu"
-                    onButtonClick={handleOpenRoles}
+                    onButtonClick={() => act('open_roles')}
                   />
                 )}
                 {currentMainTab === 'settings' && <SettingsPage />}
@@ -234,7 +209,7 @@ export const PreferencesBook = () => {
                     <Tabs.Tab
                       key={tab.id}
                       selected={currentSubTab === tab.id}
-                      onClick={() => handleSetSubTab(tab.id)}>
+                      onClick={() => act('set_sub_tab', { sub_tab: tab.id })}>
                       {tab.name}
                     </Tabs.Tab>
                   ))}
@@ -280,7 +255,7 @@ const CharacterPage = () => {
 
   return (
     <Stack fill>
-      <Stack.Item basis="50%">
+      <Stack.Item basis="34%">
         <Section title="Identity">
           <Field
             label="Name"
@@ -327,51 +302,44 @@ const CharacterPage = () => {
         </Section>
       </Stack.Item>
 
-      <Stack.Item grow basis={0}>
-        <Section title="Appearance">
-          <Stack>
-            <Stack.Item grow>
-              <Section title="Body Preview">
-                <BodyPreview selectedRegion={book?.selected_region} />
-              </Section>
-            </Stack.Item>
-            <Stack.Item basis="240px">
-              <Section title="Descriptors / Color">
-                <Button fluid onClick={() => act('open_pref_menu', { which: 'descriptors' })}>
-                  Open descriptors editor
-                </Button>
-                <Button fluid mt={1} onClick={() => act('open_pref_menu', { which: 'body_markings' })}>
-                  Open markings editor
-                </Button>
-              </Section>
-            </Stack.Item>
-          </Stack>
+      <Stack.Item basis="32%">
+        <Section title="Body Preview">
+          <BodyPreview selectedRegion={String(book?.selected_region || 'head')} />
+        </Section>
 
-          <Section title={`Region: ${selected?.name || 'None'}`} mt={1}>
-            <Box mb={1}>
-              {body_regions.map((region) => (
-                <Button
-                  key={region.id}
-                  selected={region.id === book?.selected_region}
-                  mr={0.5}
-                  mb={0.5}
-                  onClick={() => act('select_body_region', { region: region.id })}>
-                  {region.name}
-                </Button>
-              ))}
-            </Box>
-            <Box mt={1}>
-              {(selected?.options || []).map((option) => (
-                <Button
-                  key={option.id}
-                  mr={0.5}
-                  mb={0.5}
-                  onClick={() => act('open_pref_menu', { which: option.id })}>
-                  {option.name}
-                </Button>
-              ))}
-            </Box>
-          </Section>
+        <Section title="Colors / Quick Actions" mt={1}>
+          <ActionField label="Skin Tone" value={String(character_page?.selected_region?.id === 'face' ? 'Edit skin' : 'Edit skin')} onClick={() => act('open_pref_menu', { which: 's_tone' })} />
+          <ActionField label="Descriptors" value="Open editor" onClick={() => act('open_pref_menu', { which: 'descriptors' })} />
+          <ActionField label="Body Markings" value="Open editor" onClick={() => act('open_pref_menu', { which: 'body_markings' })} />
+          <ActionField label="Customizers" value="Open editor" onClick={() => act('open_pref_menu', { which: 'customizers' })} />
+        </Section>
+      </Stack.Item>
+
+      <Stack.Item grow basis={0}>
+        <Section title={`Region: ${selected?.name || 'None'}`}>
+          <Box mb={1}>
+            {body_regions.map((region) => (
+              <Button
+                key={region.id}
+                selected={region.id === book?.selected_region}
+                mr={0.5}
+                mb={0.5}
+                onClick={() => act('select_body_region', { region: region.id })}>
+                {region.name}
+              </Button>
+            ))}
+          </Box>
+          <Box mt={1}>
+            {(selected?.options || []).map((option) => (
+              <Button
+                key={option.id}
+                mr={0.5}
+                mb={0.5}
+                onClick={() => act('open_pref_menu', { which: option.id })}>
+                {option.name}
+              </Button>
+            ))}
+          </Box>
         </Section>
       </Stack.Item>
     </Stack>
@@ -530,22 +498,160 @@ const EmbeddedVirtuePanel = (props: { expanded: boolean; panel?: VirtuePanel; pr
 
 const BodyPreview = (props: { selectedRegion: string }) => {
   const { act } = useBackend<Data>();
-  const renderBodyButton = (id: string, label: string) => (
-    <Button fluid selected={props.selectedRegion === id} onClick={() => act('select_body_region', { region: id })} mb={0.5}>
-      {label}
-    </Button>
+
+  const zoneStyle = (selected: boolean, top: string, left: string, width: string, height: string) => ({
+    position: 'absolute' as const,
+    top,
+    left,
+    width,
+    height,
+    border: selected ? '2px solid rgba(255, 210, 80, 0.95)' : '1px solid rgba(255,255,255,0.18)',
+    background: selected ? 'rgba(255, 210, 80, 0.18)' : 'rgba(255,255,255,0.04)',
+    borderRadius: '10px',
+    cursor: 'pointer',
+    transition: 'all 120ms ease',
+  });
+
+  const zoneButton = (
+    id: string,
+    label: string,
+    top: string,
+    left: string,
+    width: string,
+    height: string,
+  ) => (
+    <div
+      key={label}
+      style={zoneStyle(props.selectedRegion === id, top, left, width, height)}
+      onClick={() => act('select_body_region', { region: id })}
+      title={label}
+    />
   );
+
   return (
-    <Stack vertical align="center">
-      <Stack.Item width="220px">{renderBodyButton('head', 'Head')}</Stack.Item>
-      <Stack.Item width="220px">{renderBodyButton('face', 'Face')}</Stack.Item>
-      <Stack.Item width="220px">{renderBodyButton('torso', 'Torso')}</Stack.Item>
-      <Stack.Item width="220px">{renderBodyButton('arms', 'Arms')}</Stack.Item>
-      <Stack.Item width="220px">{renderBodyButton('hands', 'Hands')}</Stack.Item>
-      <Stack.Item width="220px">{renderBodyButton('legs', 'Legs')}</Stack.Item>
-      <Stack.Item width="220px">{renderBodyButton('feet', 'Feet')}</Stack.Item>
-      <Stack.Item width="220px">{renderBodyButton('organs', 'Organs')}</Stack.Item>
-    </Stack>
+    <Box
+      style={{
+        position: 'relative',
+        width: '260px',
+        height: '520px',
+        margin: '0 auto',
+        borderRadius: '16px',
+        background: 'linear-gradient(180deg, rgba(255,255,255,0.05), rgba(255,255,255,0.02))',
+        border: '1px solid rgba(255,255,255,0.08)',
+      }}>
+      <div
+        style={{
+          position: 'absolute',
+          top: '18px',
+          left: '92px',
+          width: '76px',
+          height: '76px',
+          borderRadius: '999px',
+          background: 'rgba(220,220,220,0.18)',
+          border: '1px solid rgba(255,255,255,0.12)',
+        }}
+      />
+      <div
+        style={{
+          position: 'absolute',
+          top: '95px',
+          left: '118px',
+          width: '24px',
+          height: '24px',
+          borderRadius: '999px',
+          background: 'rgba(220,220,220,0.14)',
+        }}
+      />
+      <div
+        style={{
+          position: 'absolute',
+          top: '120px',
+          left: '78px',
+          width: '104px',
+          height: '142px',
+          borderRadius: '26px',
+          background: 'rgba(220,220,220,0.18)',
+          border: '1px solid rgba(255,255,255,0.12)',
+        }}
+      />
+      <div
+        style={{
+          position: 'absolute',
+          top: '120px',
+          left: '38px',
+          width: '30px',
+          height: '160px',
+          borderRadius: '20px',
+          background: 'rgba(220,220,220,0.16)',
+        }}
+      />
+      <div
+        style={{
+          position: 'absolute',
+          top: '120px',
+          right: '38px',
+          width: '30px',
+          height: '160px',
+          borderRadius: '20px',
+          background: 'rgba(220,220,220,0.16)',
+        }}
+      />
+      <div
+        style={{
+          position: 'absolute',
+          top: '265px',
+          left: '98px',
+          width: '64px',
+          height: '58px',
+          borderRadius: '18px',
+          background: 'rgba(220,220,220,0.18)',
+        }}
+      />
+      <div
+        style={{
+          position: 'absolute',
+          top: '322px',
+          left: '88px',
+          width: '34px',
+          height: '160px',
+          borderRadius: '22px',
+          background: 'rgba(220,220,220,0.16)',
+        }}
+      />
+      <div
+        style={{
+          position: 'absolute',
+          top: '322px',
+          left: '138px',
+          width: '34px',
+          height: '160px',
+          borderRadius: '22px',
+          background: 'rgba(220,220,220,0.16)',
+        }}
+      />
+
+      {zoneButton('head', 'Forehead / Head', '20px', '88px', '84px', '30px')}
+      {zoneButton('face', 'Face', '50px', '86px', '88px', '52px')}
+      {zoneButton('torso', 'Torso', '122px', '74px', '112px', '118px')}
+      {zoneButton('arms', 'Left Arm', '126px', '28px', '46px', '152px')}
+      {zoneButton('arms', 'Right Arm', '126px', '186px', '46px', '152px')}
+      {zoneButton('organs', 'Groin', '248px', '94px', '72px', '68px')}
+      {zoneButton('legs', 'Left Leg', '322px', '78px', '48px', '166px')}
+      {zoneButton('legs', 'Right Leg', '322px', '134px', '48px', '166px')}
+
+      <Box
+        style={{
+          position: 'absolute',
+          bottom: '10px',
+          left: '0',
+          width: '100%',
+          textAlign: 'center',
+          opacity: 0.8,
+          fontSize: '12px',
+        }}>
+        Selected: {props.selectedRegion}
+      </Box>
+    </Box>
   );
 };
 

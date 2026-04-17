@@ -1,3 +1,4 @@
+
 /**
  * Preferences TGUI hub
  * Backend kept neutral; frontend may style it as a book.
@@ -238,13 +239,13 @@
 
 		if("torso")
 			options += list(
-				list("id" = "markings", "name" = "Body Markings"),
+				list("id" = "body_markings", "name" = "Body Markings"),
 				list("id" = "customizers", "name" = "Customizers"),
 			)
 
 		if("arms", "hands", "legs", "feet")
 			options += list(
-				list("id" = "markings", "name" = "Body Markings"),
+				list("id" = "body_markings", "name" = "Body Markings"),
 				list("id" = "customizers", "name" = "Customizers"),
 			)
 
@@ -505,6 +506,9 @@
 			var/new_region = params["region"]
 			if(new_region)
 				prefs_ui_selected_region = new_region
+			if(ui)
+				ui.send_update()
+			SStgui.update_uis(src)
 			return TRUE
 
 		if("set_pref")
@@ -1344,7 +1348,7 @@
 			return FALSE
 
 		if("erpprefs")
-			to_chat(user, "<span class='notice'>["<span class='bold'>Erotic Roleplay preferences. If you put 'anything goes' or 'no limits' here, do not be surprised if people take you up on it.</span>"]</span>")
+			to_chat(user, "<span class='notice'>Erotic Roleplay preferences. If you put 'anything goes' or 'no limits' here, do not be surprised if people take you up on it.</span>")
 			to_chat(user, "<font color = '#d6d6d6'>Leave blank to clear.</font>")
 			var/new_erpprefs = tgui_input_text(user, "Input your preferences:", "ERP Preferences", erpprefs, multiline = TRUE, encode = FALSE, bigmodal = TRUE)
 			if(isnull(new_erpprefs))
