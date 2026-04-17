@@ -430,7 +430,7 @@
 			return process_link(user, list("preference" = "changeslot"))
 
 		if("pq")
-			check_pq_menu(user.ckey)
+			return open_pq_tgui(user)
 
 		if("name")
 			return process_link(user, list("preference" = "name", "task" = "input"))
@@ -535,3 +535,12 @@
 			return process_link(user, list("preference" = "erpprefs", "task" = "input"))
 
 	return FALSE
+
+/datum/preferences/proc/open_pq_tgui(mob/user)
+	if(!user || !user.client)
+		return FALSE
+
+	var/datum/pq_viewer/V = new(user.ckey)
+	V.ui_interact(user)
+
+	return TRUE
