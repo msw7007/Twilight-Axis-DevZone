@@ -65,9 +65,16 @@
 	if(ishuman(target) && human_npc_target_already_bound(target))
 		var/mob/living/carbon/human/human_target = target
 		human_npc_stabilize_bound_target(human_target)
+		controller.set_blackboard_key(BB_HUMAN_NPC_CAPTURE_TARGET, human_target)
+		controller.clear_blackboard_key(BB_HUMAN_NPC_CAPTURE_DESTINATION)
+
 		var/list/capture_loot = human_npc_strip_bound_target_equipment(human_target, get_turf(human_target))
 		if(length(capture_loot))
 			controller.set_blackboard_key(BB_HUMAN_NPC_CAPTURE_LOOT, capture_loot)
+			controller.set_blackboard_key(BB_HUMAN_NPC_CAPTURE_PHASE, HUMAN_NPC_CAPTURE_PHASE_LOOT)
+		else
+			controller.clear_blackboard_key(BB_HUMAN_NPC_CAPTURE_LOOT)
+			controller.set_blackboard_key(BB_HUMAN_NPC_CAPTURE_PHASE, HUMAN_NPC_CAPTURE_PHASE_DELIVER)
 
 	if(restored_item && !QDELETED(restored_item))
 		if(restored_item.loc == get_turf(pawn) || restored_item.loc == pawn.loc)

@@ -2,3 +2,19 @@
 #define HUMAN_NPC_ANTI_GRAB_CON_LIMIT 12
 
 #define BB_HUMAN_NPC_CAPTURE_LOOT "human_npc_capture_loot"
+#define BB_HUMAN_NPC_CAPTURE_TARGET "human_npc_capture_target"
+#define BB_HUMAN_NPC_CAPTURE_DESTINATION "human_npc_capture_destination"
+#define BB_HUMAN_NPC_CAPTURE_PHASE "human_npc_capture_phase"
+
+#define HUMAN_NPC_CAPTURE_PHASE_LOOT "loot"
+#define HUMAN_NPC_CAPTURE_PHASE_DELIVER "deliver"
+#define HUMAN_NPC_CAPTURE_PHASE_CARRYING "carrying"
+
+#define HUMAN_NPC_CAPTURE_DELIVERY_FACTION_BANDITS "bandits"
+#define HUMAN_NPC_CAPTURE_DELIVERY_FACTION_GOBLINS "goblins"
+#define HUMAN_NPC_CAPTURE_DELIVERY_FACTION_DEFAULT "default"
+
+#define HUMAN_NPC_CAPTURE_DELIVERY_MAP_DUN_WORLD "dun_world"
+#define HUMAN_NPC_CAPTURE_DELIVERY_MAP_ROCKHILL "rockhill"
+#define HUMAN_NPC_CAPTURE_DELIVERY_MAP_ROGUETEST "roguetest"
+#define HUMAN_NPC_CAPTURE_DELIVERY_MAP_DEFAULT "default"

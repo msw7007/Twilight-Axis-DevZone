@@ -592,3 +592,312 @@
 			best_item = I
 
 	return best_item
+
+GLOBAL_LIST_EMPTY(human_npc_captive_delivery_points)
+GLOBAL_LIST_EMPTY(human_npc_captive_delivery_z_map)
+
+/proc/human_npc_ensure_captive_delivery_points()
+	if(!islist(GLOB.human_npc_captive_delivery_points) || !length(GLOB.human_npc_captive_delivery_points))
+		init_human_npc_captive_delivery_points()
+
+	if(!islist(GLOB.human_npc_captive_delivery_z_map))
+		GLOB.human_npc_captive_delivery_z_map = list()
+
+/proc/init_human_npc_captive_delivery_points()
+	GLOB.human_npc_captive_delivery_points = list()
+	GLOB.human_npc_captive_delivery_z_map = list()
+
+	var/list/roguetest_points = list()
+	roguetest_points[HUMAN_NPC_CAPTURE_DELIVERY_FACTION_BANDITS] = list(
+		list(24, 24, 2),
+		list(25, 24, 2),
+	)
+	roguetest_points[HUMAN_NPC_CAPTURE_DELIVERY_FACTION_GOBLINS] = list(
+		list(24, 25, 2),
+		list(25, 25, 2),
+	)
+	roguetest_points[HUMAN_NPC_CAPTURE_DELIVERY_FACTION_DEFAULT] = list(
+		list(24, 24, 2),
+		list(25, 25, 2),
+	)
+	GLOB.human_npc_captive_delivery_points[HUMAN_NPC_CAPTURE_DELIVERY_MAP_ROGUETEST] = roguetest_points
+
+	var/list/rockhill_points = list()
+	rockhill_points[HUMAN_NPC_CAPTURE_DELIVERY_FACTION_BANDITS] = list(
+		list(30, 30, 3),
+		list(31, 30, 3),
+	)
+	rockhill_points[HUMAN_NPC_CAPTURE_DELIVERY_FACTION_GOBLINS] = list(
+		list(30, 31, 3),
+		list(31, 31, 3),
+	)
+	rockhill_points[HUMAN_NPC_CAPTURE_DELIVERY_FACTION_DEFAULT] = list(
+		list(30, 30, 3),
+		list(31, 31, 3),
+	)
+	GLOB.human_npc_captive_delivery_points[HUMAN_NPC_CAPTURE_DELIVERY_MAP_ROCKHILL] = rockhill_points
+
+	var/list/dun_world_points = list()
+	dun_world_points[HUMAN_NPC_CAPTURE_DELIVERY_FACTION_BANDITS] = list(
+		list(20, 372, 4),
+		list(21, 372, 4),
+	)
+	dun_world_points[HUMAN_NPC_CAPTURE_DELIVERY_FACTION_GOBLINS] = list(
+		list(20, 373, 4),
+		list(21, 373, 4),
+	)
+	dun_world_points[HUMAN_NPC_CAPTURE_DELIVERY_FACTION_DEFAULT] = list(
+		list(20, 372, 4),
+		list(21, 373, 4),
+	)
+	GLOB.human_npc_captive_delivery_points[HUMAN_NPC_CAPTURE_DELIVERY_MAP_DUN_WORLD] = dun_world_points
+
+	var/list/default_points = list()
+	default_points[HUMAN_NPC_CAPTURE_DELIVERY_FACTION_BANDITS] = list(
+		list(24, 24, 2),
+		list(25, 24, 2),
+	)
+	default_points[HUMAN_NPC_CAPTURE_DELIVERY_FACTION_GOBLINS] = list(
+		list(24, 25, 2),
+		list(25, 25, 2),
+	)
+	default_points[HUMAN_NPC_CAPTURE_DELIVERY_FACTION_DEFAULT] = list(
+		list(24, 24, 2),
+		list(25, 25, 2),
+	)
+	GLOB.human_npc_captive_delivery_points[HUMAN_NPC_CAPTURE_DELIVERY_MAP_DEFAULT] = default_points
+
+/proc/human_npc_get_delivery_map_alias(map_key)
+	map_key = human_npc_normalize_delivery_key(map_key)
+	if(!map_key)
+		return null
+
+	if(map_key == HUMAN_NPC_CAPTURE_DELIVERY_MAP_DUN_WORLD || findtext(map_key, "dun_world"))
+		return HUMAN_NPC_CAPTURE_DELIVERY_MAP_DUN_WORLD
+
+	if(map_key == HUMAN_NPC_CAPTURE_DELIVERY_MAP_ROCKHILL || findtext(map_key, "rockhill"))
+		return HUMAN_NPC_CAPTURE_DELIVERY_MAP_ROCKHILL
+
+	if(map_key == HUMAN_NPC_CAPTURE_DELIVERY_MAP_ROGUETEST || findtext(map_key, "roguetest") || findtext(map_key, "rogue_test"))
+		return HUMAN_NPC_CAPTURE_DELIVERY_MAP_ROGUETEST
+
+	return map_key
+
+/proc/human_npc_normalize_delivery_key(value)
+	if(isnull(value))
+		return null
+
+	var/text = lowertext("[value]")
+	text = replacetext(text, " ", "_")
+	text = replacetext(text, "-", "_")
+	text = replacetext(text, ".dmm", "")
+	text = replacetext(text, ".json", "")
+	return text
+
+/proc/human_npc_get_delivery_faction_alias(faction_key)
+	faction_key = human_npc_normalize_delivery_key(faction_key)
+	if(!faction_key)
+		return null
+
+	if(faction_key == HUMAN_NPC_CAPTURE_DELIVERY_FACTION_BANDITS || findtext(faction_key, "bandit"))
+		return HUMAN_NPC_CAPTURE_DELIVERY_FACTION_BANDITS
+	if(faction_key == HUMAN_NPC_CAPTURE_DELIVERY_FACTION_GOBLINS || findtext(faction_key, "goblin"))
+		return HUMAN_NPC_CAPTURE_DELIVERY_FACTION_GOBLINS
+
+	return faction_key
+
+/proc/human_npc_known_delivery_map_key(map_key)
+	if(!map_key)
+		return null
+
+	human_npc_ensure_captive_delivery_points()
+
+	map_key = human_npc_get_delivery_map_alias(map_key)
+	if(GLOB.human_npc_captive_delivery_points[map_key])
+		return map_key
+
+	return null
+
+/proc/human_npc_register_captive_delivery_point(map_key, faction_key, x, y, z)
+	map_key = human_npc_normalize_delivery_key(map_key)
+	faction_key = human_npc_normalize_delivery_key(faction_key)
+	if(!map_key || !faction_key || !x || !y || !z)
+		return FALSE
+
+	human_npc_ensure_captive_delivery_points()
+
+	if(!GLOB.human_npc_captive_delivery_points[map_key])
+		GLOB.human_npc_captive_delivery_points[map_key] = list()
+	if(!GLOB.human_npc_captive_delivery_points[map_key][faction_key])
+		GLOB.human_npc_captive_delivery_points[map_key][faction_key] = list()
+
+	GLOB.human_npc_captive_delivery_points[map_key][faction_key] += list(list(x, y, z))
+	return TRUE
+
+/proc/human_npc_register_captive_delivery_z_map(z, map_key)
+	map_key = human_npc_known_delivery_map_key(map_key)
+	if(!z || !map_key)
+		return FALSE
+
+	if(!GLOB.human_npc_captive_delivery_z_map)
+		GLOB.human_npc_captive_delivery_z_map = list()
+
+	GLOB.human_npc_captive_delivery_z_map["[z]"] = map_key
+	return TRUE
+
+/proc/human_npc_get_current_delivery_map_key(atom/source)
+	human_npc_ensure_captive_delivery_points()
+
+	var/turf/source_turf = get_turf(source)
+	if(source_turf && GLOB.human_npc_captive_delivery_z_map)
+		var/z_map_key = human_npc_known_delivery_map_key(GLOB.human_npc_captive_delivery_z_map["[source_turf.z]"])
+		if(z_map_key)
+			return z_map_key
+
+	if(SSmapping?.config)
+		var/list/candidates = list()
+		if(SSmapping.config.map_name)
+			candidates += SSmapping.config.map_name
+		if(SSmapping.config.map_file)
+			if(islist(SSmapping.config.map_file))
+				for(var/map_file as anything in SSmapping.config.map_file)
+					candidates += map_file
+			else
+				candidates += SSmapping.config.map_file
+		if(SSmapping.config.map_path)
+			candidates += SSmapping.config.map_path
+
+		for(var/candidate as anything in candidates)
+			var/map_key = human_npc_known_delivery_map_key(candidate)
+			if(map_key)
+				return map_key
+
+	return HUMAN_NPC_CAPTURE_DELIVERY_MAP_DEFAULT
+
+/proc/human_npc_get_delivery_faction_keys(mob/living/carbon/human/pawn)
+	var/list/result = list()
+	if(!pawn)
+		return result
+
+	if(islist(pawn.faction))
+		for(var/faction_key as anything in pawn.faction)
+			faction_key = human_npc_get_delivery_faction_alias(faction_key)
+			if(faction_key)
+				result |= faction_key
+	else if(pawn.faction)
+		var/faction_key = human_npc_get_delivery_faction_alias(pawn.faction)
+		if(faction_key)
+			result |= faction_key
+
+	// Если faction записана нестандартно, всё равно дадим двум основным лагерям шанс.
+	// Для теста это важнее, чем молча не выбрать точку.
+	result |= HUMAN_NPC_CAPTURE_DELIVERY_FACTION_BANDITS
+	result |= HUMAN_NPC_CAPTURE_DELIVERY_FACTION_GOBLINS
+	result |= HUMAN_NPC_CAPTURE_DELIVERY_FACTION_DEFAULT
+	return result
+
+/proc/human_npc_pick_delivery_turf_from_faction_points(list/points)
+	if(!islist(points) || !length(points))
+		return null
+
+	var/list/shuffled_points = points.Copy()
+	while(length(shuffled_points))
+		var/point_index = rand(1, length(shuffled_points))
+		var/list/coords = shuffled_points[point_index]
+		shuffled_points.Cut(point_index, point_index + 1)
+		if(!islist(coords) || length(coords) < 3)
+			continue
+
+		var/turf/destination = locate(coords[1], coords[2], coords[3])
+		if(destination)
+			return destination
+
+	return null
+
+/proc/human_npc_get_captive_delivery_turf(mob/living/carbon/human/pawn)
+	if(!pawn)
+		return null
+
+	human_npc_ensure_captive_delivery_points()
+
+	var/list/map_keys = list(human_npc_get_current_delivery_map_key(pawn), HUMAN_NPC_CAPTURE_DELIVERY_MAP_DEFAULT)
+	var/list/faction_keys = human_npc_get_delivery_faction_keys(pawn)
+
+	for(var/map_key as anything in map_keys)
+		map_key = human_npc_known_delivery_map_key(map_key)
+		if(!map_key)
+			continue
+
+		var/list/map_points = GLOB.human_npc_captive_delivery_points[map_key]
+		if(!islist(map_points))
+			continue
+
+		for(var/faction_key as anything in faction_keys)
+			faction_key = human_npc_normalize_delivery_key(faction_key)
+			var/turf/destination = human_npc_pick_delivery_turf_from_faction_points(map_points[faction_key])
+			if(destination)
+				return destination
+
+	return null
+
+/proc/human_npc_is_valid_delivery_captive(mob/living/target)
+	if(!target || QDELETED(target))
+		return FALSE
+	if(!ishuman(target))
+		return FALSE
+	if(!human_npc_target_already_bound(target))
+		return FALSE
+	if(human_npc_prisoner_is_unsalvageable(target))
+		return FALSE
+	return TRUE
+
+/proc/human_npc_pick_up_captive(mob/living/carbon/human/pawn, mob/living/carbon/human/captive)
+	if(!pawn || !captive)
+		return FALSE
+	if(QDELETED(pawn) || QDELETED(captive))
+		return FALSE
+	if(!human_npc_is_valid_delivery_captive(captive))
+		return FALSE
+	if(captive.loc == pawn)
+		return TRUE
+	if(!pawn.Adjacent(captive))
+		return FALSE
+
+	pawn.visible_message(span_warning("[pawn] lifts [captive] onto [pawn.p_their()] shoulder."))
+	captive.forceMove(pawn)
+	return TRUE
+
+/proc/human_npc_drop_off_captive(mob/living/carbon/human/pawn, mob/living/carbon/human/captive, turf/destination)
+	if(!pawn || !captive || !destination)
+		return FALSE
+	if(QDELETED(pawn) || QDELETED(captive))
+		return FALSE
+
+	if(captive.loc != pawn)
+		return FALSE
+
+	captive.forceMove(destination)
+	captive.setDir(pawn.dir)
+	pawn.visible_message(span_warning("[pawn] drops [captive] here."))
+	return TRUE
+
+/*
+// Portal delivery variant. Пока оставлено как заготовка, не включать до отдельного баланса/визуала.
+/proc/human_npc_portal_delivery_captive(mob/living/carbon/human/pawn, mob/living/carbon/human/captive, turf/destination)
+	if(!pawn || !captive || !destination)
+		return FALSE
+	if(!human_npc_is_valid_delivery_captive(captive))
+		return FALSE
+	if(!pawn.Adjacent(captive))
+		return FALSE
+
+	pawn.visible_message(span_warning("[pawn] opens a dark portal under [captive]."))
+	if(!do_after(pawn, 10 SECONDS, target = captive))
+		return FALSE
+	if(!human_npc_is_valid_delivery_captive(captive))
+		return FALSE
+
+	captive.forceMove(destination)
+	captive.visible_message(span_warning("[captive] falls out of a dark portal."))
+	return TRUE
+*/

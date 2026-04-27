@@ -59,4 +59,5 @@
 			pawn.put_in_hands(I)
 
 	controller.clear_blackboard_key(loot_key)
+	controller.set_blackboard_key(BB_HUMAN_NPC_CAPTURE_PHASE, HUMAN_NPC_CAPTURE_PHASE_DELIVER)
 	finish_action(controller, TRUE, loot_key)
