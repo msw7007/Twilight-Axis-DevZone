@@ -40,6 +40,8 @@
 		return FALSE
 	if(!ishuman(target))
 		return FALSE
+	if(human_npc_is_in_captive_delivery_zone(target))
+		return FALSE
 	if(human_npc_target_already_bound(target))
 		return FALSE
 	if(human_npc_target_yielded(target))
@@ -814,6 +816,78 @@ GLOBAL_LIST_EMPTY(human_npc_captive_delivery_z_map)
 
 	return null
 
+/proc/human_npc_get_all_captive_delivery_turfs(mob/living/carbon/human/pawn)
+	var/list/result = list()
+	if(!pawn)
+		return result
+
+	human_npc_ensure_captive_delivery_points()
+
+	var/list/map_keys = list(human_npc_get_current_delivery_map_key(pawn), HUMAN_NPC_CAPTURE_DELIVERY_MAP_DEFAULT)
+	var/list/faction_keys = human_npc_get_delivery_faction_keys(pawn)
+
+	for(var/map_key as anything in map_keys)
+		map_key = human_npc_known_delivery_map_key(map_key)
+		if(!map_key)
+			continue
+
+		var/list/map_points = GLOB.human_npc_captive_delivery_points[map_key]
+		if(!islist(map_points))
+			continue
+
+		for(var/faction_key as anything in faction_keys)
+			faction_key = human_npc_normalize_delivery_key(faction_key)
+			var/list/points = map_points[faction_key]
+			if(!islist(points))
+				continue
+
+			for(var/point as anything in points)
+				var/list/coords = point
+				if(!islist(coords) || length(coords) < 3)
+					continue
+
+				var/turf/destination = locate(coords[1], coords[2], coords[3])
+				if(destination)
+					result |= destination
+
+	return result
+
+/proc/human_npc_is_in_captive_delivery_zone(mob/living/target, mob/living/carbon/human/pawn = null, radius = HUMAN_NPC_CAPTURE_DELIVERY_ZONE_RADIUS)
+	if(!target || QDELETED(target))
+		return FALSE
+	if(!ishuman(target))
+		return FALSE
+
+	var/turf/target_turf = get_turf(target)
+	if(!target_turf)
+		return FALSE
+
+	if(!pawn && ishuman(target))
+		var/mob/living/carbon/human/human_target = target
+		pawn = human_target
+
+	if(!istype(pawn))
+		return FALSE
+
+	var/list/delivery_turfs = human_npc_get_all_captive_delivery_turfs(pawn)
+	for(var/turf/delivery_turf as anything in delivery_turfs)
+		if(!delivery_turf)
+			continue
+		if(target_turf.z != delivery_turf.z)
+			continue
+		if(get_dist(target_turf, delivery_turf) <= radius)
+			return TRUE
+
+	return FALSE
+
+/proc/human_npc_clear_capture_blackboard(datum/ai_controller/controller)
+	if(!controller)
+		return
+	controller.clear_blackboard_key(BB_HUMAN_NPC_CAPTURE_TARGET)
+	controller.clear_blackboard_key(BB_HUMAN_NPC_CAPTURE_DESTINATION)
+	controller.clear_blackboard_key(BB_HUMAN_NPC_CAPTURE_LOOT)
+	controller.clear_blackboard_key(BB_HUMAN_NPC_CAPTURE_PHASE)
+
 /proc/human_npc_get_captive_delivery_turf(mob/living/carbon/human/pawn)
 	if(!pawn)
 		return null
@@ -855,6 +929,8 @@ GLOBAL_LIST_EMPTY(human_npc_captive_delivery_z_map)
 	if(!pawn || !captive)
 		return FALSE
 	if(QDELETED(pawn) || QDELETED(captive))
+		return FALSE
+	if(human_npc_is_in_captive_delivery_zone(captive, pawn))
 		return FALSE
 	if(!human_npc_is_valid_delivery_captive(captive))
 		return FALSE

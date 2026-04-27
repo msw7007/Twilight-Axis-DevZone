@@ -10,6 +10,10 @@
 	var/mob/living/carbon/human/captive = controller.blackboard[BB_HUMAN_NPC_CAPTURE_TARGET]
 	var/capture_phase = controller.blackboard[BB_HUMAN_NPC_CAPTURE_PHASE]
 
+	if(istype(captive) && captive.loc != pawn && human_npc_is_in_captive_delivery_zone(captive, pawn))
+		human_npc_clear_capture_blackboard(controller)
+		return
+
 	if(capture_phase == HUMAN_NPC_CAPTURE_PHASE_CARRYING)
 		if(istype(captive))
 			controller.queue_behavior(/datum/ai_behavior/human_npc_deliver_captive, BB_HUMAN_NPC_CAPTURE_TARGET, BB_HUMAN_NPC_CAPTURE_DESTINATION)

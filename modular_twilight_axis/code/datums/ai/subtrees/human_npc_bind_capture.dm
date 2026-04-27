@@ -11,6 +11,10 @@
 	if(!istype(target))
 		return
 
+	if(human_npc_is_in_captive_delivery_zone(target, pawn))
+		controller.clear_blackboard_key(BB_BASIC_MOB_CURRENT_TARGET)
+		return
+
 	if(!human_npc_is_valid_bind_target(target))
 		return
 

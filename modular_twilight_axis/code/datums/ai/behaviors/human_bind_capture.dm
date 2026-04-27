@@ -15,6 +15,9 @@
 	if(!istype(target))
 		return FALSE
 
+	if(human_npc_is_in_captive_delivery_zone(target, pawn))
+		return FALSE
+
 	if(!human_npc_is_valid_bind_target(target))
 		return FALSE
 
@@ -31,6 +34,10 @@
 
 	var/mob/living/target = controller.blackboard[target_key]
 	if(!istype(target))
+		finish_action(controller, FALSE, target_key)
+		return
+
+	if(human_npc_is_in_captive_delivery_zone(target, pawn))
 		finish_action(controller, FALSE, target_key)
 		return
 

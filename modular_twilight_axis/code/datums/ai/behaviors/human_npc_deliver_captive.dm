@@ -16,6 +16,10 @@
 	if(!istype(captive))
 		return FALSE
 
+	if(captive.loc != pawn && human_npc_is_in_captive_delivery_zone(captive, pawn))
+		human_npc_clear_capture_blackboard(controller)
+		return FALSE
+
 	if(!human_npc_is_valid_delivery_captive(captive))
 		return FALSE
 
@@ -66,6 +70,10 @@
 		finish_action(controller, FALSE, captive_key, destination_key)
 		return
 
+	if(captive.loc != pawn && human_npc_is_in_captive_delivery_zone(captive, pawn))
+		finish_action(controller, TRUE, captive_key, destination_key)
+		return
+
 	if(!human_npc_is_valid_delivery_captive(captive))
 		finish_action(controller, FALSE, captive_key, destination_key)
 		return
@@ -77,6 +85,13 @@
 			finish_action(controller, FALSE, captive_key, destination_key)
 			return
 		controller.set_blackboard_key(destination_key, destination)
+
+	if(captive.loc == pawn && human_npc_is_in_captive_delivery_zone(captive, pawn))
+		if(!human_npc_drop_off_captive(pawn, captive, get_turf(pawn) || destination))
+			finish_action(controller, FALSE, captive_key, destination_key)
+			return
+		finish_action(controller, TRUE, captive_key, destination_key)
+		return
 
 	if(captive.loc != pawn)
 		if(!pawn.Adjacent(captive))

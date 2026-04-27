@@ -11,6 +11,10 @@
 	if(!istype(captive))
 		return
 
+	if(captive.loc != pawn && human_npc_is_in_captive_delivery_zone(captive, pawn))
+		human_npc_clear_capture_blackboard(controller)
+		return
+
 	if(!human_npc_is_valid_delivery_captive(captive))
 		controller.clear_blackboard_key(BB_HUMAN_NPC_CAPTURE_TARGET)
 		controller.clear_blackboard_key(BB_HUMAN_NPC_CAPTURE_DESTINATION)
