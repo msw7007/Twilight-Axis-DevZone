@@ -146,7 +146,7 @@
 		var/obj/item/roguegem/ruby/new_gem = new(eater.loc)
 		qdel(G)
 		eater.put_in_hands(new_gem)
-		to_chat(eater, span_notice("The [G] transforms into a rontz in your hand!"))
+		to_chat(eater, span_notice("\The [G] transforms into a rontz in your hand!"))
 		//Probably best not to allow 2 at once...
 		break
 
@@ -297,6 +297,9 @@
 		ADD_TRAIT(target, TRAIT_IWASREVIVED, "ochre_aril")
 		target.apply_status_effect(/datum/status_effect/debuff/metabolic_acceleration)
 		target.mind.remove_antag_datum(/datum/antagonist/zombie)
+		#ifdef REVIVE_GRACE
+		target.apply_status_effect(/datum/status_effect/debuff/revive_grace) // TA EDIT
+		#endif
 		return TRUE
 	else
 		target.visible_message(span_warning("The magic falters, and nothing happens."))

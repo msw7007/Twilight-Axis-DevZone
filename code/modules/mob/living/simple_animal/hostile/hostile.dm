@@ -1,5 +1,5 @@
 /mob/living/simple_animal/hostile
-	faction = list("hostile")
+	faction = list(FACTION_HOSTILE)
 	stop_automated_movement_when_pulled = 0
 	obj_damage = 40
 	environment_smash = ENVIRONMENT_SMASH_STRUCTURES //Bitflags. Set to ENVIRONMENT_SMASH_STRUCTURES to break closets,tables,racks, etc; ENVIRONMENT_SMASH_WALLS for walls; ENVIRONMENT_SMASH_RWALLS for rwalls
@@ -401,6 +401,8 @@
 
 
 /mob/living/simple_animal/hostile/proc/AttackingTarget()
+	if(target == src)
+		return FALSE
 	if(SEND_SIGNAL(src, COMSIG_HOSTILE_PRE_ATTACKINGTARGET, target) & COMPONENT_HOSTILE_NO_PREATTACK)
 		return FALSE //but more importantly return before attack_animal called
 	SEND_SIGNAL(src, COMSIG_HOSTILE_ATTACKINGTARGET, target)
@@ -561,7 +563,11 @@
 		for(var/direction in dir_list) //now we hit all of the directions we got in this fashion, since it's the only directions we should actually need
 			DestroyObjectsInDirection(direction)
 	for(var/obj/structure/O in get_step(src,dir_to_target))
-		if(O.density && O.climbable)
+		if(O.climbable)
+			O.climb_structure(src)
+			break
+	for(var/obj/structure/O in get_turf(src))
+		if(O.climbable)
 			O.climb_structure(src)
 			break
 

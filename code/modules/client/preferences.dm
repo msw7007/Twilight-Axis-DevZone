@@ -12,7 +12,7 @@ GLOBAL_LIST_EMPTY(chosen_names)
 
 	var/max_save_slots = 20
 
-	
+
 	var/list/job_characters = list() //TA EDIT
 	var/tmp/list/loaded_job_slots = list()  //TA EDIT
 
@@ -69,6 +69,7 @@ GLOBAL_LIST_EMPTY(chosen_names)
 	var/preferred_map = null
 	var/pda_style = MONO
 	var/pda_color = "#808000"
+	var/topjob = null
 
 	var/uses_glasses_colour = 0
 
@@ -146,6 +147,7 @@ GLOBAL_LIST_EMPTY(chosen_names)
 	var/lobbymusicvol = 50
 	var/ambiencevol = 50
 	var/mastervol = 50
+	var/stopdroning = FALSE
 
 	var/anonymize = TRUE
 	var/masked_examine = FALSE
@@ -269,6 +271,9 @@ GLOBAL_LIST_EMPTY(chosen_names)
 
 	/// Per-character theme override for examine panel viewers
 	var/examine_theme
+
+	/// Whether we can see the feint HUD bar.
+	var/feint_hud = FALSE
 
 	var/datum/loadout_panel/loadoutpanel
 
@@ -441,6 +446,7 @@ GLOBAL_LIST_EMPTY(chosen_names)
 			dat += "</td>"
 
 			dat += "<td style='width:33%;text-align:center'>"
+
 			dat += "</td>"
 
 			dat += "<td style='width:33%;text-align:right'>"
@@ -623,6 +629,8 @@ GLOBAL_LIST_EMPTY(chosen_names)
 			if(charflaws.len)
 				for(var/i = 1 to charflaws.len)
 					var/datum/charflaw/cf = charflaws[i]
+					if(!cf)
+						continue
 					var/warning = ""
 					if(cf.needs_extra_vice && charflaws.len < 2)
 						warning = "<font color = '#910505'>"
@@ -748,6 +756,7 @@ GLOBAL_LIST_EMPTY(chosen_names)
 			dat+= "<a href='?_src_=prefs;preference=clear_nsfw_gallery;task=input'>Clear NSFW Gallery</a>"
 			dat += "<br><a href='?_src_=prefs;preference=ooc_preview;task=input'><b>Preview Examine</b></a>"
 
+			dat += "<br><b>Family Preferences:</b> <a href='?_src_=prefs;preference=family_options;task=input'>Change</a>" // TA EDIT
 			dat += "<br><b>Loadout Items:</b> <a href='?_src_=prefs;preference=loadout_item;task=input'>Change</a>"
 
 			dat += "</td>"
@@ -1144,7 +1153,9 @@ GLOBAL_LIST_EMPTY(chosen_names)
 					prefUpperLevel = 4
 					prefLowerLevel = 2
 					var/mob/dead/new_player/P = user
-					if(istype(P)) P.topjob = job.title
+					if(istype(P))
+						P.topjob = job.title
+						topjob = job.title
 				if(JP_MEDIUM)
 					prefLevelLabel = "Medium"
 					prefLevelColor = "green"
@@ -1833,18 +1844,21 @@ GLOBAL_LIST_EMPTY(chosen_names)
 				// LETHALSTONE EDIT: add statpack selection
 				if ("statpack")
 					var/list/statpacks_available = list()
+					var/list/statpack_descriptions = list()
 					for (var/path as anything in GLOB.statpacks)
 						var/datum/statpack/statpack = GLOB.statpacks[path]
 						if (!statpack.name)
 							continue
 						var/index = statpack.name
 						if(length(statpack.stat_array))
-							index += " \n[statpack.generate_modifier_string()]"
+							var/modifier_string = statpack.generate_modifier_string()
+							index += " [modifier_string]"
+							statpack_descriptions[index] = modifier_string
 						statpacks_available[index] = statpack
 
 					statpacks_available = sort_list(statpacks_available)
 
-					var/statpack_input = tgui_input_list(user, "How shall your strengths manifest?", "STATPACK", statpacks_available, statpack)
+					var/statpack_input = tgui_input_list(user, "How shall your strengths manifest?", "STATPACK", statpacks_available, statpack, descriptions = statpack_descriptions)
 					if (statpack_input)
 						var/datum/statpack/statpack_chosen = statpacks_available[statpack_input]
 						statpack = statpack_chosen
@@ -2461,6 +2475,9 @@ GLOBAL_LIST_EMPTY(chosen_names)
 
 					loadoutpanel.ui_interact(user)
 
+				if("family_options") // TA EDIT
+					user.client?.familytree_module_open_preferences(user)
+
 				if("vampire_hair")
 					var/new_vampirehair = input(user, "Choose your character's vampire hair color:", "Character Preference","#"+vampire_hair) as color|null
 					if(new_vampirehair)
@@ -3036,10 +3053,14 @@ GLOBAL_LIST_EMPTY(chosen_names)
 						if(S)
 							for(var/i=1, i<=max_save_slots, i++)
 								var/name
+								var/suffix
 								S.cd = "/character[i]"
 								S["real_name"] >> name
+								S["topjob"] >> suffix
 								if(!name)
 									name = "Slot[i]"
+								if(suffix)
+									name += " — [suffix]"
 								choices[name] = i
 					var/choice = tgui_input_list(user, "CHOOSE A HERO","ROGUETOWN", choices)
 					if(choice)
@@ -3374,8 +3395,6 @@ GLOBAL_LIST_EMPTY(chosen_names)
 /datum/preferences/proc/LorePopup(mob/user)
 	if(!user || !user.client)
 		return
-	var/list/dat = list()
 	var/datum/browser/noclose/popup  = new(user, "lore_primer", "<div align='center'>Lore Primer</div>", 650, 900)
-	dat += GLOB.roleplay_readme
-	popup.set_content(dat.Join())
+	popup.set_content(build_lore_primer_content())
 	popup.open(FALSE)

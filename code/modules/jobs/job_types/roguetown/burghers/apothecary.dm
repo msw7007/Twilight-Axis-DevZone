@@ -59,7 +59,7 @@
 		/datum/skill/misc/reading = SKILL_LEVEL_JOURNEYMAN,
 		/datum/skill/misc/medicine = SKILL_LEVEL_MASTER,
 		/datum/skill/craft/sewing = SKILL_LEVEL_APPRENTICE,
-		/datum/skill/craft/alchemy = SKILL_LEVEL_JOURNEYMAN,
+		/datum/skill/craft/alchemy = SKILL_LEVEL_EXPERT,
 	)
 
 /datum/outfit/job/roguetown/apothecary/basic/pre_equip(mob/living/carbon/human/H)
@@ -85,7 +85,7 @@
 	if(H.mind)
 		H.mind.AddSpell(new /obj/effect/proc_holder/spell/invoked/diagnose/secular)
 	if(H.mind)
-		SStreasury.give_money_account(ECONOMIC_UPPER_MIDDLE_CLASS, H, "Savings.")
+		SStreasury.grant_savings(ECONOMIC_UPPER_MIDDLE_CLASS, H)
 	if(SSmapping.config.map_name == "Rockhill") //TA_EDIT
 		beltr = /obj/item/storage/keyring/apothecaryenigma
 	else

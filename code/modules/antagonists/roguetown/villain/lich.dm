@@ -41,6 +41,7 @@
 		TRAIT_RITUALIST,
 		TRAIT_ARCYNE,
 		TRAIT_SELF_SUSTENANCE,
+		TRAIT_ALCHEMY_EXPERT,
 		TRAIT_SILVER_WEAK
 		)
 
@@ -98,7 +99,7 @@
 
 	var/mob/living/carbon/human/L = owner.current
 	L.cmode_music = 'modular_twilight_axis/sound/music/combat_lich.ogg' //TA_EDIT
-	L.faction = list("undead")
+	L.faction = list(FACTION_UNDEAD)
 
 	for(var/datum/charflaw/cf in L.charflaws)
 		L.charflaws.Remove(cf)
@@ -182,6 +183,7 @@
 	lichman.phylacteries += new_phylactery
 	new_phylactery.possessor = lichman
 	H.equip_to_slot_or_del(new_phylactery,SLOT_IN_BACKPACK, TRUE)
+	H.select_skeleton_features()
 
 /datum/antagonist/lich/proc/consume_phylactery(timer = 10 SECONDS)
 	if(phylacteries.len)
@@ -255,7 +257,7 @@
 	new_body.real_name = old_body.name
 	new_body.dna.real_name = old_body.real_name
 	new_body.mob_biotypes |= MOB_UNDEAD
-	new_body.faction = list("undead")
+	new_body.faction = list(FACTION_UNDEAD)
 	new_body.set_patron(/datum/patron/inhumen/zizo)
 	new_body.mind.grab_ghost(force = TRUE)
 

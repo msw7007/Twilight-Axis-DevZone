@@ -142,7 +142,7 @@
 	force = 25
 	force_wielded = 30
 	possible_item_intents = list(/datum/intent/sword/cut, /datum/intent/sword/thrust/long, /datum/intent/sword/strike)
-	gripped_intents = list(/datum/intent/sword/cut/long, /datum/intent/sword/thrust/long, /datum/intent/sword/chop)
+	gripped_intents = list(/datum/intent/sword/cut/long, /datum/intent/sword/thrust/long, /datum/intent/sword/chop, /datum/intent/sword/thrust/long/deep)
 	alt_grips = list(/datum/alt_grip/mordhau/sword, /datum/alt_grip/halfsword)
 	icon_state = "longsword"
 	icon = 'icons/roguetown/weapons/swords64.dmi'
@@ -162,7 +162,7 @@
 	associated_skill = /datum/skill/combat/swords
 	throwforce = 15
 	thrown_bclass = BCLASS_CUT
-	max_blade_int = 280
+	max_blade_int = 320
 	wdefense_wbonus = 4
 	smeltresult = /obj/item/ingot/steel
 	special = /datum/special_intent/side_sweep
@@ -254,7 +254,7 @@
 	force_wielded = 15
 	sharpness = IS_BLUNT
 	possible_item_intents = list(/datum/intent/mace/strike, /datum/intent/sword/thrust/blunt)
-	gripped_intents = list(/datum/intent/mace/strike, /datum/intent/sword/thrust/blunt)
+	gripped_intents = list(/datum/intent/mace/strike, /datum/intent/sword/thrust/blunt, /datum/intent/sword/strike/penalty, /datum/intent/sword/strike/cancel)
 	icon_state = "feder"
 	throwforce = 5
 	thrown_bclass = BCLASS_BLUNT
@@ -345,7 +345,7 @@
 	desc = "A masterfully smithed, perfectly-balanced longsword that makes it easy for even a beginner to perform basic fencing maneuvers."
 	icon_state = "germanlong"
 	max_blade_int = 275
-	possible_item_intents = list(/datum/intent/sword/cut, /datum/intent/sword/thrust/long, /datum/intent/dagger/sucker_punch, /datum/intent/sword/bash)
+	possible_item_intents = list(/datum/intent/sword/cut, /datum/intent/sword/thrust/long, /datum/intent/dagger/sucker_punch, SWORD_STRIKE)
 	gripped_intents = list(/datum/intent/sword/cut, /datum/intent/sword/thrust/long, /datum/intent/sword/thrust/long/halfsword/lesser, /datum/intent/sword/chop)
 	wlength = WLENGTH_NORMAL
 
@@ -409,6 +409,16 @@
 	static_price = TRUE
 	max_integrity = 999
 	max_blade_int = 9999
+
+/obj/item/rogueweapon/sword/long/judgement/ascendant/tester
+	name = "DEBUG TEST SWORD - DO NOT USE IN ROUND"
+	desc = "A ridiculous admin-spawn test weapon that one-shots anything. If you are holding this in a real round, something has gone badly wrong."
+	force = 999
+	force_wielded = 999
+	max_integrity = 999
+	max_blade_int = 9999
+	sellprice = 0
+	static_price = TRUE
 
 /obj/item/rogueweapon/sword/long/judgement/vlord
 	name = "\"Ichor Fang\""
@@ -1028,7 +1038,7 @@
 	desc = "A very popular backsword made for cavalrymen that originated in Naledi and spread its influence further north, reaching Aavnr as a \"Szablya\" and notoriously cementing itself as the preferred weapon of the Potentate's Hussars."
 	icon_state = "saber"
 	sheathe_icon = "saber"
-	possible_item_intents = list(/datum/intent/sword/cut/sabre, /datum/intent/sword/thrust/sabre, /datum/intent/sword/strike)
+	possible_item_intents = list(/datum/intent/sword/cut/sabre, /datum/intent/sword/cut/sabre/heavy, /datum/intent/sword/thrust/sabre, /datum/intent/sword/strike)
 	gripped_intents = null
 	parrysound = list('sound/combat/parry/bladed/bladedthin (1).ogg', 'sound/combat/parry/bladed/bladedthin (2).ogg', 'sound/combat/parry/bladed/bladedthin (3).ogg')
 	swingsound = BLADEWOOSH_SMALL
@@ -1042,6 +1052,17 @@
 	clickcd = 8		//Faster than sword by 4
 	damfactor = 1.25	//Better than rapier (Base is 1.1 for swords)
 	penfactor = PEN_NONE
+
+/datum/intent/sword/cut/sabre/heavy
+	name = "precise swing"
+	icon_state = "inhack"
+	blade_class = BCLASS_CHOP
+	damfactor = 1.5
+	penfactor = PEN_HEAVY
+	swingdelay = 1 SECONDS
+	swingdelay_type = SWINGDELAY_CANCEL
+	canparry = FALSE
+	candodge = FALSE
 
 /datum/intent/sword/thrust/sabre
 	clickcd = 9			//Fast but still not as fast as rapier n' shittier.
@@ -1220,7 +1241,7 @@
 	inhand_y_dimension = 64
 	dropshrink = 0.75
 	max_blade_int = 230
-	possible_item_intents = list(/datum/intent/sword/thrust/rapier, /datum/intent/sword/cut/rapier)
+	possible_item_intents = list(/datum/intent/sword/thrust/rapier, /datum/intent/sword/cut/rapier, /datum/intent/sword/thrust/rapier/lunge)
 	gripped_intents = null
 	special = /datum/special_intent/piercing_lunge
 	parrysound = list(
@@ -1322,6 +1343,19 @@
 	clickcd = 8
 	damfactor = 1.1
 	penfactor = PEN_MEDIUM
+
+/datum/intent/sword/thrust/rapier/lunge
+	name = "deep lunge"
+	icon_state = "inlunge"
+	damfactor = 1.3
+	penfactor = PEN_BSTEEL
+
+	swingdelay_type = SWINGDELAY_CANCELSLOW
+	canparry = FALSE
+	candodge = FALSE
+
+	swingdelay = 0.8 SECONDS
+	clickcd = 1.5 SECONDS
 
 /obj/item/rogueweapon/sword/rapier/dec
 	name = "decorated rapier"
@@ -1732,7 +1766,7 @@
 	It is meant to be wielded with both hands and is a popular weapon amongst Grenzelhoftian mercenaries."
 	icon_state = "kriegmesser"
 	possible_item_intents = list(/datum/intent/sword/cut/krieg, /datum/intent/sword/chop/falx, /datum/intent/sword/strike, /datum/intent/rend/krieg)
-	gripped_intents = list(/datum/intent/sword/cut/krieg, /datum/intent/sword/thrust/krieg, /datum/intent/sword/strike, /datum/intent/rend/krieg)
+	gripped_intents = list(/datum/intent/sword/cut/krieg, /datum/intent/sword/thrust/long/deep, /datum/intent/sword/strike, /datum/intent/rend/krieg)
 	alt_grips = null
 	smeltresult = /obj/item/ingot/steel
 
@@ -1750,7 +1784,7 @@
 	icon = 'icons/roguetown/weapons/swords64.dmi'
 	icon_state = "ssangsudo"
 	sheathe_icon = "ssangsudo"
-	gripped_intents = list(/datum/intent/sword/cut/krieg, /datum/intent/sword/thrust/krieg, /datum/intent/rend, /datum/intent/sword/strike) // better rend by .05
+	gripped_intents = list(/datum/intent/sword/cut/krieg, /datum/intent/sword/thrust/long/deep, /datum/intent/rend, /datum/intent/sword/strike) // better rend by .05
 
 /obj/item/rogueweapon/sword/long/kriegmesser/pestran
 	name = "Cleansing Edge"
@@ -1780,15 +1814,19 @@
 	name = "ruma hwando"
 	desc = "A foreign steel single-edged sword with cloud patterns on the groove. The Ruma Clan's insignia is engraved on the blade."
 	icon_state = "eastsword2"
+	force = 27
+	max_integrity = 200
+	sharpness_mod = 2
+	sellprice = 50
 
 /obj/item/rogueweapon/sword/sabre/mulyeog/rumacaptain
-	force = 30
 	name = "samjeongdo"
 	desc = "A gold-stained sword with cloud patterns on the groove. One of a kind. It is a symbol of status within the Ruma clan."
 	icon_state = "eastsword3"
-	max_integrity = 180
+	force = 27
+	max_integrity = 200
 	sharpness_mod = 2
-	wdefense = 4
+	sellprice = 150
 
 /obj/item/rogueweapon/sword/sabre/hook
 	force = 20
@@ -2104,3 +2142,21 @@
 	sellprice = 50
 	sheathe_icon = "elfsword"
 	max_blade_int = 300
+
+//Banded iron sword that I don't want to chuck in the middle of the file again
+/obj/item/rogueweapon/sword/short/iron/banded
+	name = "banded iron sword"
+	desc = "A rather heavy slab of iron for separating brigands from their ill-gotten gold. It's extremely heavy and only really allows cutting, yet it swings surprisingly fast - at the cost of force output."
+	icon_state = "bandedsword"
+	possible_item_intents = list(
+		/datum/intent/sword/cut/short/banded,
+		/datum/intent/sword/chop/powerstrike
+		)
+	wdefense = 4
+	minstr = 10
+	force = 7	//This sword gets its real damage values from its intents. IYKYK.
+	sellprice = 25
+	blade_int = 350	//You're gonna cut. A lot.
+	max_integrity = 110	//Iron arming sword + 10
+	pickup_sound = 'sound/foley/equip/scrap_equip.ogg'
+	equip_sound = 'sound/foley/equip/scrap_equip.ogg'

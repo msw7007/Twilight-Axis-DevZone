@@ -1,6 +1,12 @@
 #define LINKIFY_READY(string, value) "<a href='byond://?src=[REF(src)];ready=[value]'>[string]</a>"
 GLOBAL_LIST_INIT(roleplay_readme, world.file2list("strings/rt/rp_prompt.txt"))
 
+/proc/build_lore_primer_content()
+	var/list/dat = list()
+	dat += GLOB.roleplay_readme
+	dat += build_regions_primer_html()
+	return dat.Join()
+
 /mob/dead/new_player
 	var/ready = 0
 	var/spawning = 0//Referenced when you want to delete the new_player later on in the code.
@@ -223,12 +229,9 @@ GLOBAL_LIST_INIT(roleplay_readme, world.file2list("strings/rt/rp_prompt.txt"))
 /mob/dead/new_player/verb/do_rp_prompt()
 	set name = "Lore Primer"
 	set category = "Memory"
-	var/list/dat = list()
-	dat += GLOB.roleplay_readme
-	if(dat)
-		var/datum/browser/popup = new(src, "Primer", "TWILIGHT AXIS", 460, 550)
-		popup.set_content(dat.Join())
-		popup.open()
+	var/datum/browser/popup = new(src, "Primer", "TWILIGHT AXIS", 460, 550)
+	popup.set_content(build_lore_primer_content())
+	popup.open()
 
 /proc/get_job_unavailable_error_message(retval, jobtitle)
 	switch(retval)
@@ -369,7 +372,10 @@ GLOBAL_LIST_INIT(roleplay_readme, world.file2list("strings/rt/rp_prompt.txt"))
 	return JOB_AVAILABLE
 
 /mob/dead/new_player/proc/AttemptLateSpawn(rank)
-	var/error = IsJobUnavailable(rank, TRUE)
+	var/datum/job/selected_job = SSjob.GetJob(rank)
+	// TA EDIT: only force latejoin-specific checks for familytree-controlled royal partner jobs.
+	var/familytree_force_latejoin_check = istype(selected_job, /datum/job/roguetown/lady) || istype(selected_job, /datum/job/roguetown/suitor)
+	var/error = IsJobUnavailable(rank, familytree_force_latejoin_check)
 	if(error != JOB_AVAILABLE)
 		to_chat(src, span_warning("[get_job_unavailable_error_message(error, rank)]"))
 		return FALSE
