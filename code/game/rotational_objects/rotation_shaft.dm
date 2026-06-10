@@ -170,29 +170,40 @@
 		checked = list()
 	checked |= src
 
-	for(var/direction in GLOB.cardinals)
-		var/turf/step_back = get_step(src, direction)
-		if(!step_back)
+	var/list/to_check = list(src)
+	while(length(to_check))
+		var/obj/structure/rotation_piece/cog/current = to_check[length(to_check)]
+		to_check.len -= 1
+		if(!current || QDELETED(current) || !current.rotation_network)
 			continue
-		for(var/obj/structure/structure in step_back.contents)
-			if(structure in checked)
+
+		for(var/direction in GLOB.cardinals)
+			var/turf/step_back = get_step(current, direction)
+			if(!step_back)
 				continue
-			if(!(direction & dpdir))  // not in dpdir, check for cog structures
-				if(!istype(structure, /obj/structure/rotation_piece/cog))
+			for(var/obj/structure/structure in step_back.contents)
+				if(structure in checked)
 					continue
-			else if(!(REVERSE_DIR(direction) & structure.dpdir))
-				continue
-			if(!(structure in rotation_network.connected))
-				continue
-			propagate_rotation_change(structure, checked, TRUE)
+				if(!(direction & current.dpdir))  // not in dpdir, check for cog structures
+					if(!istype(structure, /obj/structure/rotation_piece/cog))
+						continue
+				else if(!(REVERSE_DIR(direction) & structure.dpdir))
+					continue
+				if(!(structure in current.rotation_network.connected))
+					continue
+				checked |= structure
+				if(!current.apply_cog_rotation_to_connector(structure))
+					continue
+				if(istype(structure, /obj/structure/rotation_piece/cog))
+					to_check += structure
+				else
+					structure.find_and_propagate(checked, FALSE)
 	if(first && rotation_network)
 		rotation_network.update_animation_effect()
 
-/obj/structure/rotation_piece/cog/propagate_rotation_change(obj/structure/connector, list/checked, first = FALSE)
-	if(!length(checked))
-		checked = list()
-	checked |= src
-
+/obj/structure/rotation_piece/cog/proc/apply_cog_rotation_to_connector(obj/structure/connector)
+	if(!connector || QDELETED(connector))
+		return FALSE
 	var/direction = get_dir(src, connector)
 	if(direction != dir && direction != REVERSE_DIR(dir))
 		if(istype(connector, /obj/structure/rotation_piece/cog))
@@ -201,10 +212,19 @@
 	else
 		if(connector.stress_generator && connector.rotation_direction && rotation_direction && (connector.rotation_direction != rotation_direction))
 			rotation_break()
-			return
+			return FALSE
 		connector.rotation_direction = rotation_direction
 		if(!connector.stress_generator)
 			connector.set_rotations_per_minute(rotations_per_minute)
+	return TRUE
+
+/obj/structure/rotation_piece/cog/propagate_rotation_change(obj/structure/connector, list/checked, first = FALSE)
+	if(!length(checked))
+		checked = list()
+	checked |= src
+
+	if(!apply_cog_rotation_to_connector(connector))
+		return
 
 	connector.find_and_propagate(checked, FALSE)
 	if(first)

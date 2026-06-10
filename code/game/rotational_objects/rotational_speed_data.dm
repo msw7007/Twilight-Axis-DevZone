@@ -224,17 +224,24 @@
 	rotation_network.rebuild_group() // <=-- this is dumb as hell but for some reason if you perform a fucking dark ritual or someshit you can trick the game into lobotomizing itself.
 	return TRUE
 
+/obj/structure/proc/apply_rotation_to_connector(obj/structure/connector)
+	if(!connector || QDELETED(connector))
+		return FALSE
+	if(connector.last_stress_generation && connector.rotation_direction && rotation_direction && (connector.rotation_direction != rotation_direction))
+		rotation_break()
+		return FALSE
+	connector.rotation_direction = rotation_direction
+	if(!connector.stress_generator)
+		connector.set_rotations_per_minute(rotations_per_minute)
+	return TRUE
+
 /obj/structure/proc/propagate_rotation_change(obj/structure/connector, list/checked, first = FALSE)
 	if(!length(checked))
 		checked = list()
 	checked |= src
 
-	if(connector.last_stress_generation && connector.rotation_direction && rotation_direction && (connector.rotation_direction != rotation_direction))
-		rotation_break()
+	if(!apply_rotation_to_connector(connector))
 		return
-	connector.rotation_direction = rotation_direction
-	if(!connector.stress_generator)
-		connector.set_rotations_per_minute(rotations_per_minute)
 
 	connector.find_and_propagate(checked, FALSE)
 	if(first)
@@ -245,21 +252,32 @@
 		checked = list()
 	checked |= src
 
-	for(var/direction in GLOB.cardinals_multiz)
-		if(!(direction & dpdir))
+	var/list/to_check = list(src)
+	while(length(to_check))
+		var/obj/structure/current = to_check[length(to_check)]
+		to_check.len -= 1
+		if(!current || QDELETED(current) || !current.rotation_network || !current.dpdir)
 			continue
-		var/turf/step_forward = get_step_multiz(src, direction)
-		if(step_forward)
+
+		for(var/direction in GLOB.cardinals_multiz)
+			if(!(direction & current.dpdir))
+				continue
+			var/turf/step_forward = get_step_multiz(current, direction)
+			if(!step_forward)
+				continue
 			for(var/obj/structure/structure in step_forward.contents)
 				if(structure in checked)
 					continue
 				if(!structure.rotation_network || !structure.dpdir)
 					continue
-				if(!(structure in rotation_network.connected))
+				if(!(structure in current.rotation_network.connected))
 					continue
 				if(!(REVERSE_DIR(direction) & structure.dpdir))
 					continue
-				propagate_rotation_change(structure, checked, FALSE)
+				checked |= structure
+				if(!current.apply_rotation_to_connector(structure))
+					continue
+				to_check += structure
 
 	if(first)
 		rotation_network?.update_animation_effect()

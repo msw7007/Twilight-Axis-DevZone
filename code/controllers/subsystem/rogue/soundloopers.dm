@@ -15,6 +15,7 @@ SUBSYSTEM_DEF(soundloopers)
 	//cache for sanic speed (lists are references anyways)
 	var/list/current = src.currentrun
 	var/check_clients = FALSE
+	var/update_clients = FALSE
 	client_ticker++
 
 	if(client_ticker>=5) //this is dumb but necessary- clients update every half tick but sounds themselves need to be updated regularly
@@ -37,12 +38,17 @@ SUBSYSTEM_DEF(soundloopers)
 				continue
 
 		if(check_clients && thing.persistent_loop)
-			for(var/client/C in GLOB.clients)
-				if(C.mob) //Not in the lobby
-					C.update_sounds()
+			update_clients = TRUE
 
 		if (MC_TICK_CHECK)
 			return
+
+	if(update_clients)
+		for(var/client/C in GLOB.clients)
+			if(C.mob) //Not in the lobby
+				C.update_sounds()
+			if (MC_TICK_CHECK)
+				return
 
 /client/proc/update_sounds()
 
@@ -60,7 +66,10 @@ SUBSYSTEM_DEF(soundloopers)
 		if(get_dist(get_turf(mob),parent_turf) > world.view + PS.extra_range) //Too far away. get_dist shouldn't be too awful for repeated calcs
 			continue
 
-		if(mob_turf.z - parent_turf.z > 2 || mob_turf.z - parent_turf.z < 2) //for some reason get_dist not checking this properly
+		if(!mob_turf || !parent_turf)
+			continue
+
+		if(abs(mob_turf.z - parent_turf.z) > 2) //for some reason get_dist not checking this properly
 			continue
 
 		//otherwise add it to the client loops and off we go from there
@@ -163,4 +172,3 @@ SUBSYSTEM_DEF(soundloopers)
 					mob.unmute_sound(found_sound)
 				found_loop["VOL"] = new_volume
 				mob.update_sound_volume(played_loops[loop]["SOUND"], new_volume)
-

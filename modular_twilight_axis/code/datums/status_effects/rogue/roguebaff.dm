@@ -24,19 +24,32 @@
 /datum/status_effect/buff/clergybuff/process()
 
 	.=..()
+	if(!owner)
+		return
 	var/area/rogue/our_area = get_area(owner)
-	if(!(our_area.holy_area) && !(world.time < lastcheck + 10 SECONDS))
-		lastcheck = world.time
-		var/preserve = FALSE
-		for(var/turf/T in view(5, owner))
-			var/area/rogue/mercyarea = get_area(T)
-			if(mercyarea.holy_area)
-				preserve = TRUE
-		for(var/mob/living/carbon/human/H in view(7, owner))
+	if(our_area?.holy_area || (world.time < lastcheck + 10 SECONDS))
+		return
+
+	lastcheck = world.time
+	var/preserve = FALSE
+	for(var/area/nearby_area as anything in get_areas_in_range(5, owner))
+		var/area/rogue/mercyarea = nearby_area
+		if(!istype(mercyarea))
+			continue
+		if(mercyarea.holy_area)
+			preserve = TRUE
+			break
+
+	if(!preserve)
+		for(var/mob/living/carbon/human/H as anything in SSspatial_grid.orthogonal_range_search(owner, SPATIAL_GRID_CONTENTS_TYPE_CLIENTS, 7))
+			if(get_dist(owner, H) > 7)
+				continue
 			if(H.mind?.assigned_role == "Bishop")
 				preserve = TRUE
-		if(!preserve)
-			owner.remove_status_effect(/datum/status_effect/buff/clergybuff)
+				break
+
+	if(!preserve)
+		owner.remove_status_effect(/datum/status_effect/buff/clergybuff)
 	
 /mob/living/carbon/human
 	var/priest_timer_check = 0

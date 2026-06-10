@@ -891,6 +891,7 @@
 				continue
 			if(istype(H.get_inactive_held_item(), /obj/item/rogueweapon/spear/matthios_standard) || istype(H.get_active_held_item(), /obj/item/rogueweapon/spear/matthios_standard))
 				preserve = TRUE
+				break
 		if(!preserve)
 			owner.remove_status_effect(/datum/status_effect/buff/twilight_peoplesbanner)
 
@@ -919,6 +920,7 @@
 				continue
 			if(istype(H.get_inactive_held_item(), /obj/item/rogueweapon/spear/matthios_standard) || istype(H.get_active_held_item(), /obj/item/rogueweapon/spear/matthios_standard))
 				preserve = TRUE
+				break
 		if(!preserve)
 			owner.remove_status_effect(/datum/status_effect/debuff/twilight_peoplesbanner)
 

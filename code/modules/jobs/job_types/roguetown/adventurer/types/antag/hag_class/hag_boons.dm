@@ -41,14 +41,7 @@
 	return ..()
 
 /datum/hag_boon/proc/find_target()
-	for(var/mob/living/L in GLOB.player_list)
-		if(L.real_name == true_name)
-			return L
-	// Fallback in case someone ghosts or druid shenaniganery!
-	for(var/mob/living/L in GLOB.mob_living_list)
-		if(L.real_name == true_name)
-			return L
-	return null
+	return find_hag_target_by_true_name(true_name)
 
 /datum/hag_boon/proc/apply_boon_effect(mob/living/L)
 	// Apply status effects, mutations, etc.

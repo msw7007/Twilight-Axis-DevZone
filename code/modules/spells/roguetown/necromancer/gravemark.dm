@@ -30,8 +30,10 @@
 	if(target == owner)
 		var/list/allies = list()
 
-		for(var/mob/living/M in world)
+		for(var/mob/living/M as anything in GLOB.mob_living_list)
 			if(M == owner)
+				continue
+			if(QDELETED(M))
 				continue
 
 			if(M.mind?.current)

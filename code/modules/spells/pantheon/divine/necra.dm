@@ -313,8 +313,8 @@ var/global/mob/_corpse_sort_ref = null
 	var/list/departed = list()
 	var/list/forsaken = list()
 
-	for(var/mob/living/carbon/C in GLOB.mob_list)
-		if(!C || QDELETED(C))
+	for(var/mob/living/carbon/C in GLOB.mob_living_list)
+		if(QDELETED(C))
 			continue
 
 		// --- corpse logic ---
@@ -1064,4 +1064,3 @@ var/global/mob/_corpse_sort_ref = null
 		return TRUE
 	revert_cast()
 	return FALSE
-

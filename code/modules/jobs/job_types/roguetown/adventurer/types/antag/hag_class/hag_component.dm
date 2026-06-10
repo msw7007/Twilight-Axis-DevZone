@@ -38,6 +38,20 @@
 	/// List of boon paths the hag has pre-prepared: [boon_path] = quantity
 	var/list/prepared_boons = list()
 
+/proc/find_hag_target_by_true_name(true_name)
+	if(!true_name)
+		return null
+
+	var/mob/living/fallback
+	for(var/mob/living/L as anything in GLOB.mob_living_list)
+		if(QDELETED(L) || L.real_name != true_name)
+			continue
+		if(L.client || L.ckey || L.mind?.key)
+			return L
+		if(!fallback)
+			fallback = L
+	return fallback
+
 /datum/component/hag_curio_tracker/Initialize()
 	if(!isliving(parent))
 		return COMPONENT_INCOMPATIBLE
@@ -224,15 +238,7 @@
 		to_chat(parent, span_boldnotice("The Mossmother sees you. You have reached Tier 3."))
 
 /datum/component/hag_curio_tracker/proc/find_target(true_name)
-	// Less heavy of a check than in boons itself.
-	// Don't use this proc if the player's mind is in question...
-	for(var/mob/living/L in GLOB.player_list)
-		if(L.real_name == true_name)
-			return L
-	for(var/mob/living/L in GLOB.mob_living_list)
-		if(L.real_name == true_name)
-			return L
-	return null
+	return find_hag_target_by_true_name(true_name)
 
 /datum/component/hag_curio_tracker/proc/can_grant_boon(boon_path)
 	if(!prepared_boons[boon_path] || prepared_boons[boon_path] <= 0)
