@@ -963,6 +963,12 @@ GLOBAL_LIST_EMPTY(personal_objective_minds)
 	check_learnspell()
 
 /datum/mind/proc/check_learnspell()
+	if(formula_magic_replaces_spell_learning)
+		RemoveSpell(/datum/action/cooldown/spell/learnspell)
+		if(!has_spell(/datum/action/cooldown/spell/formula_live_cast))
+			AddSpell(new /datum/action/cooldown/spell/formula_live_cast())
+		return
+
 	// Aspect config system — LearnSpell only appears until the first binding.
 	// After that, the spellbook handles edit mode.
 	if(LAZYLEN(mage_aspect_config))

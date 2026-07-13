@@ -268,6 +268,7 @@
 	woke_up = TRUE
 	if(mind.aspect_resets_used > 0)
 		mind.aspect_resets_used = 0
+	mind.unlock_formula_magic_reassignment()
 
 /datum/sleep_adv/proc/is_considered_sleeping()
 	if(!mind.current)
