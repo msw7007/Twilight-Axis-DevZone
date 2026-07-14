@@ -8,17 +8,12 @@
 		return FALSE
 
 	if(speak_words)
-		var/arcane_rank = caster.get_skill_level(/datum/skill/magic/arcane)
-		var/word_index = 1
-		for(var/word_id in word_ids)
-			var/datum/formula_magic_word/word = resolve_formula_magic_word(word_id)
-			if(!word)
-				qdel(formula)
-				return FALSE
-			caster.say(word.get_phrase(), forced = "spell", language = /datum/language/common)
-			caster.stamina_add(max(1, word.mana_cost * 3))
-			var/speak_delay = max(2, (formula.word_cast_times[word_index] || word.cast_time) - arcane_rank)
-			word_index++
+		var/list/speech_phrases = formula_magic_speech_phrases_for_words(word_ids)
+		var/list/speech_delays = formula_magic_speech_delays_for_words(word_ids, formula.word_cast_times)
+		for(var/i in 1 to length(speech_phrases))
+			caster.say(speech_phrases[i], forced = "spell", language = /datum/language/common)
+			caster.stamina_add(max(1, round(formula.mana_cost / max(1, length(speech_phrases)))))
+			var/speak_delay = max(2, speech_delays[i] || FORMULA_DEFAULT_WORD_DELAY)
 			if(!do_after(caster, speak_delay, target = caster))
 				to_chat(caster, span_warning("My formula breaks apart before it can resolve."))
 				qdel(formula)
@@ -42,20 +37,60 @@
 		target = source
 
 	if(formula.tags["unstable_opposition"])
-		caster.visible_message(span_danger("[caster]'s opposed formula detonates in their hands!"), span_userdanger("The opposed formula detonates through me!"))
-		caster.adjustBruteLoss(max(10, formula.power))
-		caster.safe_throw_at(get_ranged_target_turf(caster, turn(caster.dir, 180), 3), 3, 1, caster, force = MOVE_FORCE_STRONG)
-		return FALSE
+		return formula_magic_detonate_caster(caster, formula, "opposed formula")
+	if(formula.tags["unstable_prebuilt"])
+		return formula_magic_detonate_caster(caster, formula, "corrupted fixed formula")
+	if(formula.tags["unstable_fixed_combo"])
+		return formula_magic_detonate_caster(caster, formula, "overloaded fixed formula")
+	if(formula.tags["prebuilt_formula"])
+		return resolve_formula_magic_prebuilt(caster, formula, cast_on)
+
+	formula_magic_configure_trailing_orb_seeker(caster, formula, target)
+
+	if("sequence" in formula.links)
+		return resolve_formula_magic_sequence(caster, formula, cast_on, guidance_start)
 
 	var/resolved_any = FALSE
+	var/list/form_counts = formula_magic_form_counts(formula)
+	var/meteor_count = formula_magic_consume_form_pair_count(form_counts, FORMULA_FORM_ORB, FORMULA_FORM_INSTANT)
+	if(meteor_count)
+		var/turf/meteor_target = formula_magic_limited_target_from_caster(caster, target, formula_magic_form_repeat_range(formula, FORMULA_FORM_INSTANT, 3))
+		for(var/i in 1 to meteor_count)
+			var/turf/current_target = formula_magic_combo_offset_target(meteor_target, i)
+			if(resolve_formula_magic_meteor(caster, formula, current_target || meteor_target))
+				resolved_any = TRUE
+	var/breath_count = formula_magic_consume_form_pair_count(form_counts, FORMULA_FORM_CLOAK, FORMULA_FORM_TOUCH)
+	if(breath_count)
+		var/old_breath_range = formula.range
+		formula.range = max(formula.range, 3)
+		for(var/i in 1 to breath_count)
+			if(resolve_formula_magic_breath(caster, formula, target))
+				resolved_any = TRUE
+		formula.range = old_breath_range
+	var/nova_count = formula_magic_consume_form_pair_count(form_counts, FORMULA_FORM_AURA, FORMULA_FORM_WAVE)
+	if(nova_count)
+		var/list/nova_summary = formula.get_summary()
+		nova_summary["skip_center_visual"] = TRUE
+		nova_summary["radius"] = max(1, nova_summary["radius"] || 0)
+		for(var/i in 1 to nova_count)
+			if(resolve_formula_magic_area_effect(caster, nova_summary, source))
+				resolved_any = TRUE
+	var/rune_count = formula_magic_consume_form_pair_count(form_counts, FORMULA_FORM_SUMMON, FORMULA_FORM_GUIDANCE)
+	if(rune_count)
+		for(var/i in 1 to rune_count)
+			var/turf/current_target = formula_magic_combo_offset_target(target, i)
+			if(resolve_formula_magic_rune(caster, formula, current_target || target))
+				resolved_any = TRUE
+	if(formula_magic_uncombined_form_type_count(form_counts) > 1)
+		return formula_magic_detonate_caster(caster, formula, "unjoined formula")
 	var/list/resolved_forms = list()
 	for(var/form_id in formula.forms)
 		if(form_id in resolved_forms)
 			continue
-		if(form_id == FORMULA_FORM_RUNE && (FORMULA_FORM_NOVA in formula.forms))
+		if((form_counts[form_id] || 0) <= 0)
 			continue
 		resolved_forms += form_id
-		if(resolve_formula_magic_single_form(caster, formula, form_id, target, guidance_start))
+		if(resolve_formula_magic_single_form(caster, formula, form_id, target, guidance_start, cast_on))
 			resolved_any = TRUE
 
 	if(resolved_any)
@@ -64,7 +99,596 @@
 	resolve_formula_magic_area_effect(caster, formula.get_summary(), target)
 	return TRUE
 
-/proc/resolve_formula_magic_single_form(mob/living/carbon/human/caster, datum/formula_magic_formula/formula, form_id, turf/target, atom/guidance_start)
+/proc/resolve_formula_magic_sequence(mob/living/carbon/human/caster, datum/formula_magic_formula/formula, atom/cast_on, atom/guidance_start)
+	if(!caster?.mind || !formula)
+		return FALSE
+	var/list/segments = formula_magic_sequence_segments_from_formula(formula)
+	if(!length(segments))
+		return FALSE
+	var/list/first_segment = segments[1]
+	var/datum/formula_magic_formula/segment_formula = caster.mind.build_formula_magic_formula(first_segment)
+	if(!segment_formula)
+		return FALSE
+	var/list/remaining_segments = length(segments) > 1 ? segments.Copy(2) : list()
+	if(FORMULA_FORM_ORB in segment_formula.forms)
+		remaining_segments = formula_magic_configure_orb_sequence(caster, segment_formula, remaining_segments, cast_on)
+	if(length(remaining_segments))
+		segment_formula.sequence_segments = remaining_segments
+	var/result = resolve_formula_magic_effect(caster, segment_formula, cast_on, guidance_start)
+	qdel(segment_formula)
+	return result
+
+/proc/formula_magic_configure_orb_sequence(mob/living/carbon/human/caster, datum/formula_magic_formula/formula, list/segments, atom/cast_on)
+	if(!caster?.mind || !formula || !length(segments))
+		return segments
+	var/list/remaining_segments = segments.Copy()
+	var/list/carrier_summaries = list()
+	var/chase_orb_count = 0
+	while(length(remaining_segments))
+		var/list/segment = remaining_segments[1]
+		var/orb_count = formula_magic_word_count_in_segment(segment, FORMULA_FORM_ORB)
+		if(!orb_count)
+			break
+		chase_orb_count += orb_count
+		if(formula_magic_segment_is_only_word(segment, FORMULA_FORM_ORB))
+			remaining_segments.Cut(1, 2)
+			continue
+		var/datum/formula_magic_formula/carrier_formula = caster.mind.build_formula_magic_formula(segment)
+		if(!carrier_formula)
+			break
+		var/list/carrier_summary = carrier_formula.get_summary()
+		carrier_summary["radius"] = 0
+		carrier_summary["silent"] = TRUE
+		carrier_summary["sequence_segments"] = list()
+		carrier_summaries += list(carrier_summary)
+		qdel(carrier_formula)
+		remaining_segments.Cut(1, 2)
+	if(chase_orb_count)
+		var/atom/chase_target = formula_magic_nearest_target_to_point(caster, get_turf(cast_on), 7)
+		if(chase_target)
+			formula.tags["orb_sequence_chase"] = chase_orb_count
+			formula.tags["orb_seeker"] = max(formula.tags["orb_seeker"] || 0, chase_orb_count)
+			formula.tags["orb_seeker_target"] = chase_target
+			formula.tags["pierce"] = max(formula.tags["pierce"] || 0, 99)
+	if(length(carrier_summaries))
+		formula.tags["orb_carrier"] = length(carrier_summaries)
+		formula.tags["pierce"] = max(formula.tags["pierce"] || 0, 99)
+		formula.sequence_segments = list()
+		formula.tags["orb_carrier_summaries"] = carrier_summaries
+	return remaining_segments
+
+/proc/formula_magic_configure_trailing_orb_seeker(mob/living/carbon/human/caster, datum/formula_magic_formula/formula, turf/target)
+	if(!caster || !formula || length(formula.links))
+		return FALSE
+	if(!(FORMULA_FORM_ORB in formula.forms) || length(formula.forms) < 2)
+		return FALSE
+	var/trailing_orbs = 0
+	for(var/i = length(formula.words), i >= 1, i--)
+		var/datum/formula_magic_word/word = formula.words[i]
+		if(!word || word.id != FORMULA_FORM_ORB)
+			break
+		trailing_orbs++
+	if(trailing_orbs <= 0 || trailing_orbs >= length(formula.forms))
+		return FALSE
+	formula.tags["orb_seeker"] = trailing_orbs
+	formula.tags["orb_seeker_target"] = formula_magic_nearest_target_to_point(caster, target, 7)
+	formula.power = max(1, round(formula.power * 0.6))
+	formula.projectile_count = max(1, (formula.projectile_count || 1) - trailing_orbs)
+	return TRUE
+
+/proc/formula_magic_word_count_in_segment(list/segment, word_id)
+	var/count = 0
+	for(var/current_id in segment)
+		if(current_id == word_id)
+			count++
+	return count
+
+/proc/formula_magic_segment_is_only_word(list/segment, word_id)
+	if(!length(segment))
+		return FALSE
+	for(var/current_id in segment)
+		if(current_id != word_id)
+			return FALSE
+	return TRUE
+
+/proc/formula_magic_sequence_segments_from_formula(datum/formula_magic_formula/formula)
+	var/list/segments = list()
+	var/list/current_segment = list()
+	for(var/datum/formula_magic_word/word in formula?.words)
+		if(!word)
+			continue
+		if(word.id == "sequence")
+			if(length(current_segment))
+				segments += list(current_segment)
+				current_segment = list()
+			continue
+		current_segment += word.id
+	if(length(current_segment))
+		segments += list(current_segment)
+	return segments
+
+/proc/formula_magic_detonate_caster(mob/living/carbon/human/caster, datum/formula_magic_formula/formula, reason)
+	if(!caster || !formula)
+		return FALSE
+	caster.visible_message(span_danger("[caster]'s [reason || "formula"] detonates in their hands!"), span_userdanger("The [reason || "formula"] detonates through me!"))
+	caster.adjustBruteLoss(max(10, formula.power))
+	caster.safe_throw_at(get_ranged_target_turf(caster, turn(caster.dir, 180), 3), 3, 1, caster, force = MOVE_FORCE_STRONG)
+	return FALSE
+
+/proc/resolve_formula_magic_prebuilt(mob/living/carbon/human/caster, datum/formula_magic_formula/formula, atom/cast_on)
+	if(!caster || !formula)
+		return FALSE
+	var/list/tags = formula.tags || list()
+	var/mob/living/target = formula_magic_prebuilt_target(caster, cast_on)
+	if(!target)
+		to_chat(caster, span_warning("The fixed formula finds no valid target."))
+		return FALSE
+	if(tags["prebuilt_guidance"])
+		apply_buff_to(target, /datum/status_effect/buff/guidance, STAT_BUFF_SELF_DURATION)
+		target.visible_message(span_notice("[target] briefly shines orange."))
+		return TRUE
+	if(tags["prebuilt_surge"])
+		if(target == caster)
+			to_chat(caster, span_warning("This surge cannot be turned inward."))
+			return FALSE
+		formula_magic_apply_surge(target)
+		target.visible_message(span_warning("[target] surges back up, wreathed in energy!"), span_notice("Arcyne energy floods my body - I rise!"))
+		return TRUE
+	if(tags["prebuilt_precognition"])
+		var/hastened = formula_magic_reduce_combat_cooldowns(target)
+		if(hastened)
+			target.balloon_alert_to_viewers("<font color='#66ffcc'>cooldowns -30s!</font>")
+			to_chat(target, span_notice("I glimpse the moments ahead, and ready myself for the next move."))
+		else
+			to_chat(target, span_notice("I glimpse the moments ahead, but there is nothing left to hasten."))
+		return TRUE
+	if(tags["prebuilt_ascension"])
+		if(target == caster)
+			to_chat(caster, span_warning("This power is too great to channel into myself."))
+			return FALSE
+		apply_buff_to(target, /datum/status_effect/buff/attune_haste, STAT_BUFF_ALLY_DURATION)
+		apply_buff_to(target, /datum/status_effect/buff/attune_giant, STAT_BUFF_ALLY_DURATION)
+		apply_buff_to(target, /datum/status_effect/buff/fortitude, STAT_BUFF_ALLY_DURATION)
+		apply_buff_to(target, /datum/status_effect/buff/attune_hawk, STAT_BUFF_ALLY_DURATION)
+		apply_buff_to(target, /datum/status_effect/buff/guidance, STAT_BUFF_ALLY_DURATION)
+		target.visible_message(span_warning("[target] radiates with overwhelming arcyne energy!"))
+		return TRUE
+	if(tags["prebuilt_blood_rush"])
+		target.apply_status_effect(/datum/status_effect/buff/adrenaline_rush)
+		if(target != caster)
+			caster.apply_status_effect(/datum/status_effect/buff/adrenaline_rush)
+		target.visible_message(span_warning("[target]'s veins flush with sudden vigor."))
+		return TRUE
+	if(tags["prebuilt_fortitude"])
+		apply_buff_to(target, /datum/status_effect/buff/fortitude, STAT_BUFF_SELF_DURATION)
+		return TRUE
+	if(tags["prebuilt_mirror_transform"])
+		if(!istype(target, /mob/living/carbon/human))
+			to_chat(caster, span_warning("The mirror formula needs a humen body."))
+			return FALSE
+		var/mob/living/carbon/human/H = target
+		ADD_TRAIT(H, TRAIT_MIRROR_MAGIC, TRAIT_GENERIC)
+		H.visible_message(span_notice("[H]'s reflection shimmers briefly."))
+		addtimer(CALLBACK(GLOBAL_PROC, GLOBAL_PROC_REF(formula_magic_remove_mirror_magic), H), 5 MINUTES)
+		return TRUE
+	if(tags["prebuilt_airhead"])
+		var/had_guidance = target.has_status_effect(/datum/status_effect/buff/guidance)
+		if(had_guidance)
+			target.remove_status_effect(/datum/status_effect/buff/guidance)
+		else
+			target.apply_status_effect(/datum/status_effect/debuff/formula_magic_reverse_guidance, 30 SECONDS)
+		var/list/airhead_debuff = list(STATKEY_PER = -3, STATKEY_INT = -1)
+		target.apply_status_effect(/datum/status_effect/debuff/formula_magic_stat_curse, airhead_debuff, 30 SECONDS)
+		target.balloon_alert_to_viewers("<font color='#8A8A8A'>airhead!</font>")
+		return TRUE
+	if(tags["prebuilt_mending"])
+		var/turf/repair_turf = get_turf(cast_on) || get_turf(target)
+		if(!formula_magic_repair_atoms(caster, repair_turf, formula.power))
+			to_chat(caster, span_warning("The mending formula finds nothing broken enough to repair."))
+			return FALSE
+		return TRUE
+	if(tags["prebuilt_form_blade"])
+		return formula_magic_prebuilt_form_blade(caster)
+	if(tags["prebuilt_bind_armament"])
+		return formula_magic_prebuilt_bind_armament(caster)
+	if(tags["prebuilt_summon_instrument"])
+		return formula_magic_prebuilt_summon_instrument(caster)
+	if(tags["prebuilt_familiar"])
+		return formula_magic_prebuilt_familiar(caster, cast_on, FALSE)
+	if(tags["prebuilt_elemental_familiar"])
+		return formula_magic_prebuilt_familiar(caster, cast_on, TRUE)
+	if(tags["prebuilt_raise_deadite"])
+		return formula_magic_prebuilt_necromancy_summon(caster, cast_on, /mob/living/simple_animal/hostile/rogue/skeleton/guard, "calls a weak deadite guard.")
+	if(tags["prebuilt_conjure_undead"])
+		return formula_magic_prebuilt_necromancy_summon(caster, cast_on, /mob/living/carbon/human/species/skeleton/npc/bogguard/necromancer, "calls a deadite guardian.")
+	if(tags["prebuilt_raise_skeleton"])
+		return formula_magic_prebuilt_necromancy_summon(caster, cast_on, /mob/living/carbon/human/species/skeleton/npc/summon, "raises a skeleton servant.")
+	if(tags["prebuilt_read_omen"])
+		return formula_magic_prebuilt_read_omen(caster)
+	if(tags["prebuilt_message"])
+		return formula_magic_prebuilt_message(caster)
+	if(tags["prebuilt_mindlink"])
+		return formula_magic_prebuilt_mindlink(caster)
+	if(tags["prebuilt_reversion"])
+		return formula_magic_prebuilt_reversion(caster, cast_on, formula)
+	if(tags["prebuilt_lesser_knock"])
+		return formula_magic_prebuilt_lesser_knock(caster)
+	if(tags["prebuilt_conjure_spectacles"])
+		return formula_magic_prebuilt_conjure_spectacles(caster)
+	if(tags["prebuilt_great_shelter"])
+		return formula_magic_prebuilt_great_shelter(caster)
+	return FALSE
+
+/proc/formula_magic_prebuilt_target(mob/living/carbon/human/caster, atom/cast_on)
+	if(isliving(cast_on))
+		return cast_on
+	var/turf/T = get_turf(cast_on)
+	if(!T)
+		T = get_turf(caster)
+	for(var/mob/living/L in T)
+		if(L == caster)
+			continue
+		return L
+	return caster
+
+/proc/formula_magic_prebuilt_turf(mob/living/carbon/human/caster, atom/cast_on)
+	var/turf/T = get_turf(cast_on)
+	if(!T)
+		T = get_step(caster, caster.dir)
+	if(!T)
+		T = get_turf(caster)
+	return T
+
+/proc/formula_magic_bind_summon_to_caster(mob/living/summon, mob/living/carbon/human/caster)
+	if(!summon || !caster)
+		return
+	var/faction_key = caster.mind?.current?.real_name ? "[caster.mind.current.real_name]_faction" : "[caster.real_name]_faction"
+	if(!(faction_key in caster.faction))
+		caster.faction |= faction_key
+	summon.faction |= caster.faction
+	summon.faction |= faction_key
+	if("summoner" in summon.vars)
+		summon.vars["summoner"] = caster.real_name
+
+/proc/formula_magic_prebuilt_familiar(mob/living/carbon/human/caster, atom/cast_on, elemental = FALSE)
+	if(!caster)
+		return FALSE
+	var/turf/T = formula_magic_prebuilt_turf(caster, cast_on)
+	if(!isopenturf(T))
+		to_chat(caster, span_warning("The familiar formula needs open ground."))
+		return FALSE
+	var/familiar_type = elemental ? /mob/living/simple_animal/pet/familiar/elemental : /mob/living/simple_animal/pet/familiar/fae
+	var/mob/living/simple_animal/pet/familiar/familiar = new familiar_type(T)
+	familiar.familiar_summoner = caster
+	formula_magic_bind_summon_to_caster(familiar, caster)
+	caster.visible_message(span_notice("[caster] calls [familiar] through a fixed formula."))
+	return TRUE
+
+/proc/formula_magic_summon_primordial(mob/living/carbon/human/caster, turf/T, primordial_type)
+	if(!caster || !ispath(primordial_type, /mob/living/simple_animal/hostile/retaliate/rogue/primordial))
+		return FALSE
+	if(!isopenturf(T))
+		to_chat(caster, span_warning("The primordial formula needs open ground."))
+		return FALSE
+	var/mob/living/primordial = new primordial_type(T, caster)
+	formula_magic_bind_summon_to_caster(primordial, caster)
+	if(!locate(/obj/effect/proc_holder/spell/invoked/minion_order) in caster.mind?.spell_list)
+		caster.mind?.AddSpell(new /obj/effect/proc_holder/spell/invoked/minion_order)
+	caster.visible_message(span_warning("[caster] tears open a primordial shape from a spoken formula."))
+	return TRUE
+
+/proc/formula_magic_prebuilt_necromancy_summon(mob/living/carbon/human/caster, atom/cast_on, summon_type, message)
+	if(!caster || !ispath(summon_type))
+		return FALSE
+	var/turf/T = formula_magic_prebuilt_turf(caster, cast_on)
+	if(!isopenturf(T))
+		to_chat(caster, span_warning("The necromantic formula needs open ground."))
+		return FALSE
+	new /obj/effect/temp_visual/gib_animation(T, "gibbed-h")
+	var/mob/living/summon = new summon_type(T, caster)
+	formula_magic_bind_summon_to_caster(summon, caster)
+	if(!locate(/obj/effect/proc_holder/spell/invoked/minion_order) in caster.mind?.spell_list)
+		caster.mind?.AddSpell(new /obj/effect/proc_holder/spell/invoked/minion_order)
+	caster.visible_message(span_warning("[caster] [message]"))
+	return TRUE
+
+/proc/formula_magic_spawn_ratmouse(mob/living/carbon/human/caster, turf/T, lifespan)
+	if(!T || !isopenturf(T) || T.is_blocked_turf(exclude_mobs = TRUE))
+		return FALSE
+	var/mob/living/simple_animal/hostile/retaliate/rogue/bigrat/rat = new(T)
+	QDEL_IN(rat, max(10 SECONDS, lifespan || 30 SECONDS))
+	new /obj/effect/temp_visual/spell_impact(T, "#8A8A8A", SPELL_IMPACT_LOW)
+	return TRUE
+
+/proc/formula_magic_prebuilt_read_omen(mob/living/carbon/human/caster)
+	if(!caster)
+		return FALSE
+	caster.visible_message(span_info("The eyes of [caster] roll back into their head for a moment!"), span_info("My eyes roll into the back of my head!"))
+	var/datum/storyteller/current_god = SSgamemode.storytellers[SSgamemode.ruling_god]
+	if(!current_god)
+		to_chat(caster, span_warning("The omen is silent."))
+		return TRUE
+	to_chat(caster, span_warning("The leylines bend toward [current_god.name]."))
+	return TRUE
+
+/proc/formula_magic_prebuilt_message(mob/living/carbon/human/caster)
+	if(!caster?.mind?.known_people?.len)
+		to_chat(caster, span_warning("I don't know anyone to contact."))
+		return FALSE
+	var/list/eligible_players = sortList(caster.mind.known_people.Copy())
+	var/target_name = tgui_input_list(caster, "Who do I contact?", "Message", eligible_players)
+	if(!target_name)
+		return FALSE
+	var/mob/living/carbon/human/target
+	for(var/mob/living/carbon/human/H in GLOB.human_list)
+		if(H.real_name == target_name)
+			target = H
+			break
+	if(!target)
+		to_chat(caster, span_warning("I seek a mental connection, but cannot find [target_name]."))
+		return FALSE
+	var/message = stripped_input(caster, "What thought do I send?", "Message", "", 160)
+	if(!message)
+		return FALSE
+	target.playsound_local(target, 'sound/magic/message.ogg', 100)
+	caster.playsound_local(caster, 'sound/magic/message.ogg', 100)
+	var/message_color = ishuman(caster) ? caster.voice_color : "7246ff"
+	to_chat(target, span_big("Arcyne whispers slip into my mind, resolving into [caster]'s voice: <font color=#[message_color]><i>\"[message]\"</i></font>"))
+	to_chat(caster, span_big("I whisper into [target]'s mind: <font color=#[message_color]><i>\"[message]\"</i></font>"))
+	log_game("[key_name(caster)] sent a formula magic message to [key_name(target)] with contents [message]")
+	return TRUE
+
+/proc/formula_magic_prebuilt_mindlink(mob/living/carbon/human/caster)
+	if(!caster?.mind?.known_people?.len)
+		to_chat(caster, span_warning("I know no minds to bind."))
+		return FALSE
+	var/list/possible_targets = sortList(caster.mind.known_people.Copy())
+	possible_targets = list(caster.real_name) + possible_targets
+	var/first_target_name = tgui_input_list(caster, "Choose the first mind.", "Mindlink", possible_targets)
+	if(!first_target_name)
+		return FALSE
+	possible_targets -= first_target_name
+	var/second_target_name = tgui_input_list(caster, "Choose the second mind.", "Mindlink", possible_targets)
+	if(!second_target_name)
+		return FALSE
+	var/mob/living/first_target
+	var/mob/living/second_target
+	for(var/mob/living/carbon/human/H in GLOB.human_list)
+		if(H.real_name == first_target_name)
+			first_target = H
+		if(H.real_name == second_target_name)
+			second_target = H
+	if(!first_target || !second_target)
+		to_chat(caster, span_warning("One of the chosen minds is absent."))
+		return FALSE
+	for(var/datum/mindlink/ML in GLOB.mindlinks)
+		if(ML && (ML.owner == first_target || ML.target == first_target || ML.owner == second_target || ML.target == second_target))
+			to_chat(caster, span_warning("A mindlink already binds one of the targets."))
+			return FALSE
+	caster.visible_message(span_notice("[caster] touches their temples and threads two minds together."))
+	var/datum/mindlink/link = new(first_target, second_target)
+	GLOB.mindlinks += link
+	to_chat(first_target, span_notice("A mindlink has been established with [second_target]. Use ,Y before a message to communicate telepathically."))
+	to_chat(second_target, span_notice("A mindlink has been established with [first_target]. Use ,Y before a message to communicate telepathically."))
+	addtimer(CALLBACK(GLOBAL_PROC, GLOBAL_PROC_REF(formula_magic_break_mindlink), link), 3 MINUTES)
+	return TRUE
+
+/proc/formula_magic_break_mindlink(datum/mindlink/link)
+	if(!link)
+		return
+	to_chat(link.owner, span_warning("The mindlink with [link.target] fades away..."))
+	to_chat(link.target, span_warning("The mindlink with [link.owner] fades away..."))
+	GLOB.mindlinks -= link
+	qdel(link)
+
+/proc/formula_magic_prebuilt_lesser_knock(mob/living/carbon/human/caster)
+	if(!caster)
+		return FALSE
+	if(!length(caster.get_empty_held_indexes()))
+		to_chat(caster, span_warning("I need a free hand for the lockpick."))
+		return FALSE
+	var/obj/item/melee/touch_attack/lesserknock/lockpick = new(caster.drop_location())
+	caster.put_in_hands(lockpick)
+	caster.visible_message(span_notice("[caster] conjures a spectral lockpick."))
+	return TRUE
+
+/proc/formula_magic_prebuilt_conjure_spectacles(mob/living/carbon/human/caster)
+	if(!caster)
+		return FALSE
+	if(!length(caster.get_empty_held_indexes()))
+		to_chat(caster, span_warning("I need a free hand for the spectacles."))
+		return FALSE
+	var/list/spectacles = list(
+		"Spectacles" = /obj/item/clothing/mask/rogue/spectacles,
+		"Nocshades" = /obj/item/clothing/mask/rogue/spectacles/inq_lesser_summoned,
+		"Golden Spectacles" = /obj/item/clothing/mask/rogue/spectacles/golden_lesser_summoned,
+		"Silver Monocle" = /obj/item/clothing/mask/rogue/spectacles/monocle,
+		"Smokey Onyxa Spectacles" = /obj/item/clothing/mask/rogue/spectacles/onyxa_lesser_summoned,
+	)
+	var/choice = tgui_input_list(caster, "Choose spectacles.", "Conjure Spectacles", spectacles)
+	if(!choice)
+		return FALSE
+	var/spectacles_type = spectacles[choice]
+	var/obj/item/clothing/mask/rogue/spectacles/R = new spectacles_type(caster.drop_location())
+	R.AddComponent(/datum/component/conjured_item, GLOW_COLOR_ARCANE, FALSE, caster, null)
+	R.sellprice = 0
+	caster.put_in_hands(R)
+	caster.visible_message(span_notice("[caster] conjures [R] from shaped glass-light."))
+	return TRUE
+
+/proc/formula_magic_prebuilt_great_shelter(mob/living/carbon/human/caster)
+	if(!caster)
+		return FALSE
+	var/turf/center = get_turf(caster)
+	if(!center)
+		return FALSE
+	var/raised = 0
+	for(var/turf/T in range(1, center))
+		if(T == center || !isopenturf(T) || T.is_blocked_turf(exclude_mobs = TRUE))
+			continue
+		var/obj/structure/formula_magic_wall/wall = new(T)
+		wall.setup_formula_wall("#C000FF", 60 SECONDS)
+		raised++
+	if(!raised)
+		to_chat(caster, span_warning("The shelter formula finds no open ground."))
+		return FALSE
+	caster.visible_message(span_notice("[caster] raises a brief arcyne shelter."))
+	return TRUE
+
+/proc/formula_magic_apply_surge(mob/living/target)
+	if(!target)
+		return
+	target.SetUnconscious(0)
+	target.SetSleeping(0)
+	target.SetParalyzed(0)
+	target.SetImmobilized(0)
+	target.SetStun(0)
+	target.SetKnockdown(0)
+	if(target.has_status_effect(/datum/status_effect/incapacitating/off_balanced))
+		target.remove_status_effect(/datum/status_effect/incapacitating/off_balanced)
+	if(iscarbon(target))
+		var/mob/living/carbon/carbon_target = target
+		carbon_target.stam_paralyzed = FALSE
+	target.stamina_reset()
+	target.set_resting(FALSE)
+
+/proc/formula_magic_reduce_combat_cooldowns(mob/living/target)
+	if(!target)
+		return FALSE
+	var/hastened = FALSE
+	hastened |= formula_magic_reduce_status_duration(target, /datum/status_effect/debuff/clashcd, 30 SECONDS)
+	hastened |= formula_magic_reduce_status_duration(target, /datum/status_effect/debuff/feintcd, 30 SECONDS)
+	hastened |= formula_magic_reduce_status_duration(target, /datum/status_effect/debuff/baitcd, 30 SECONDS)
+	hastened |= formula_magic_reduce_status_duration(target, /datum/status_effect/debuff/specialcd, 30 SECONDS)
+	return hastened
+
+/proc/formula_magic_reduce_status_duration(mob/living/target, effect_type, amount)
+	var/datum/status_effect/S = target?.has_status_effect(effect_type)
+	if(!S)
+		return FALSE
+	S.duration -= amount
+	if(S.duration <= world.time)
+		target.remove_status_effect(effect_type)
+	return TRUE
+
+/proc/formula_magic_remove_mirror_magic(mob/living/carbon/human/H)
+	if(QDELETED(H))
+		return
+	REMOVE_TRAIT(H, TRAIT_MIRROR_MAGIC, TRAIT_GENERIC)
+	to_chat(H, span_warning("My connection to mirrors fades away."))
+
+/proc/formula_magic_prebuilt_form_blade(mob/living/carbon/human/caster)
+	if(!caster)
+		return FALSE
+	if(!length(caster.get_empty_held_indexes()))
+		to_chat(caster, span_warning("I need a free hand to shape an arcyne blade."))
+		return FALSE
+	var/list/forms = list(
+		"Khopesh" = /obj/item/rogueweapon/sword/sabre/ferramancy,
+		"Rapier" = /obj/item/rogueweapon/sword/rapier/ferramancy,
+		"Greatsword" = /obj/item/rogueweapon/greatsword/ferramancy,
+		"Greataxe" = /obj/item/rogueweapon/greataxe/steel/doublehead/ferramancy,
+		"Halberd" = /obj/item/rogueweapon/halberd/ferramancy,
+		"Greatbow" = /obj/item/gun/ballistic/revolver/grenadelauncher/bow/greatbow,
+	)
+	var/choice = tgui_input_list(caster, "Choose an arcyne weapon form.", "Form Blade", forms)
+	if(!choice)
+		return FALSE
+	formula_magic_clear_conjured_types(caster, list(
+		/obj/item/rogueweapon/sword/sabre/ferramancy,
+		/obj/item/rogueweapon/sword/rapier/ferramancy,
+		/obj/item/rogueweapon/greatsword/ferramancy,
+		/obj/item/rogueweapon/greataxe/steel/doublehead/ferramancy,
+		/obj/item/rogueweapon/halberd/ferramancy,
+		/obj/item/gun/ballistic/revolver/grenadelauncher/bow/greatbow,
+	))
+	var/weapon_type = forms[choice]
+	var/obj/item/W = new weapon_type(caster.drop_location())
+	if(W.max_integrity)
+		W.max_integrity = round(W.max_integrity * 0.5)
+		W.obj_integrity = W.max_integrity
+	W.AddComponent(/datum/component/conjured_item, "#5c7cff", FALSE, caster, null)
+	caster.put_in_hands(W)
+	caster.visible_message(span_notice("[caster] shapes [W] from arcyne metal."))
+	return TRUE
+
+/proc/formula_magic_prebuilt_bind_armament(mob/living/carbon/human/caster)
+	if(!caster)
+		return FALSE
+	var/obj/item/weapon = caster.get_active_held_item()
+	if(!weapon)
+		var/released = formula_magic_release_skill_binds(caster)
+		if(released)
+			to_chat(caster, span_notice("The arcyne bonds on my armaments fade."))
+			return TRUE
+		to_chat(caster, span_warning("I have no held weapon or bound armament to release."))
+		return FALSE
+	if(!istype(weapon, /obj/item/rogueweapon) || !ispath(weapon.associated_skill, /datum/skill/combat))
+		to_chat(caster, span_warning("[weapon] is not something my arts can guide."))
+		return FALSE
+	if(weapon.GetComponent(/datum/component/skill_bind))
+		to_chat(caster, span_warning("[weapon] already carries an arcyne bond."))
+		return FALSE
+	weapon.AddComponent(/datum/component/skill_bind, /datum/skill/combat/arcyne, caster)
+	to_chat(caster, span_notice("I lay an arcyne bond on [weapon]; it answers to my conjurer's training now."))
+	playsound(get_turf(caster), 'sound/magic/charged.ogg', 50, TRUE)
+	caster.visible_message(span_notice("[caster] passes a hand over [weapon], which glows faintly."))
+	return TRUE
+
+/proc/formula_magic_release_skill_binds(mob/living/carbon/human/caster)
+	if(!caster)
+		return FALSE
+	var/released = FALSE
+	for(var/obj/item/I in caster.GetAllContents())
+		var/datum/component/skill_bind/existing = I.GetComponent(/datum/component/skill_bind)
+		if(!existing)
+			continue
+		qdel(existing)
+		released = TRUE
+	return released
+
+/proc/formula_magic_prebuilt_summon_instrument(mob/living/carbon/human/caster)
+	if(!caster)
+		return FALSE
+	if(!length(caster.get_empty_held_indexes()))
+		to_chat(caster, span_warning("I need a free hand to hold the instrument."))
+		return FALSE
+	var/list/instruments = list(
+		"Harp" = /obj/item/rogue/instrument/harp,
+		"Lute" = /obj/item/rogue/instrument/lute,
+		"Accordion" = /obj/item/rogue/instrument/accord,
+		"Guitar" = /obj/item/rogue/instrument/guitar,
+		"Hurdy-Gurdy" = /obj/item/rogue/instrument/hurdygurdy,
+		"Viola" = /obj/item/rogue/instrument/viola,
+		"Vocal Talisman" = /obj/item/rogue/instrument/vocals,
+		"Psyaltery" = /obj/item/rogue/instrument/psyaltery,
+		"Flute" = /obj/item/rogue/instrument/flute,
+		"Drum" = /obj/item/rogue/instrument/drum,
+		"Shamisen" = /obj/item/rogue/instrument/shamisen,
+	)
+	var/choice = tgui_input_list(caster, "Choose a musical instrument.", "Summon Instrument", instruments)
+	if(!choice)
+		return FALSE
+	formula_magic_clear_conjured_types(caster, list(/obj/item/rogue/instrument))
+	var/instrument_type = instruments[choice]
+	var/obj/item/rogue/instrument/R = new instrument_type(caster.drop_location())
+	R.AddComponent(/datum/component/conjured_item, GLOW_COLOR_ARCANE, FALSE, caster, null)
+	caster.put_in_hands(R)
+	caster.visible_message(span_notice("[caster] conjures [R] from ringing arcyne wire."))
+	return TRUE
+
+/proc/formula_magic_clear_conjured_types(mob/living/carbon/human/caster, list/type_list)
+	if(!caster || !length(type_list))
+		return
+	for(var/obj/item/I in caster.GetAllContents())
+		if(!I.GetComponent(/datum/component/conjured_item))
+			continue
+		if(!is_type_in_list(I, type_list))
+			continue
+		I.visible_message(span_warning("[I] shimmers and fades away!"))
+		qdel(I)
+
+/proc/resolve_formula_magic_single_form(mob/living/carbon/human/caster, datum/formula_magic_formula/formula, form_id, turf/target, atom/guidance_start, atom/cast_on)
 	if(!caster || !formula || !form_id)
 		return FALSE
 	var/turf/source = get_turf(caster)
@@ -90,11 +714,13 @@
 			return resolve_formula_magic_area_effect(caster, formula.get_summary(), touch_target)
 		if(FORMULA_FORM_INSTANT)
 			if(formula.tags["teleport"])
+				target = formula_magic_limited_target_from_caster(caster, target, formula_magic_form_repeat_range(formula, FORMULA_FORM_INSTANT, 3))
 				do_teleport(caster, target, channel = TELEPORT_CHANNEL_MAGIC)
 				playsound(source, 'sound/magic/blink.ogg', 60, TRUE)
 				resolve_formula_magic_departure_effect(caster, formula, source)
 				caster.visible_message(span_notice("[caster] folds through space."), span_notice("I step through the formula."))
 				return TRUE
+			return resolve_formula_magic_moment(caster, formula, target, cast_on)
 		if(FORMULA_FORM_FALL)
 			return resolve_formula_magic_meteor(caster, formula, target)
 		if(FORMULA_FORM_RUNE)
@@ -105,8 +731,94 @@
 				line_start = source
 			return resolve_formula_magic_guidance(caster, formula, line_start, target)
 		if(FORMULA_FORM_SUMMON)
-			return resolve_formula_magic_summon(caster, formula, target)
+			return resolve_formula_magic_summon(caster, formula, target, cast_on)
 	return FALSE
+
+/proc/formula_magic_form_counts(datum/formula_magic_formula/formula)
+	var/list/result = list()
+	for(var/form_id in formula?.forms)
+		result[form_id] = (result[form_id] || 0) + 1
+	return result
+
+/proc/formula_magic_consume_form_pair_count(list/form_counts, first_form, second_form)
+	if(!form_counts || (form_counts[first_form] || 0) <= 0 || (form_counts[second_form] || 0) <= 0)
+		return 0
+	var/pair_count = min(form_counts[first_form] || 0, form_counts[second_form] || 0)
+	form_counts[first_form] -= pair_count
+	form_counts[second_form] -= pair_count
+	return pair_count
+
+/proc/formula_magic_uncombined_form_type_count(list/form_counts)
+	var/form_type_count = 0
+	for(var/form_id in form_counts)
+		if((form_counts[form_id] || 0) > 0)
+			form_type_count++
+	return form_type_count
+
+/proc/formula_magic_combo_offset_target(turf/target, index)
+	if(!target || index <= 1)
+		return target
+	var/list/offset_dirs = list(NORTH, SOUTH, EAST, WEST, NORTHEAST, NORTHWEST, SOUTHEAST, SOUTHWEST)
+	var/offset_dir = offset_dirs[((index - 2) % length(offset_dirs)) + 1]
+	var/ring = round((index - 2) / length(offset_dirs)) + 1
+	var/turf/current = target
+	for(var/i in 1 to ring)
+		if(current)
+			current = get_step(current, offset_dir)
+	return current || target
+
+/proc/resolve_formula_magic_moment(mob/living/carbon/human/caster, datum/formula_magic_formula/formula, turf/target, atom/cast_on)
+	if(!caster || !formula || !target)
+		return FALSE
+	target = formula_magic_limited_target_from_caster(caster, target, formula_magic_form_repeat_range(formula, FORMULA_FORM_INSTANT, 3))
+	var/list/summary = formula.get_summary()
+	var/mob/living/point_target = formula_magic_moment_target(caster, target, cast_on)
+	var/list/summary_tags = summary["tags"] || list()
+	if(point_target && !summary["radius"] && !summary_tags["widen_amount"])
+		var/turf/point_turf = get_turf(point_target)
+		summary["single_target"] = point_target
+		if((FORMULA_SCHOOL_KINESIS in formula.schools) || (FORMULA_SCHOOL_DISPLACEMENT in formula.schools))
+			resolve_formula_magic_area_effect(caster, summary, point_turf)
+		else
+			new /obj/effect/temp_visual/spell_impact(point_turf, formula_magic_color_for_summary(summary), SPELL_IMPACT_LOW)
+			addtimer(CALLBACK(GLOBAL_PROC, PROC_REF(resolve_formula_magic_area_effect), caster, summary, point_turf), 1 SECONDS)
+		return TRUE
+	if((FORMULA_SCHOOL_KINESIS in formula.schools) || (FORMULA_SCHOOL_DISPLACEMENT in formula.schools))
+		return resolve_formula_magic_area_effect(caster, summary, target)
+	new /obj/effect/temp_visual/spell_impact(target, formula_magic_color_for_summary(summary), SPELL_IMPACT_LOW)
+	addtimer(CALLBACK(GLOBAL_PROC, PROC_REF(resolve_formula_magic_area_effect), caster, summary, target), 1 SECONDS)
+	return TRUE
+
+/proc/formula_magic_moment_target(mob/living/carbon/human/caster, turf/target, atom/cast_on)
+	if(isliving(cast_on))
+		return cast_on
+	if(!target)
+		return null
+	for(var/mob/living/L in target)
+		if(L == caster)
+			continue
+		return L
+	return null
+
+/proc/formula_magic_form_repeat_range(datum/formula_magic_formula/formula, form_id, base_range)
+	var/repeats = 0
+	for(var/current_form_id in formula?.forms)
+		if(current_form_id == form_id)
+			repeats++
+	return max(1, (base_range || 1) + max(0, repeats - 1))
+
+/proc/formula_magic_limited_target_from_caster(mob/living/carbon/human/caster, turf/target, max_distance)
+	var/turf/source = get_turf(caster)
+	if(!source || !target)
+		return target
+	max_distance = max(1, max_distance || 1)
+	if(get_dist(source, target) <= max_distance)
+		return target
+	var/list/line = getline(source, target)
+	if(length(line) > max_distance + 1)
+		return line[max_distance + 1]
+	var/limited_dir = get_dir(source, target) || caster.dir
+	return get_step(source, limited_dir) || source
 
 /proc/resolve_formula_magic_departure_effect(mob/living/carbon/human/caster, datum/formula_magic_formula/formula, turf/source)
 	if(!caster || !formula || !source)
@@ -117,14 +829,12 @@
 	tags -= "teleport"
 	tags -= "self"
 	tags -= "persistent"
-	if(!formula_magic_has_pulse_payload(tags) && !tags["metal"] && !tags["weapon"] && !tags["cut"] && !tags["repair"])
+	if(!formula_magic_has_pulse_payload(tags) && !tags["metal"] && !tags["weapon"] && !tags["cut"] && !tags["blade_field"] && !tags["repair"] && !tags["bone"])
 		return FALSE
 	summary["tags"] = tags
 	summary["radius"] = max(0, min(summary["radius"] || 0, 2))
 	if(tags["metal"] && !tags["damage_blunt"] && !tags["damage_force"])
 		tags["damage_blunt"] = 1
-	if(tags["cut"] || tags["weapon"])
-		tags["fragments"] = max(tags["fragments"] || 0, 1)
 	new /obj/effect/temp_visual/formula_magic_zone(source, formula_magic_color_for_summary(summary), "formula_rune", 12)
 	resolve_formula_magic_area_effect(caster, summary, source, list(caster))
 	return TRUE
@@ -139,7 +849,8 @@
 	var/wave_dir = get_dir(source, target_turf) || caster.dir
 	var/list/turfs = getline(caster, target_turf) - source
 	playsound(caster.loc, 'sound/magic/fireball.ogg', 80, TRUE)
-	INVOKE_ASYNC(GLOBAL_PROC, GLOBAL_PROC_REF(progressive_formula_magic_wave), caster, formula.get_summary(), turfs, wave_dir, max(0, formula.radius || 0))
+	var/list/wave_summary = formula_magic_summary_with_radius(formula.get_summary(), 0)
+	INVOKE_ASYNC(GLOBAL_PROC, GLOBAL_PROC_REF(progressive_formula_magic_wave), caster, wave_summary, turfs, wave_dir, max(0, formula.tags["wave_width"] || 0))
 	return TRUE
 
 /proc/formula_magic_wave_step_turfs(turf/base_turf, movement_dir, width)
@@ -186,13 +897,13 @@
 	var/list/breath_summary = formula_magic_summary_with_radius(summary, 0)
 	breath_summary["power"] = max(1, round((breath_summary["power"] || 10) * 0.4))
 	breath_summary["formula_stack_chance"] = 40
-	INVOKE_ASYNC(GLOBAL_PROC, GLOBAL_PROC_REF(progressive_formula_magic_dragon_breath), caster, breath_summary, max(1, min(formula.range, 8)))
+	INVOKE_ASYNC(GLOBAL_PROC, GLOBAL_PROC_REF(progressive_formula_magic_dragon_breath), caster, breath_summary, max(1, min(formula.range, 8)), max(3 SECONDS, formula.duration || 3 SECONDS))
 	return TRUE
 
-/proc/progressive_formula_magic_dragon_breath(mob/living/carbon/human/caster, list/summary, breath_range)
+/proc/progressive_formula_magic_dragon_breath(mob/living/carbon/human/caster, list/summary, breath_range, breath_duration)
 	if(!caster || !summary)
 		return FALSE
-	var/duration = 3 SECONDS
+	var/duration = max(1, breath_duration || 3 SECONDS)
 	var/interval = 2
 	var/max_ticks = duration / interval
 	for(var/i in 1 to max_ticks)
@@ -269,6 +980,20 @@
 /proc/formula_magic_rune_targets(mob/living/carbon/human/caster, datum/formula_magic_formula/formula, turf/target)
 	var/list/result = list()
 	if(!caster || !formula)
+		return result
+	var/rune_spread = formula.tags["rune_spread"] || 0
+	if(rune_spread > 0)
+		if(target)
+			result += target
+		var/list/spread_dirs = list(NORTH, SOUTH, EAST, WEST, NORTHEAST, NORTHWEST, SOUTHEAST, SOUTHWEST)
+		for(var/spread_dir in spread_dirs)
+			for(var/distance in 1 to rune_spread)
+				var/turf/T = target
+				for(var/i in 1 to distance)
+					if(T)
+						T = get_step(T, spread_dir)
+				if(T)
+					result |= T
 		return result
 	var/nova_words = 0
 	for(var/form_id in formula.forms)
@@ -371,13 +1096,19 @@
 		var/turf/limited_end = get_ranged_target_turf(start, get_dir(start, end), max_distance)
 		if(limited_end)
 			end = limited_end
+	var/line_dir = get_dir(start, end) || caster.dir
+	var/line_width = max(0, formula.tags["guidance_width"] || 0)
 	new /obj/effect/temp_visual/formula_magic_zone(start, formula_magic_color_for_summary(summary), "formula_guidance", 12)
 	new /obj/effect/temp_visual/formula_magic_zone(end, formula_magic_color_for_summary(summary), "formula_guidance", 12)
 	for(var/turf/T in getline(start, end))
 		if(!T || T.is_blocked_turf(exclude_mobs = TRUE))
 			continue
-		new /obj/effect/temp_visual/formula_magic_zone(T, formula_magic_color_for_summary(summary), "formula_guidance", 6)
-		resolve_formula_magic_area_effect(caster, line_summary, T, hit_list)
+		var/list/line_turfs = formula_magic_wave_step_turfs(T, line_dir, line_width)
+		for(var/turf/line_turf in line_turfs)
+			if(!line_turf || line_turf.is_blocked_turf(exclude_mobs = TRUE))
+				continue
+			new /obj/effect/temp_visual/formula_magic_zone(line_turf, formula_magic_color_for_summary(summary), "formula_guidance", 6)
+			resolve_formula_magic_area_effect(caster, line_summary, line_turf, hit_list)
 		sleep(1)
 	return TRUE
 
@@ -395,8 +1126,9 @@
 		for(var/mob/living/L in range(max(1, formula.radius || 1), caster))
 			L.apply_status_effect(/datum/status_effect/buff/featherfall)
 	if(tags["nondetection"])
-		caster.add_filter("formula_nondetection", 2, list("type" = "outline", "color" = "#2F80FF", "alpha" = 25, "size" = 1))
-		addtimer(CALLBACK(caster, TYPE_PROC_REF(/atom/movable, remove_filter), "formula_nondetection"), duration)
+		caster.apply_status_effect(/datum/status_effect/buff/formula_magic_nondetection, duration)
+	if(tags["temporal_acceleration"] || tags["temporal_deceleration"] || tags["temporal_restore"] || tags["temporal_reversion"] || tags["time"])
+		formula_magic_apply_chronomancy_payload(caster, caster, formula.get_summary())
 	var/list/resists = list()
 	if(tags["damage_burn"])
 		resists["fire"] = min(0.9, 0.1 * tags["damage_burn"])
@@ -406,8 +1138,12 @@
 		resists["shock"] = min(0.9, 0.1 * tags["damage_shock"])
 	if(tags["damage_blunt"] || tags["damage_force"])
 		resists["physical"] = min(0.9, 0.1 * max(tags["damage_blunt"] || 0, tags["damage_force"] || 0))
+	if(tags["metal"])
+		resists["physical"] = max(resists["physical"] || 0, min(0.9, 0.1 * tags["metal"]))
 	if(length(resists))
 		caster.apply_status_effect(/datum/status_effect/buff/formula_magic_elemental_aura, resists, duration)
+	if(tags["metal"])
+		caster.visible_message(span_notice("[caster] shapes a protective iron ring around themselves."))
 	new /obj/effect/temp_visual/spell_impact(get_turf(caster), formula_magic_color_for_summary(formula.get_summary()), SPELL_IMPACT_MEDIUM)
 	caster.visible_message(span_notice("[caster] is wrapped in a formula aura."))
 	return TRUE
@@ -416,6 +1152,12 @@
 	if(!caster || !formula)
 		return FALSE
 	var/duration = max(30, formula.duration || 30)
+	if(formula.tags["metal"])
+		var/list/resists = list("physical" = min(0.9, 0.15 * formula.tags["metal"]))
+		caster.apply_status_effect(/datum/status_effect/buff/formula_magic_elemental_aura, resists, duration)
+		new /obj/effect/temp_visual/spell_impact(get_turf(caster), formula_magic_color_for_summary(formula.get_summary()), SPELL_IMPACT_MEDIUM)
+		caster.visible_message(span_notice("[caster]'s skin hardens into a dragon-hide formula cloak."))
+		return TRUE
 	var/list/cloak_summary = formula.get_summary()
 	cloak_summary["radius"] = max(1, formula.radius || 1)
 	cloak_summary["power"] = max(1, round((cloak_summary["power"] || 10) * 0.1))
@@ -440,7 +1182,7 @@
 /proc/formula_magic_has_pulse_payload(list/tags)
 	if(!length(tags))
 		return FALSE
-	if(tags["damage_arcane"] || tags["damage_burn"] || tags["ignite"] || tags["damage_cold"] || tags["frost_stack"] || tags["damage_shock"] || tags["electrocute"] || tags["damage_blunt"] || tags["damage_force"] || tags["fragments"] || tags["push"] || tags["pull"] || tags["gravity"] || tags["shift_target"] || tags["anchor_target"] || tags["silence"] || tags["stumble"] || tags["repair"] || tags["mind"])
+	if(tags["damage_arcane"] || tags["damage_burn"] || tags["ignite"] || tags["damage_cold"] || tags["frost_stack"] || tags["damage_shock"] || tags["electrocute"] || tags["damage_blunt"] || tags["damage_force"] || tags["metal"] || tags["bone"] || tags["blade_field"] || tags["shrapnel"] || tags["push"] || tags["pull"] || tags["gravity"] || tags["cleanse"] || tags["shift_target"] || tags["anchor_target"] || tags["silence"] || tags["repair"] || tags["mind"] || tags["time"] || tags["temporal_acceleration"] || tags["temporal_deceleration"] || tags["temporal_restore"] || tags["temporal_reversion"])
 		return TRUE
 	return FALSE
 
@@ -476,38 +1218,89 @@
 		else
 			bolt.icon_state = "formula_orb"
 			bolt.speed = 0.6
+		if(formula.tags["orb_seeker"])
+			bolt.speed = 1.1 + (0.2 * max(0, (formula.tags["orb_seeker"] || 1) - 1))
+			bolt.homing_turn_speed = 25 + (10 * max(0, (formula.tags["orb_seeker"] || 1) - 1))
+			var/atom/seeker_target = formula.tags["orb_seeker_target"] || formula_magic_nearest_target_to_point(caster, get_turf(target), 7)
+			if(seeker_target)
+				bolt.set_homing_target(seeker_target)
 		bolt.preparePixelProjectile(target, caster, null, start_spread + ((i - 1) * spread_step))
 		bolt.fire()
 	return TRUE
 
-/proc/resolve_formula_magic_summon(mob/living/carbon/human/caster, datum/formula_magic_formula/formula, turf/target)
+/proc/resolve_formula_magic_summon(mob/living/carbon/human/caster, datum/formula_magic_formula/formula, turf/target, atom/cast_on)
 	if(!caster || !formula)
 		return FALSE
 	if(!target)
 		target = get_turf(caster)
-	if(formula.tags["damage_burn"] || formula.tags["ignite"])
+	if(formula.tags["damage_burn"])
+		if(formula.tags["creation"])
+			return formula_magic_summon_primordial(caster, target, /mob/living/simple_animal/hostile/retaliate/rogue/primordial/fire)
 		if(target && !locate(/obj/machinery/light/rogue/campfire/create_campfire) in target)
 			new /obj/machinery/light/rogue/campfire/create_campfire(target)
 			caster.visible_message(span_notice("[caster] calls a temporary campfire into being."))
 			return TRUE
-	if(formula.tags["damage_shock"] || formula.tags["electrocute"])
+	if(formula.tags["ignite"])
+		new /obj/effect/temp_visual/fire(target)
+		target.fire_act()
+		caster.visible_message(span_notice("[caster] summons a brief burning tile."))
+		return TRUE
+	if(formula.tags["damage_cold"])
+		if(formula.tags["creation"])
+			return formula_magic_summon_primordial(caster, target, /mob/living/simple_animal/hostile/retaliate/rogue/primordial/water)
+		var/atom/chill_target = formula_magic_chill_container_target(cast_on)
+		if(!chill_target)
+			to_chat(caster, span_warning("The frost-summon formula needs a container to chill."))
+			return FALSE
+		var/obj/effect/formula_magic_fridge/fridge = new(chill_target)
+		fridge.setup_formula_fridge(chill_target, max(60 SECONDS, formula.duration || 5 MINUTES))
+		caster.visible_message(span_notice("[caster] wraps [chill_target] in a temporary cryomantic chill."))
+		return TRUE
+	if(formula.tags["frost_stack"])
+		new /obj/effect/temp_visual/snap_freeze(target)
+		caster.visible_message(span_notice("[caster] freezes the tile into a brittle patch of ice."))
+		return TRUE
+	if(formula.tags["blade_field"])
+		new /obj/effect/formula_magic_blade_field(target, caster, max(1, round(formula.power * 0.35)), max(10 SECONDS, formula.duration || 10 SECONDS), formula.radius || 0)
+		caster.visible_message(span_warning("[caster] plants a spinning formula blade."))
+		return TRUE
+	if(formula.tags["damage_shock"])
+		if(formula.tags["creation"])
+			return formula_magic_summon_primordial(caster, target, /mob/living/simple_animal/hostile/retaliate/rogue/primordial/air)
 		new /obj/effect/formula_magic_light(target, formula_magic_color_for_summary(formula.get_summary()), max(30 SECONDS, formula.duration || 60 SECONDS))
 		caster.visible_message(span_notice("[caster] binds a small formula light."))
 		return TRUE
-	if(formula.tags["damage_cold"] || formula.tags["frost_stack"])
-		new /obj/effect/temp_visual/snap_freeze(target)
-		target.visible_message(span_notice("A chill formula settles over [target]."))
+	if(formula.tags["electrocute"])
+		new /obj/effect/temp_visual/small_smoke(target)
+		caster.visible_message(span_notice("[caster] summons a smoking discharge mark."))
 		return TRUE
-	if(formula.tags["life"])
-		var/mob/living/simple_animal/pet/familiar/fae/familiar = new(target)
-		familiar.name = "formula familiar"
-		QDEL_IN(familiar, max(60 SECONDS, formula.duration || 3 MINUTES))
-		caster.visible_message(span_notice("[caster] gives a formula a brief living shape."))
+	if(formula.tags["anchor_target"])
+		var/obj/structure/earthen_pillar/pillar = new(target)
+		pillar.max_integrity = max(pillar.max_integrity, formula.power * 5)
+		pillar.obj_integrity = pillar.max_integrity
+		caster.visible_message(span_notice("[caster] raises a stone wall from the formula."))
 		return TRUE
-	if(formula.tags["death"])
-		var/mob/living/simple_animal/hostile/rogue/skeleton/guard/bones = new(target, caster)
-		QDEL_IN(bones, max(60 SECONDS, formula.duration || 3 MINUTES))
-		caster.visible_message(span_warning("[caster] calls bones into a temporary servant."))
+	if(formula.tags["ratmouse"])
+		return formula_magic_spawn_ratmouse(caster, target, max(10 SECONDS, formula.duration || 30 SECONDS))
+	if(formula.tags["damage_blunt"])
+		var/count = max(1, formula.tags["damage_blunt"] || 1)
+		for(var/i in 1 to count)
+			var/obj/item/rogueweapon/magicbrick/brick = new(caster.drop_location())
+			brick.name = "formula brick"
+			brick.desc = "A temporary brick shaped from spoken stone."
+			brick.force = max(brick.force, round(formula.power / 2))
+			brick.throwforce = max(brick.throwforce, formula.power)
+			brick.AddComponent(/datum/component/conjured_item, null, FALSE, caster, null)
+			if(i == 1)
+				caster.put_in_hands(brick)
+		caster.visible_message(span_notice("[caster] summons [count] formula brick[count == 1 ? "" : "s"]."))
+		return TRUE
+	if(formula.tags["creation"])
+		var/creation_words = max(1, formula.tags["creation"] || 1)
+		var/obj/structure/flora/roguegrass/maneater/real/juvenile/maneater = new(target)
+		maneater.planter = caster
+		QDEL_IN(maneater, creation_words * 10 SECONDS)
+		caster.visible_message(span_notice("[caster] gives a formula a brief man-eater shape."))
 		return TRUE
 	if((formula.tags["summon"] || 0) > 1)
 		var/obj/structure/formula_magic_forge/forge = new(target)
@@ -524,8 +1317,17 @@
 		caster.put_in_hands(brick)
 		caster.visible_message(span_notice("[caster] shapes a temporary arcyne implement."))
 		return TRUE
-	caster.visible_message(span_notice("[caster]'s formula coils into being, then fades without a suitable material word."))
-	return FALSE
+	var/obj/structure/formula_magic_wall/wall = new(target)
+	wall.setup_formula_wall("#C000FF", max(30 SECONDS, formula.duration || 60 SECONDS))
+	caster.visible_message(span_notice("[caster] summons an arcyne wall."))
+	return TRUE
+
+/proc/formula_magic_chill_container_target(atom/cast_on)
+	if(!cast_on)
+		return null
+	if(istype(cast_on, /obj/item/storage) || istype(cast_on, /obj/structure/closet))
+		return cast_on
+	return null
 
 /proc/resolve_formula_magic_area_effect(mob/living/carbon/human/caster, list/summary, turf/center, list/shared_hit_list)
 	if(!center || !summary)
@@ -536,6 +1338,7 @@
 	var/effective_radius = min(radius, 16)
 	var/effect_color = formula_magic_color_for_summary(summary)
 	var/skip_center_visual = summary["skip_center_visual"]
+	var/mob/living/single_target = summary["single_target"]
 
 	if(!skip_center_visual)
 		new /obj/effect/temp_visual/spell_impact(center, effect_color, SPELL_IMPACT_LOW)
@@ -551,13 +1354,25 @@
 		playsound(center, 'sound/magic/lightning.ogg', 70, TRUE)
 	if(!skip_center_visual && tags["damage_arcane"])
 		new /obj/effect/temp_visual/spell_impact(center, "#B7B3FF", SPELL_IMPACT_MEDIUM)
+	if(!skip_center_visual && tags["bone"])
+		new /obj/effect/temp_visual/spell_impact(center, "#6B6B6B", SPELL_IMPACT_MEDIUM)
 	if(!skip_center_visual && tags["gravity"])
 		new /obj/effect/temp_visual/gravity(center)
+	if(!skip_center_visual && tags["cleanse"])
+		new /obj/effect/temp_visual/cleaning_pulse(center)
+	if(!skip_center_visual && (tags["time"] || tags["temporal_acceleration"] || tags["temporal_deceleration"] || tags["temporal_restore"] || tags["temporal_reversion"]))
+		new /obj/effect/temp_visual/origin_restoration(center)
 
 	var/list/hit_targets = list()
 	for(var/turf/T in range(effective_radius, center))
 		if(T != center)
 			new /obj/effect/temp_visual/spell_impact(T, effect_color, SPELL_IMPACT_LOW)
+		if(tags["cleanse"])
+			formula_magic_cleanse_turf(T)
+		if(tags["blade_field"])
+			new /obj/effect/formula_magic_blade_field(T, caster, max(1, round(power * 0.35)), max(10 SECONDS, summary["duration"] || 10 SECONDS), 0)
+		if(tags["extinguish"])
+			formula_magic_extinguish_turf(T)
 		if(tags["ignite"])
 			new /obj/effect/temp_visual/fire(T)
 			T.fire_act()
@@ -567,10 +1382,20 @@
 			new /obj/effect/temp_visual/snap_freeze(T)
 		if(tags["damage_arcane"])
 			new /obj/effect/temp_visual/spell_impact(T, "#B7B3FF", SPELL_IMPACT_LOW)
+		if(tags["bone"])
+			new /obj/effect/temp_visual/spell_impact(T, "#6B6B6B", SPELL_IMPACT_LOW)
 		if(tags["gravity"])
 			new /obj/effect/temp_visual/gravity(T)
+		if(tags["cleanse"] && T != center)
+			new /obj/effect/temp_visual/cleaning_pulse(T)
+		if(tags["time"] || tags["temporal_acceleration"] || tags["temporal_deceleration"] || tags["temporal_restore"] || tags["temporal_reversion"])
+			new /obj/effect/temp_visual/spell_impact(T, "#66FFCC", SPELL_IMPACT_LOW)
+		if(tags["ratmouse"])
+			formula_magic_spawn_ratmouse(caster, T, max(10 SECONDS, summary["duration"] || 30 SECONDS))
 
 		for(var/mob/living/L in T)
+			if(single_target && L != single_target)
+				continue
 			if(shared_hit_list && (L in shared_hit_list))
 				continue
 			if(shared_hit_list)
@@ -579,7 +1404,7 @@
 				continue
 			hit_targets |= L
 			if(tags["damage_arcane"])
-				formula_magic_apply_damage(L, max(1, round(power * 0.45)), BRUTE)
+				formula_magic_apply_damage(L, max(1, power), BRUTE)
 			if(tags["damage_burn"])
 				formula_magic_apply_damage(L, max(1, round(power * 0.6)), BURN)
 			if(tags["ignite"])
@@ -588,6 +1413,9 @@
 					L.ignite_mob()
 			if(tags["damage_cold"] || tags["frost_stack"])
 				formula_magic_apply_damage(L, max(1, round(power * 0.35)), BURN)
+				if(tags["extinguish"] && L.on_fire)
+					L.adjust_fire_stacks(-1)
+					L.visible_message(span_warning("The frost dampens the flames on [L]!"))
 				if(tags["frost_stack"] && formula_magic_stack_chance_succeeds(summary))
 					apply_frost_stack(L)
 			if(tags["damage_shock"])
@@ -599,7 +1427,11 @@
 				new /obj/effect/temp_visual/gravity(get_turf(L))
 			if(tags["damage_blunt"] || tags["damage_force"])
 				formula_magic_apply_damage(L, max(1, round(power * 0.5)), BRUTE)
-			if(tags["fragments"])
+			if(tags["metal"])
+				formula_magic_apply_iron_armor_damage(L, 15 * max(1, tags["metal"] || 1), caster?.zone_selected || BODY_ZONE_CHEST)
+			if(tags["bone"] && !tags["ratmouse"])
+				formula_magic_apply_damage(L, max(1, power + 10), BRUTE)
+			if(tags["shrapnel"])
 				formula_magic_apply_damage(L, max(1, round(power * 0.25)), BRUTE)
 			if(tags["push"] && !tags["anchor_target"])
 				var/push_dir = get_dir(center, L)
@@ -626,21 +1458,23 @@
 				L.apply_status_effect(STATUS_EFFECT_BLINDED)
 			if(tags["silence"] && formula_magic_stack_chance_succeeds(summary))
 				L.apply_status_effect(/datum/status_effect/silenced, max(3 SECONDS, min(20 SECONDS, power)))
-			if(tags["stumble"] && formula_magic_stack_chance_succeeds(summary))
-				L.Knockdown(max(1 SECONDS, min(4 SECONDS, tags["stumble"] SECONDS)))
 			if(tags["softfall"])
 				L.apply_status_effect(/datum/status_effect/buff/featherfall)
 			if(tags["mind"])
 				if(tags["self"] || L == caster)
 					to_chat(L, span_notice("A formula opens a quiet thread of thought."))
 				else
-					to_chat(L, span_notice("A brief formula whisper brushes my mind."))
+					L.confused = max(L.confused, max(1, tags["mind"]) * 2 SECONDS)
+					L.do_jitter_animation(3)
+					to_chat(L, span_warning("A brief formula whisper tangles my thoughts."))
 			if(tags["size_down"])
 				L.add_filter("formula_size_down", 2, list("type" = "outline", "color" = "#2F80FF", "alpha" = 35, "size" = 1))
 				addtimer(CALLBACK(L, TYPE_PROC_REF(/atom/movable, remove_filter), "formula_size_down"), max(10 SECONDS, min(60 SECONDS, power * 2)))
 			if(tags["size_up"])
 				L.add_filter("formula_size_up", 2, list("type" = "outline", "color" = "#8A8A8A", "alpha" = 40, "size" = 2))
 				addtimer(CALLBACK(L, TYPE_PROC_REF(/atom/movable, remove_filter), "formula_size_up"), max(10 SECONDS, min(60 SECONDS, power * 2)))
+			if(tags["time"] || tags["temporal_acceleration"] || tags["temporal_deceleration"] || tags["temporal_restore"] || tags["temporal_reversion"])
+				formula_magic_apply_chronomancy_payload(caster, L, summary)
 
 		if(tags["repair"])
 			formula_magic_repair_atoms(caster, T, power)
@@ -649,8 +1483,100 @@
 		resolve_formula_magic_chain(caster, summary, center, hit_targets, tags["chain"])
 	if(tags["ricochet"])
 		resolve_formula_magic_ricochet(caster, summary, center, tags["ricochet"])
-	center.visible_message(span_warning("A spoken formula resolves at [center]."))
+	if(tags["recall"])
+		formula_magic_schedule_recall(caster, summary, center, effective_radius, tags["recall"])
+	if(tags["shrapnel"])
+		formula_magic_release_shrapnel(caster, summary, center, tags["shrapnel"])
+	formula_magic_create_lingering_zones(caster, summary, center, effective_radius)
+	if(!summary["silent"])
+		center.visible_message(span_warning("A spoken formula resolves at [center]."))
 	return TRUE
+
+/proc/formula_magic_extinguish_turf(turf/T)
+	if(!T)
+		return
+	for(var/obj/O in T.contents)
+		O.extinguish()
+	var/obj/effect/hotspot/hotspot = (locate(/obj/effect/hotspot) in T)
+	if(hotspot)
+		new /obj/effect/temp_visual/small_smoke(T)
+		qdel(hotspot)
+
+/proc/formula_magic_cleanse_turf(turf/T)
+	if(!T)
+		return
+	wash_atom(T, CLEAN_MEDIUM)
+	for(var/atom/A in T)
+		if(istype(A, /obj/effect/decal/cleanable) || ismob(A) || (isobj(A) && !istype(A, /obj/effect)))
+			wash_atom(A, CLEAN_MEDIUM)
+
+/proc/formula_magic_schedule_recall(mob/living/carbon/human/caster, list/summary, turf/center, radius, recall_count)
+	if(!center || !summary)
+		return
+	var/repeats = max(0, recall_count || 0) * 3
+	if(repeats <= 0)
+		return
+	var/list/candidates = list()
+	var/effective_radius = min(max(0, radius || 0), 16)
+	for(var/turf/T in range(effective_radius, center))
+		if(!T || T.is_blocked_turf(exclude_mobs = TRUE))
+			continue
+		candidates += T
+	if(!length(candidates))
+		return
+	var/list/recall_summary = formula_magic_secondary_summary(summary)
+	var/list/recall_tags = recall_summary["tags"] || list()
+	recall_tags -= "recall"
+	recall_summary["tags"] = recall_tags
+	recall_summary["radius"] = 0
+	recall_summary["silent"] = TRUE
+	recall_summary["power"] = max(1, round((recall_tags["pre_widen_power"] || summary["power"] || 10) * 0.35))
+	var/list/selected = list()
+	while(length(selected) < repeats && length(candidates))
+		var/turf/picked_turf = pick(candidates)
+		selected += picked_turf
+		candidates -= picked_turf
+	var/delay = 4
+	for(var/turf/selected_turf in selected)
+		addtimer(CALLBACK(GLOBAL_PROC, PROC_REF(formula_magic_recall_strike), caster, recall_summary, selected_turf), delay)
+		delay += 4
+
+/proc/formula_magic_recall_strike(mob/living/carbon/human/caster, list/summary, turf/target)
+	if(!target || !summary)
+		return
+	new /obj/effect/temp_visual/spell_impact(target, formula_magic_color_for_summary(summary), SPELL_IMPACT_LOW)
+	resolve_formula_magic_area_effect(caster, summary, target)
+
+/proc/formula_magic_release_shrapnel(mob/living/carbon/human/caster, list/summary, turf/source, shrapnel_count)
+	if(!caster || !summary || !source)
+		return
+	var/shard_count = max(0, shrapnel_count || 0) * 3
+	if(shard_count <= 0)
+		return
+	var/list/shard_summary = formula_magic_secondary_summary(summary)
+	var/list/shard_tags = shard_summary["tags"] || list()
+	shard_tags -= "shrapnel"
+	shard_summary["tags"] = shard_tags
+	shard_summary["radius"] = 0
+	shard_summary["power"] = max(1, round((summary["power"] || 10) * 0.4))
+	shard_summary["range"] = max(3, min(summary["range"] || 7, 7))
+	for(var/i in 1 to shard_count)
+		var/angle = rand(0, 359)
+		formula_magic_fire_summary_bolt(caster, shard_summary, source, null, angle)
+
+/proc/formula_magic_create_lingering_zones(mob/living/carbon/human/caster, list/summary, turf/center, radius)
+	if(!center || !summary)
+		return
+	var/list/tags = summary["tags"] || list()
+	var/existence_duration = tags["existence_duration"] || 0
+	if(existence_duration <= 0)
+		return
+	var/effective_radius = min(max(0, radius || 0), 16)
+	for(var/turf/T in range(effective_radius, center))
+		if(!T || T.is_blocked_turf(exclude_mobs = TRUE))
+			continue
+		var/obj/effect/formula_magic_lingering_zone/zone = new(T)
+		zone.setup_formula_zone(caster, summary, existence_duration)
 
 /proc/resolve_formula_magic_chain(mob/living/carbon/human/caster, list/summary, turf/source, list/hit_targets, chain_count)
 	var/remaining = max(0, chain_count || 0)
@@ -693,6 +1619,12 @@
 	var/list/tags = source_tags.Copy()
 	tags -= "chain"
 	tags -= "ricochet"
+	tags -= "shrapnel"
+	tags -= "orb_carrier"
+	tags -= "orb_carrier_summaries"
+	tags -= "orb_sequence_chase"
+	tags -= "orb_seeker"
+	tags -= "orb_seeker_target"
 	result["tags"] = tags
 	return result
 
@@ -704,7 +1636,7 @@
 /proc/formula_magic_color_for_summary(list/summary)
 	var/list/tags = summary?["tags"] || list()
 	var/list/schools = summary?["schools"] || list()
-	if(tags["death"])
+	if(tags["bone"])
 		return "#6B6B6B"
 	if(FORMULA_SCHOOL_CURSES in schools)
 		return "#8A8A8A"
@@ -722,8 +1654,12 @@
 		return "#5B1A8E"
 	if(FORMULA_SCHOOL_ARTIFICE_WARDING in schools)
 		return "#36B36A"
-	if(FORMULA_SCHOOL_LIFE in schools)
+	if(FORMULA_SCHOOL_BIOMANCY in schools)
 		return "#75D86F"
+	if(FORMULA_SCHOOL_NECROMANCY in schools)
+		return "#6B6B6B"
+	if(FORMULA_SCHOOL_CHRONOMANCY in schools)
+		return "#66FFCC"
 	if(FORMULA_SCHOOL_KINESIS in schools)
 		return "#D7A51E"
 	if(tags["damage_burn"] || tags["ignite"])
@@ -736,22 +1672,45 @@
 		return "#8B5E34"
 	if(tags["push"] || tags["pull"] || tags["gravity"])
 		return "#D7A51E"
+	if(tags["cleanse"])
+		return "#E8F4FF"
 	if(tags["teleport"] || tags["phase"] || tags["shift_target"] || tags["anchor_target"])
 		return "#5B1A8E"
-	if(tags["metal"] || tags["weapon"] || tags["armor"])
+	if(tags["metal"] || tags["weapon"] || tags["blade_field"])
 		return "#36B36A"
 	if(tags["curse"] || tags["curse_blindness"])
 		return "#8A8A8A"
-	if(tags["life"])
+	if(tags["creation"])
 		return "#75D86F"
-	if(tags["death"])
+	if(tags["bone"])
 		return "#6B6B6B"
+	if(tags["time"] || tags["temporal_acceleration"] || tags["temporal_deceleration"] || tags["temporal_restore"] || tags["temporal_reversion"])
+		return "#66FFCC"
 	return "#C000FF"
 
 /proc/formula_magic_apply_damage(mob/living/target, amount, damagetype)
 	if(!target || amount <= 0)
 		return
 	target.apply_damage(amount, damagetype, forced = TRUE)
+
+/proc/formula_magic_apply_iron_armor_damage(mob/living/target, amount, zone = BODY_ZONE_CHEST)
+	if(!target || amount <= 0)
+		return
+	if(!ishuman(target))
+		formula_magic_apply_damage(target, amount, BRUTE)
+		return
+	var/mob/living/carbon/human/human_target = target
+	var/list/layers = human_target.get_best_worn_armor_layered(zone || BODY_ZONE_CHEST, "blunt")
+	var/damaged_layer = FALSE
+	for(var/obj/item/clothing/armor_piece as anything in layers)
+		if(QDELETED(armor_piece) || !armor_piece.max_integrity || armor_piece.obj_integrity <= 0)
+			continue
+		armor_piece.take_damage(amount, BRUTE, "blunt", sound_effect = FALSE, armor_penetration = 100)
+		damaged_layer = TRUE
+	if(!damaged_layer)
+		formula_magic_apply_damage(human_target, amount, BRUTE)
+	else
+		new /obj/effect/temp_visual/soundbreaker_fx/note_shatter(get_turf(human_target))
 
 /proc/formula_magic_push_distance(list/summary)
 	var/power = summary?["power"] || 10
@@ -786,6 +1745,85 @@
 	if(repaired && caster)
 		playsound(T, 'sound/magic/mending.ogg', 35, TRUE, -2)
 	return repaired
+
+/proc/formula_magic_apply_chronomancy_payload(mob/living/carbon/human/caster, mob/living/target, list/summary)
+	if(!target || !summary)
+		return FALSE
+	var/list/tags = summary["tags"] || list()
+	var/power = summary["power"] || 10
+	if(tags["temporal_acceleration"] && formula_magic_stack_chance_succeeds(summary))
+		var/duration = max(2 SECONDS, min(8 SECONDS, (2 + tags["temporal_acceleration"]) SECONDS))
+		if(!target.has_status_effect(/datum/status_effect/buff/accel) && !target.has_status_effect(/datum/status_effect/buff/attune_haste))
+			target.apply_status_effect(/datum/status_effect/buff/accel, duration)
+			target.visible_message(span_blue("Origin formulae throw [target]'s body ahead of the present."))
+	if(tags["temporal_deceleration"] && formula_magic_stack_chance_succeeds(summary))
+		var/duration = max(2 SECONDS, min(8 SECONDS, (2 + tags["temporal_deceleration"]) SECONDS))
+		target.apply_status_effect(/datum/status_effect/debuff/decel, duration)
+		target.visible_message(span_warning("Origin formulae drag [target]'s body behind the present."))
+	if(tags["temporal_restore"] && formula_magic_stack_chance_succeeds(summary))
+		formula_magic_temporal_restore(caster, target, power)
+	if(tags["temporal_reversion"] && formula_magic_stack_chance_succeeds(summary))
+		var/duration = max(5 SECONDS, min(25 SECONDS, (8 + tags["temporal_reversion"] * 4) SECONDS))
+		target.apply_status_effect(/datum/status_effect/buff/formula_magic_reversion_mark, get_turf(target), duration)
+		target.visible_message(span_purple("Origin formulae mark [target]'s present state."))
+	if(tags["time"] && !tags["temporal_acceleration"] && !tags["temporal_deceleration"] && !tags["temporal_restore"] && !tags["temporal_reversion"])
+		if(ishuman(target))
+			var/mob/living/carbon/human/H = target
+			H.add_stress(/datum/stressevent/formula_magic_temporal_stress)
+		target.visible_message(span_warning("Origin formulae put temporal strain on [target]."))
+	return TRUE
+
+/proc/formula_magic_prebuilt_reversion(mob/living/carbon/human/caster, atom/cast_on, datum/formula_magic_formula/formula)
+	var/mob/living/target = formula_magic_prebuilt_target(caster, cast_on)
+	var/list/tags = formula?.tags || list()
+	var/duration = max(5 SECONDS, min(25 SECONDS, 8 SECONDS + max(1, tags["prebuilt_reversion"] || 1) * 4 SECONDS))
+	target.apply_status_effect(/datum/status_effect/buff/formula_magic_reversion_mark, get_turf(target), duration)
+	target.visible_message(span_purple("Origin formulae mark [target]'s present state."))
+	return TRUE
+
+/proc/formula_magic_temporal_restore(mob/living/carbon/human/caster, mob/living/target, power)
+	if(!target)
+		return FALSE
+	if(!iscarbon(target))
+		target.adjustBruteLoss(-max(1, round(power * 0.25)))
+		target.adjustFireLoss(-max(1, round(power * 0.25)))
+		return TRUE
+	var/mob/living/carbon/C = target
+	var/changed = FALSE
+	if(length(C.bodyparts))
+		for(var/obj/item/bodypart/BP in C.bodyparts)
+			if(!BP || !length(BP.embedded_objects))
+				continue
+			for(var/obj/item/embedded as anything in BP.embedded_objects)
+				if(!embedded)
+					continue
+				BP.remove_embedded_object(embedded)
+				changed = TRUE
+	if(length(C.simple_embedded_objects))
+		for(var/obj/item/embedded as anything in C.simple_embedded_objects)
+			if(!embedded)
+				continue
+			C.simple_remove_embedded_object(embedded)
+			changed = TRUE
+	if(changed)
+		C.visible_message(span_info("Origin formulae undo [C]'s embedded objects."))
+		return TRUE
+	var/list/wounds = C.get_wounds()
+	if(length(wounds))
+		for(var/datum/wound/W as anything in wounds)
+			if(!W || W.bleed_rate <= 0)
+				continue
+			W.set_bleed_rate(0)
+			changed = TRUE
+	if(changed)
+		C.visible_message(span_info("Origin formulae reverse [C]'s bleeding."))
+		return TRUE
+	C.adjustBruteLoss(-max(1, round(power * 0.35)))
+	C.adjustFireLoss(-max(1, round(power * 0.35)))
+	C.adjustOxyLoss(-max(1, round(power * 0.2)))
+	C.adjustToxLoss(-max(1, round(power * 0.2)))
+	new /obj/effect/temp_visual/origin_restoration(get_turf(C))
+	return TRUE
 
 /proc/formula_magic_stat_bonuses_from_tags(list/tags)
 	var/list/stat_bonuses = list()
@@ -846,6 +1884,34 @@
 	. = ..()
 	owner.remove_filter("formula_stat_aura")
 
+/atom/movable/screen/alert/status_effect/buff/formula_magic_nondetection
+	name = "Formula Nondetection"
+	desc = "A formula shrouds me from divination."
+	icon_state = "buff"
+
+/datum/status_effect/buff/formula_magic_nondetection
+	id = "formula_magic_nondetection"
+	alert_type = /atom/movable/screen/alert/status_effect/buff/formula_magic_nondetection
+	duration = 1 HOURS
+	status_type = STATUS_EFFECT_REFRESH
+
+/datum/status_effect/buff/formula_magic_nondetection/on_creation(mob/living/new_owner, new_duration)
+	if(new_duration)
+		duration = new_duration
+	. = ..()
+
+/datum/status_effect/buff/formula_magic_nondetection/on_apply()
+	. = ..()
+	ADD_TRAIT(owner, TRAIT_ANTISCRYING, MAGIC_TRAIT)
+	owner.add_filter("formula_nondetection", 2, list("type" = "outline", "color" = "#2F80FF", "alpha" = 25, "size" = 1))
+	to_chat(owner, span_notice("I feel hidden from divination magic."))
+
+/datum/status_effect/buff/formula_magic_nondetection/on_remove()
+	. = ..()
+	REMOVE_TRAIT(owner, TRAIT_ANTISCRYING, MAGIC_TRAIT)
+	owner.remove_filter("formula_nondetection")
+	to_chat(owner, span_warning("I feel my anti-scrying shroud failing."))
+
 /atom/movable/screen/alert/status_effect/debuff/formula_magic_stat_curse
 	name = "Formula Curse"
 	desc = "A formula weakens my body."
@@ -871,6 +1937,118 @@
 /datum/status_effect/debuff/formula_magic_stat_curse/on_remove()
 	. = ..()
 	owner.remove_filter("formula_stat_curse")
+
+/atom/movable/screen/alert/status_effect/debuff/formula_magic_reverse_guidance
+	name = "Reverse Guidance"
+	desc = "My thoughts turn against their own direction."
+	icon_state = "debuff"
+
+/datum/status_effect/debuff/formula_magic_reverse_guidance
+	id = "formula_magic_reverse_guidance"
+	alert_type = /atom/movable/screen/alert/status_effect/debuff/formula_magic_reverse_guidance
+	duration = 30 SECONDS
+	status_type = STATUS_EFFECT_REFRESH
+
+/datum/status_effect/debuff/formula_magic_reverse_guidance/on_creation(mob/living/new_owner, new_duration)
+	if(new_duration)
+		duration = new_duration
+	. = ..()
+
+/datum/status_effect/debuff/formula_magic_reverse_guidance/on_apply()
+	. = ..()
+	ADD_TRAIT(owner, TRAIT_REVERSE_GUIDANCE, MAGIC_TRAIT)
+	owner.add_filter("formula_reverse_guidance", 2, list("type" = "outline", "color" = "#6F6F6F", "alpha" = 45, "size" = 1))
+	to_chat(owner, span_warning("My thoughts stumble in their own wake."))
+
+/datum/status_effect/debuff/formula_magic_reverse_guidance/on_remove()
+	. = ..()
+	REMOVE_TRAIT(owner, TRAIT_REVERSE_GUIDANCE, MAGIC_TRAIT)
+	owner.remove_filter("formula_reverse_guidance")
+	to_chat(owner, span_notice("My thoughts find their old road again."))
+
+/datum/stressevent/formula_magic_temporal_stress
+	timer = 5 MINUTES
+	stressadd = 2
+	desc = span_red("My place in time feels strained.")
+
+/atom/movable/screen/alert/status_effect/buff/formula_magic_reversion_mark
+	name = "Formula Reversion"
+	desc = "A formula has marked this moment of my body."
+	icon_state = "buff"
+
+/datum/status_effect/buff/formula_magic_reversion_mark
+	id = "formula_magic_reversion_mark"
+	alert_type = /atom/movable/screen/alert/status_effect/buff/formula_magic_reversion_mark
+	duration = 10 SECONDS
+	status_type = STATUS_EFFECT_REFRESH
+	var/turf/origin
+	var/brute = 0
+	var/burn = 0
+	var/oxy = 0
+	var/toxin = 0
+	var/blood = 0
+	var/list/datum/wound/snapshot_wounds
+	var/triggered = FALSE
+
+/datum/status_effect/buff/formula_magic_reversion_mark/on_creation(mob/living/new_owner, turf/snapshot_turf, new_duration)
+	origin = snapshot_turf || get_turf(new_owner)
+	if(new_duration)
+		duration = new_duration
+	if(istype(new_owner, /mob/living/carbon))
+		var/mob/living/carbon/C = new_owner
+		brute = C.getBruteLoss()
+		burn = C.getFireLoss()
+		oxy = C.getOxyLoss()
+		toxin = C.getToxLoss()
+		blood = C.blood_volume
+		snapshot_wounds = C.get_wounds()
+	. = ..()
+
+/datum/status_effect/buff/formula_magic_reversion_mark/on_apply()
+	. = ..()
+	RegisterSignal(owner, COMSIG_MOB_APPLY_DAMGE, PROC_REF(handle_reversion_damage))
+	owner.add_filter("formula_reversion_mark", 2, list("type" = "outline", "color" = "#66FFCC", "alpha" = 45, "size" = 1))
+	to_chat(owner, span_purple("A formula anchors this moment of my body."))
+
+/datum/status_effect/buff/formula_magic_reversion_mark/on_remove()
+	. = ..()
+	UnregisterSignal(owner, COMSIG_MOB_APPLY_DAMGE)
+	owner.remove_filter("formula_reversion_mark")
+	origin = null
+	snapshot_wounds = null
+
+/datum/status_effect/buff/formula_magic_reversion_mark/proc/handle_reversion_damage(datum/source, damage, damagetype, def_zone)
+	SIGNAL_HANDLER
+	if(triggered || damage <= 0)
+		return
+	triggered = TRUE
+	addtimer(CALLBACK(src, PROC_REF(perform_formula_reversion)), 1)
+
+/datum/status_effect/buff/formula_magic_reversion_mark/proc/perform_formula_reversion()
+	if(QDELETED(src) || !owner || !origin)
+		return
+	var/mob/living/carbon/C = owner
+	if(!istype(C))
+		return
+	var/turf/departure = get_turf(C)
+	if(departure)
+		new /obj/effect/temp_visual/origin_restoration(departure)
+	do_teleport(C, origin, no_effects = TRUE)
+	C.adjustBruteLoss(C.getBruteLoss() * -1 + brute)
+	C.adjustFireLoss(C.getFireLoss() * -1 + burn)
+	C.adjustOxyLoss(C.getOxyLoss() * -1 + oxy)
+	C.adjustToxLoss(C.getToxLoss() * -1 + toxin)
+	C.blood_volume = blood
+	for(var/datum/wound/wound as anything in C.get_wounds())
+		if(wound in snapshot_wounds)
+			continue
+		if(wound.bodypart_owner)
+			wound.bodypart_owner.remove_wound(wound)
+		else
+			C.simple_remove_wound(wound)
+	playsound(get_turf(C), 'sound/magic/timereverse.ogg', 80, FALSE)
+	C.visible_message(span_purple("[C] snaps backward through a formula mark."))
+	C.remove_status_effect(/datum/status_effect/buff/formula_magic_reversion_mark)
 
 /atom/movable/screen/alert/status_effect/buff/formula_magic_elemental_aura
 	name = "Elemental Formula Aura"
@@ -931,6 +2109,7 @@
 	spell_impact_intensity = SPELL_IMPACT_LOW
 	var/list/formula_summary
 	var/pierce_remaining = 0
+	var/list/orb_carrier_hit_atoms = list()
 
 /obj/projectile/magic/formula_magic_bolt/on_hit(atom/target, blocked = FALSE)
 	. = ..()
@@ -941,11 +2120,114 @@
 		caster = firer
 	var/turf/impact = get_turf(target)
 	if(impact && formula_summary)
-		resolve_formula_magic_area_effect(caster, formula_summary, impact)
+		var/list/impact_summary = formula_magic_secondary_summary(formula_summary)
+		resolve_formula_magic_area_effect(caster, impact_summary, impact)
+		formula_magic_resolve_projectile_followups(caster, formula_summary, impact, Angle, target)
+		formula_magic_resolve_next_sequence_segment(caster, formula_summary, impact)
+	var/list/tags = formula_summary?["tags"] || list()
+	if(tags["orb_sequence_chase"] && target == homing_target)
+		return BULLET_ACT_HIT
 	if(pierce_remaining > 0 && isliving(target))
 		pierce_remaining--
 		return BULLET_ACT_FORCE_PIERCE
 	return BULLET_ACT_HIT
+
+/proc/formula_magic_resolve_projectile_followups(mob/living/carbon/human/caster, list/summary, turf/impact, impact_angle, atom/hit_atom)
+	if(!caster || !summary || !impact)
+		return
+	var/list/tags = summary["tags"] || list()
+	if(tags["chain"])
+		var/list/chain_summary = formula_magic_summary_with_reduced_tag(summary, "chain")
+		var/mob/living/next_target = formula_magic_nearest_chain_target(caster, impact, hit_atom)
+		if(next_target)
+			formula_magic_fire_summary_bolt(caster, chain_summary, impact, next_target)
+	if(tags["ricochet"])
+		var/list/ricochet_summary = formula_magic_summary_with_reduced_tag(summary, "ricochet")
+		var/new_angle = SIMPLIFY_DEGREES((impact_angle || 0) + pick(120, 240))
+		formula_magic_fire_summary_bolt(caster, ricochet_summary, impact, null, new_angle)
+
+/proc/formula_magic_nearest_chain_target(mob/living/carbon/human/caster, turf/source, atom/exclude)
+	var/mob/living/next_target
+	var/best_distance = 999
+	for(var/mob/living/L in view(7, source))
+		if(L == caster || L == exclude)
+			continue
+		var/distance = get_dist(source, L)
+		if(distance < best_distance)
+			best_distance = distance
+			next_target = L
+	return next_target
+
+/proc/formula_magic_nearest_target_to_point(mob/living/carbon/human/caster, turf/source, search_range = 7, atom/exclude)
+	if(!source)
+		return null
+	var/mob/living/next_target
+	var/best_distance = 999
+	for(var/mob/living/L in view(max(1, search_range || 7), source))
+		if(L == caster || L == exclude || QDELETED(L))
+			continue
+		var/distance = get_dist(source, L)
+		if(distance < best_distance)
+			best_distance = distance
+			next_target = L
+	return next_target
+
+/proc/formula_magic_fire_summary_bolt(mob/living/carbon/human/caster, list/summary, turf/start, atom/target, forced_angle)
+	if(!caster || !summary || !start)
+		return FALSE
+	var/obj/projectile/magic/formula_magic_bolt/bolt = new(start)
+	bolt.firer = caster
+	bolt.fired_from = start
+	bolt.def_zone = caster.zone_selected
+	bolt.formula_summary = summary.Copy()
+	bolt.range = max(1, min(summary["range"] || 7, 14))
+	bolt.max_range = bolt.range
+	var/list/summary_tags = summary["tags"] || list()
+	bolt.pierce_remaining = summary_tags["pierce"] || 0
+	bolt.spell_impact_color = formula_magic_color_for_summary(summary)
+	bolt.light_color = bolt.spell_impact_color
+	bolt.icon_state = "formula_orb"
+	bolt.speed = 1.1
+	if(summary_tags["orb_seeker"])
+		bolt.speed = 1.1 + (0.2 * max(0, (summary_tags["orb_seeker"] || 1) - 1))
+		bolt.homing_turn_speed = 25 + (10 * max(0, (summary_tags["orb_seeker"] || 1) - 1))
+		var/atom/seeker_target = summary_tags["orb_seeker_target"] || formula_magic_nearest_target_to_point(caster, get_turf(target) || start, 7)
+		if(seeker_target)
+			bolt.set_homing_target(seeker_target)
+	if(target)
+		bolt.preparePixelProjectile(target, start)
+	else
+		bolt.preparePixelProjectile(get_ranged_target_turf(start, angle2dir(forced_angle), bolt.range), start)
+		bolt.setAngle(forced_angle)
+	bolt.fire()
+	return TRUE
+
+/proc/formula_magic_summary_with_reduced_tag(list/summary, tag)
+	var/list/result = summary.Copy()
+	var/list/source_tags = summary["tags"] || list()
+	var/list/tags = source_tags.Copy()
+	if((tags[tag] || 0) > 1)
+		tags[tag]--
+	else
+		tags -= tag
+	result["tags"] = tags
+	return result
+
+/proc/formula_magic_resolve_next_sequence_segment(mob/living/carbon/human/caster, list/summary, turf/impact)
+	if(!caster?.mind || !summary || !impact)
+		return FALSE
+	var/list/segments = summary["sequence_segments"]
+	if(!length(segments))
+		return FALSE
+	var/list/next_words = segments[1]
+	var/datum/formula_magic_formula/next_formula = caster.mind.build_formula_magic_formula(next_words)
+	if(!next_formula)
+		return FALSE
+	if(length(segments) > 1)
+		next_formula.sequence_segments = segments.Copy(2)
+	var/result = resolve_formula_magic_effect(caster, next_formula, impact, impact)
+	qdel(next_formula)
+	return result
 
 /obj/projectile/magic/formula_magic_bolt/can_hit_target(atom/target, list/passthrough, direct_target = FALSE, ignore_loc = FALSE)
 	if(QDELETED(target))
@@ -961,6 +2243,8 @@
 	if(isliving(target))
 		return TRUE
 	if(isobj(target))
+		if(istype(target, /obj/projectile))
+			return FALSE
 		var/obj/O = target
 		if(O.density || istype(O, /obj/structure) || istype(O, /obj/machinery))
 			return TRUE
@@ -971,15 +2255,55 @@
 	if(!. || QDELETED(src) || !fired || !loc)
 		return
 	for(var/mob/living/L in loc)
+		if(formula_magic_resolve_orb_carrier_touch(L))
+			continue
+		if(formula_magic_should_sequence_chase_ignore(L))
+			continue
 		if(can_hit_target(L, permutated, L == original, TRUE))
 			Bump(L)
 			return
 	for(var/obj/O in loc)
 		if(O == src)
 			continue
+		if(istype(O, /obj/projectile))
+			continue
 		if(can_hit_target(O, permutated, O == original, TRUE))
 			Bump(O)
 			return
+
+/obj/projectile/magic/formula_magic_bolt/proc/formula_magic_resolve_orb_carrier_touch(mob/living/L)
+	if(!L || !formula_summary)
+		return FALSE
+	var/list/tags = formula_summary["tags"] || list()
+	var/list/carrier_summaries = tags["orb_carrier_summaries"]
+	if(!length(carrier_summaries))
+		return FALSE
+	if(L == firer)
+		return TRUE
+	if(L in orb_carrier_hit_atoms)
+		return TRUE
+	orb_carrier_hit_atoms |= L
+	var/mob/living/carbon/human/caster
+	if(istype(firer, /mob/living/carbon/human))
+		caster = firer
+	var/turf/touch_turf = get_turf(L)
+	for(var/list/carrier_summary as anything in carrier_summaries)
+		resolve_formula_magic_area_effect(caster, carrier_summary, touch_turf, list())
+	if(tags["orb_sequence_chase"] && L == homing_target)
+		return FALSE
+	permutated |= L
+	return TRUE
+
+/obj/projectile/magic/formula_magic_bolt/proc/formula_magic_should_sequence_chase_ignore(mob/living/L)
+	if(!L || !formula_summary)
+		return FALSE
+	var/list/tags = formula_summary["tags"] || list()
+	if(!tags["orb_sequence_chase"])
+		return FALSE
+	if(L == homing_target)
+		return FALSE
+	permutated |= L
+	return TRUE
 
 /obj/effect/formula_magic_light
 	name = "formula light"
@@ -995,6 +2319,131 @@
 		set_light(4, 2, 1, l_color = effect_color)
 	else
 		set_light(4, 2, 1)
+	QDEL_IN(src, max(10 SECONDS, lifespan || 60 SECONDS))
+
+/obj/effect/formula_magic_fridge
+	name = "formula chill"
+	desc = "A temporary cryomantic field bound to a container."
+	icon = 'modular_twilight_axis/icons/effects/formula_magic.dmi'
+	icon_state = "formula_aura"
+	anchored = TRUE
+	layer = ABOVE_MOB_LAYER
+	var/atom/chill_target
+	var/list/chilled_foods = list()
+
+/obj/effect/formula_magic_fridge/proc/setup_formula_fridge(atom/new_target, lifespan)
+	chill_target = new_target || loc
+	if(ismovable(chill_target))
+		var/atom/movable/movable_target = chill_target
+		movable_target.add_filter("formula_fridge_glow", 2, list("type" = "outline", "color" = "#87CEEB", "alpha" = 120, "size" = 1))
+	set_light(2, 1, 1, l_color = "#8FE8FF")
+	chill_foods()
+	START_PROCESSING(SSprocessing, src)
+	QDEL_IN(src, max(30 SECONDS, lifespan || 5 MINUTES))
+
+/obj/effect/formula_magic_fridge/Destroy()
+	STOP_PROCESSING(SSprocessing, src)
+	if(ismovable(chill_target))
+		var/atom/movable/movable_target = chill_target
+		movable_target.remove_filter("formula_fridge_glow")
+	chill_target = null
+	chilled_foods = null
+	return ..()
+
+/obj/effect/formula_magic_fridge/process(delta_time)
+	chill_foods()
+
+/obj/effect/formula_magic_fridge/proc/chill_foods()
+	if(!chill_target)
+		return
+	for(var/obj/item/reagent_containers/food/snacks/food in chill_target.contents)
+		if(food in chilled_foods)
+			continue
+		if(!food.rotprocess)
+			continue
+		chilled_foods += food
+		food.warming += 15 MINUTES
+		food.add_filter("formula_chilled_food_glow", 2, list("type" = "outline", "color" = "#87CEEB", "alpha" = 120, "size" = 1))
+		addtimer(CALLBACK(food, TYPE_PROC_REF(/atom/movable, remove_filter), "formula_chilled_food_glow"), 15 MINUTES)
+
+/obj/effect/formula_magic_blade_field
+	name = "formula blade"
+	desc = "A spinning arcyne blade fixed in the air."
+	icon = 'icons/effects/effects.dmi'
+	icon_state = "sparks"
+	anchored = TRUE
+	density = FALSE
+	layer = ABOVE_MOB_LAYER
+	light_outer_range = 1
+	light_color = "#36B36A"
+	mouse_opacity = MOUSE_OPACITY_TRANSPARENT
+	var/mob/living/carbon/human/caster
+	var/tick_damage = 4
+	var/effect_radius = 0
+	var/list/blade_visuals = list()
+
+/obj/effect/formula_magic_blade_field/Initialize(mapload, mob/living/carbon/human/new_caster, new_damage, lifespan, radius)
+	. = ..()
+	caster = new_caster
+	tick_damage = max(1, new_damage || 4)
+	effect_radius = max(0, min(radius || 0, 3))
+	add_atom_colour("#36B36A", FIXED_COLOUR_PRIORITY)
+	set_light(2, 1, 1, l_color = "#36B36A")
+	INVOKE_ASYNC(src, PROC_REF(setup_visuals), max(10 SECONDS, lifespan || 10 SECONDS))
+	playsound(src, 'sound/magic/scrapeblade.ogg', 50, TRUE, 4)
+	START_PROCESSING(SSprocessing, src)
+	QDEL_IN(src, max(10 SECONDS, lifespan || 10 SECONDS))
+
+/obj/effect/formula_magic_blade_field/Destroy()
+	QDEL_LIST(blade_visuals)
+	caster = null
+	STOP_PROCESSING(SSprocessing, src)
+	return ..()
+
+/obj/effect/formula_magic_blade_field/proc/setup_visuals(lifespan)
+	var/visual_radius = max(1, effect_radius)
+	for(var/dx in -visual_radius to visual_radius)
+		for(var/dy in -visual_radius to visual_radius)
+			if(effect_radius && max(abs(dx), abs(dy)) > effect_radius)
+				continue
+			if(!effect_radius && (dx || dy))
+				continue
+			var/obj/effect/temp_visual/spinning_dagger/D = new(null, lifespan + 1 SECONDS, FALSE)
+			D.pixel_x = dx * 32
+			D.pixel_y = dy * 32
+			blade_visuals += D
+			vis_contents += D
+			D.start_spinning()
+
+/obj/effect/formula_magic_blade_field/process(delta_time)
+	var/turf/center = get_turf(src)
+	if(!center)
+		qdel(src)
+		return
+	playsound(src, pick('sound/combat/hits/bladed/genstab (1).ogg', 'sound/combat/hits/bladed/genstab (2).ogg', 'sound/combat/hits/bladed/genstab (3).ogg'), 35, TRUE)
+	for(var/turf/T in range(effect_radius, center))
+		for(var/mob/living/L in T.contents)
+			if(L == caster)
+				continue
+			if(L.anti_magic_check())
+				continue
+			formula_magic_apply_damage(L, tick_damage, BRUTE)
+			new /obj/effect/temp_visual/spell_impact(get_turf(L), "#36B36A", SPELL_IMPACT_LOW)
+
+/obj/structure/formula_magic_wall
+	name = "arcyne wall"
+	desc = "A temporary wall shaped from a spoken formula."
+	icon = 'modular_twilight_axis/icons/effects/formula_magic.dmi'
+	icon_state = "formula_rune"
+	anchored = TRUE
+	density = TRUE
+	opacity = TRUE
+	max_integrity = 100
+
+/obj/structure/formula_magic_wall/proc/setup_formula_wall(effect_color, lifespan)
+	if(effect_color)
+		add_atom_colour(effect_color, FIXED_COLOUR_PRIORITY)
+		set_light(1, 1, 1, l_color = effect_color)
 	QDEL_IN(src, max(10 SECONDS, lifespan || 60 SECONDS))
 
 /obj/structure/formula_magic_forge
@@ -1076,6 +2525,65 @@
 			p_y = side_variance
 	animate(src, pixel_x = p_x, pixel_y = p_y, alpha = 0, time = duration, easing = SINE_EASING)
 
+/obj/effect/formula_magic_lingering_zone
+	name = "lingering formula"
+	desc = "A spoken formula lingers here as a temporary trigger."
+	icon = 'modular_twilight_axis/icons/effects/formula_magic.dmi'
+	icon_state = "formula_rune"
+	anchored = TRUE
+	density = FALSE
+	alpha = 120
+	layer = ABOVE_NORMAL_TURF_LAYER
+	var/mob/living/carbon/human/caster
+	var/list/formula_summary
+	var/lifespan = 10 SECONDS
+	var/pulse_interval = 2 SECONDS
+
+/obj/effect/formula_magic_lingering_zone/Destroy()
+	caster = null
+	formula_summary = null
+	. = ..()
+
+/obj/effect/formula_magic_lingering_zone/proc/setup_formula_zone(mob/living/carbon/human/new_caster, list/new_summary, new_lifespan)
+	caster = new_caster
+	formula_summary = formula_magic_lingering_summary(new_summary)
+	lifespan = max(1 SECONDS, new_lifespan || 10 SECONDS)
+	var/effect_color = formula_magic_color_for_summary(formula_summary)
+	if(effect_color)
+		add_atom_colour(effect_color, FIXED_COLOUR_PRIORITY)
+	QDEL_IN(src, lifespan)
+	addtimer(CALLBACK(src, PROC_REF(pulse_formula_zone)), pulse_interval)
+	return TRUE
+
+/obj/effect/formula_magic_lingering_zone/Crossed(atom/movable/AM, oldloc)
+	. = ..()
+	if(isliving(AM))
+		trigger_formula_zone(AM)
+
+/obj/effect/formula_magic_lingering_zone/proc/pulse_formula_zone()
+	if(QDELETED(src) || !formula_summary)
+		return
+	for(var/mob/living/L in loc)
+		trigger_formula_zone(L)
+	addtimer(CALLBACK(src, PROC_REF(pulse_formula_zone)), pulse_interval)
+
+/obj/effect/formula_magic_lingering_zone/proc/trigger_formula_zone(mob/living/L)
+	if(!L || !formula_summary)
+		return
+	resolve_formula_magic_area_effect(caster, formula_summary, get_turf(src), list())
+
+/proc/formula_magic_lingering_summary(list/summary)
+	var/list/result = formula_magic_secondary_summary(summary)
+	var/list/source_tags = result["tags"] || list()
+	var/list/tags = source_tags.Copy()
+	tags -= "existence"
+	tags -= "existence_duration"
+	result["tags"] = tags
+	result["radius"] = 0
+	result["silent"] = TRUE
+	result["skip_center_visual"] = TRUE
+	return result
+
 /obj/structure/trap/formula_magic
 	name = "formula rune"
 	desc = "A dormant spoken formula waits in the ground."
@@ -1088,6 +2596,7 @@
 	scraptype = /obj/item/magic/manacrystal
 	var/mob/living/carbon/human/caster
 	var/list/formula_summary
+	var/triggered = FALSE
 
 /obj/structure/trap/formula_magic/Destroy()
 	caster = null
@@ -1106,8 +2615,17 @@
 	return TRUE
 
 /obj/structure/trap/formula_magic/trap_effect(mob/living/L)
-	if(!formula_summary)
+	if(triggered || !formula_summary)
 		return
+	if(caster?.mind && L?.mind == caster.mind)
+		return
+	triggered = TRUE
 	var/list/trigger_summary = formula_magic_secondary_summary(formula_summary)
 	trigger_summary["radius"] = max(0, trigger_summary["radius"] || 0)
 	resolve_formula_magic_area_effect(caster, trigger_summary, get_turf(src))
+	qdel(src)
+
+/obj/structure/trap/formula_magic/Crossed(atom/movable/AM, oldloc)
+	. = ..()
+	if(isliving(AM))
+		trap_effect(AM)

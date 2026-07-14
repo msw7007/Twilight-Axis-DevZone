@@ -18,3 +18,10 @@
 	icon_state = "book5_0"
 	base_icon_state = "book5"
 	bookfile = "ronin_codex.json"
+
+/obj/item/book/rogue/formula_spellcraft_hammerhold
+	name = "Hammerhold Formula Grimoire"
+	desc = "A stern old Hammerhold mage's primer on formula words, forms, and composed spells."
+	icon_state = "book5_0"
+	base_icon_state = "book5"
+	bookfile = "formula_spellcraft_hammerhold.json"

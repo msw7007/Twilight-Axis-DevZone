@@ -14,7 +14,9 @@
 	var/repeatable = TRUE
 	var/is_stop_word = FALSE
 	var/list/tags = list()
+	var/list/required_school_points = list()
 	var/list/phrases = list()
+	var/list/spoken_phrases = list()
 
 /datum/formula_magic_word/proc/apply_to(datum/formula_magic_formula/formula)
 	if(!formula)
@@ -28,17 +30,17 @@
 		formula.add_tag(tag)
 	switch(role)
 		if(FORMULA_WORD_FORM)
-			formula.forms += id
+			formula.forms.Insert(length(formula.forms) + 1, id)
 			if(!formula.primary_form)
 				formula.primary_form = id
 		if(FORMULA_WORD_ELEMENT)
-			formula.elements += id
+			formula.elements.Insert(length(formula.elements) + 1, id)
 		if(FORMULA_WORD_MODIFIER)
-			formula.modifiers += id
+			formula.modifiers.Insert(length(formula.modifiers) + 1, id)
 		if(FORMULA_WORD_POST_EFFECT)
-			formula.post_effects += id
+			formula.post_effects.Insert(length(formula.post_effects) + 1, id)
 		if(FORMULA_WORD_LINK)
-			formula.links += id
+			formula.links.Insert(length(formula.links) + 1, id)
 
 /datum/formula_magic_word/proc/get_entry()
 	return list(
@@ -57,6 +59,7 @@
 		"repeatable" = repeatable,
 		"is_stop_word" = is_stop_word,
 		"tags" = tags.Copy(),
+		"required_school_points" = required_school_points.Copy(),
 		"phrases" = phrases.Copy(),
 	)
 
@@ -64,6 +67,23 @@
 	if(length(phrases))
 		return phrases[1]
 	return "Asha."
+
+/datum/formula_magic_word/proc/get_speech_phrases()
+	if(length(spoken_phrases))
+		return spoken_phrases.Copy()
+	return list(get_phrase())
+
+/proc/formula_magic_widen_step(repeat_index)
+	switch(max(1, repeat_index || 1))
+		if(1)
+			return 1
+		if(2)
+			return 1
+		if(3)
+			return 2
+		if(4)
+			return 4
+	return 8
 
 /datum/formula_magic_word/form/orb
 	id = FORMULA_FORM_ORB
@@ -93,7 +113,6 @@
 /datum/formula_magic_word/form/aura/apply_to(datum/formula_magic_formula/formula)
 	..()
 	formula.duration += 30 SECONDS
-	formula.radius += 1
 
 /datum/formula_magic_word/form/cloak
 	id = FORMULA_FORM_CLOAK
@@ -109,7 +128,6 @@
 /datum/formula_magic_word/form/cloak/apply_to(datum/formula_magic_formula/formula)
 	..()
 	formula.duration += 30 SECONDS
-	formula.radius += 1
 
 /datum/formula_magic_word/form/instant
 	id = FORMULA_FORM_INSTANT
@@ -125,7 +143,7 @@
 /datum/formula_magic_word/form/instant/apply_to(datum/formula_magic_formula/formula)
 	..()
 	var/moment_words = formula.tags["moment"] || 1
-	formula.range = 4 + (moment_words - 1)
+	formula.range = 3 + (moment_words - 1)
 
 /datum/formula_magic_word/form/fall
 	id = FORMULA_FORM_FALL
@@ -219,7 +237,9 @@
 
 /datum/formula_magic_word/form/breath/apply_to(datum/formula_magic_formula/formula)
 	..()
+	var/breath_words = formula.tags["breath"] || 1
 	formula.range = 3
+	formula.duration = max(formula.duration, 3 SECONDS + ((breath_words - 1) * 1 SECONDS))
 
 /datum/formula_magic_word/form/nova
 	id = FORMULA_FORM_NOVA
@@ -235,7 +255,7 @@
 /datum/formula_magic_word/form/nova/apply_to(datum/formula_magic_formula/formula)
 	..()
 	var/nova_words = formula.tags["burst"] || 1
-	formula.radius = max(formula.radius, 2 + (nova_words - 1))
+	formula.radius = max(formula.radius, 1 + (nova_words - 1))
 
 /datum/formula_magic_word/form/touch
 	id = FORMULA_FORM_TOUCH
@@ -278,18 +298,57 @@
 /datum/formula_magic_word/modifier/widen
 	id = "widen"
 	name = "Widen"
-	desc = "Expands the area of a formula. Repeating it scales radius aggressively."
+	desc = "Expands the formula according to its form. Repeats scale as +1, +1, +2, +4, +8."
 	role = FORMULA_WORD_MODIFIER
 	mana_cost = 2
 	complexity = 2
-	tags = list("radius")
+	tags = list("widen")
 	phrases = list("Amplia.", "Latius fiat.", "Circulus crescat.")
 
 /datum/formula_magic_word/modifier/widen/apply_to(datum/formula_magic_formula/formula)
 	..()
-	var/repeats = formula.tags["radius"] || 1
-	formula.radius += max(1, 2 ** (repeats - 1))
+	var/repeats = formula.tags["widen"] || 1
+	formula.tags["widen_amount"] = (formula.tags["widen_amount"] || 0) + formula_magic_widen_step(repeats)
 	formula.instability += max(0, repeats - 2)
+
+/datum/formula_magic_word/modifier/existence
+	id = "existence"
+	name = "Existence"
+	desc = "Keeps the triggered effect zone alive after the formula resolves. Each repeat adds ten seconds."
+	role = FORMULA_WORD_MODIFIER
+	mana_cost = 3
+	cast_time = 10
+	complexity = 2
+	tags = list("existence")
+	phrases = list("Mane.", "Esse tene.", "Vestigium vivat.")
+
+/datum/formula_magic_word/modifier/existence/apply_to(datum/formula_magic_formula/formula)
+	..()
+	var/repeats = formula.tags["existence"] || 1
+	formula.tags["existence_duration"] = repeats * 10 SECONDS
+
+/datum/formula_magic_word/modifier/recall
+	id = "recall"
+	name = "Recall"
+	desc = "After the initial resolution, randomly recalls struck tiles with short delays. Each word recalls up to three tiles; a widened area will not recall the same tile twice."
+	role = FORMULA_WORD_MODIFIER
+	mana_cost = 3
+	cast_time = 10
+	complexity = 3
+	instability = 1
+	tags = list("recall")
+	phrases = list("Revoca.", "Ictus redi.", "Memoria ferit.")
+
+/datum/formula_magic_word/modifier/shrapnel
+	id = "shrapnel"
+	name = "Shrapnel"
+	desc = "Splinters the resolved formula into stone fragments. Each word releases three shards, each carrying 40% formula power."
+	role = FORMULA_WORD_MODIFIER
+	mana_cost = 3
+	cast_time = 8
+	complexity = 3
+	tags = list("shrapnel")
+	phrases = list("Frange in spicula.", "Lapides sparge.", "Grana vulnera.")
 
 /datum/formula_magic_word/element/frost
 	id = "frost"
@@ -306,13 +365,13 @@
 /datum/formula_magic_word/post_effect/frostbite
 	id = "frostbite"
 	name = "Frostbite"
-	desc = "Adds escalating frost stacks and possible frost burst."
+	desc = "Adds escalating frost stacks, dampens fire, and can burst frozen targets."
 	school_id = FORMULA_SCHOOL_CRYOMANCY
 	role = FORMULA_WORD_ELEMENT
 	mana_cost = 2
 	cast_time = 6
 	complexity = 2
-	tags = list("frost_stack")
+	tags = list("frost_stack", "extinguish")
 	phrases = list("Morde gelu.", "Tertium frange.", "Nix in ossa.")
 
 /datum/formula_magic_word/element/lightning
@@ -352,17 +411,31 @@
 	..()
 	formula.power += 7
 
-/datum/formula_magic_word/post_effect/shrapnel
-	id = "shrapnel"
-	name = "Shrapnel"
-	desc = "Splinters impact into stone fragments."
+/datum/formula_magic_word/post_effect/immobilize
+	id = "immobilize"
+	name = "Immobilize"
+	desc = "Anchors struck targets in stone and can shape a stone wall when summoned."
 	school_id = FORMULA_SCHOOL_GEOMANCY
 	role = FORMULA_WORD_ELEMENT
 	mana_cost = 2
 	cast_time = 6
 	complexity = 2
-	tags = list("fragments")
-	phrases = list("Frange in spicula.", "Lapides sparge.", "Grana vulnera.")
+	tags = list("anchor_target")
+	phrases = list("Tene terra.", "Radices lapidis.", "Saxum ligat.")
+
+/datum/formula_magic_word/element/force
+	id = "force"
+	name = "Force"
+	desc = "Adds direct kinetic crushing force."
+	school_id = FORMULA_SCHOOL_KINESIS
+	cast_time = 7
+	complexity = 2
+	tags = list("damage_force")
+	phrases = list("Vis.", "Ictus animi.", "Contere.")
+
+/datum/formula_magic_word/element/force/apply_to(datum/formula_magic_formula/formula)
+	..()
+	formula.power += 8
 
 /datum/formula_magic_word/post_effect/repulse
 	id = "repulse"
@@ -397,6 +470,18 @@
 	unlock_level = 1
 	tags = list("pull")
 	phrases = list("Trahe.", "Ad centrum.", "Veni huc.")
+
+/datum/formula_magic_word/post_effect/cleanse
+	id = "cleanse"
+	name = "Cleanse"
+	desc = "Scours grime and debris from affected ground and objects."
+	school_id = FORMULA_SCHOOL_KINESIS
+	role = FORMULA_WORD_ELEMENT
+	mana_cost = 1
+	cast_time = 5
+	complexity = 1
+	tags = list("cleanse")
+	phrases = list("Purga.", "Mundus fiat.", "Sordes abi.")
 
 /datum/formula_magic_word/element/shift
 	id = "shift"
@@ -525,11 +610,77 @@
 	tags = list("nondetection")
 	phrases = list("Lateo.", "Signum taceat.", "Umbra mentis.")
 
+/datum/formula_magic_word/prebuilt/guidance
+	id = "prebuilt_guidance"
+	name = "Guidance"
+	desc = "Fixed augmentation formula. Sharpens a target's senses."
+	school_id = FORMULA_SCHOOL_AUGMENTATION
+	mana_cost = 4
+	cast_time = 18
+	complexity = 2
+	unlock_level = 1
+	tags = list("prebuilt_formula", "prebuilt_guidance")
+	phrases = list("Imagana.")
+	spoken_phrases = list("Imagana.", "Ducere.", "Oculus aperi.")
+
+/datum/formula_magic_word/prebuilt/surge
+	id = "prebuilt_surge"
+	name = "Surge"
+	desc = "Fixed augmentation formula. Hauls a target back from stun and exhaustion."
+	school_id = FORMULA_SCHOOL_AUGMENTATION
+	mana_cost = 8
+	cast_time = 16
+	complexity = 3
+	unlock_level = 2
+	tags = list("prebuilt_formula", "prebuilt_surge")
+	phrases = list("Imagana.")
+	spoken_phrases = list("Imagana.", "Impetus.", "Surge et sta.")
+
+/datum/formula_magic_word/prebuilt/precognition
+	id = "prebuilt_precognition"
+	name = "Precognition"
+	desc = "Fixed augmentation formula. Readies a target's next combat motions."
+	school_id = FORMULA_SCHOOL_AUGMENTATION
+	mana_cost = 6
+	cast_time = 20
+	complexity = 3
+	unlock_level = 3
+	tags = list("prebuilt_formula", "prebuilt_precognition")
+	phrases = list("Imagana.")
+	spoken_phrases = list("Imagana.", "Praevidere.", "Momentum redi.")
+
+/datum/formula_magic_word/prebuilt/ascension
+	id = "prebuilt_ascension"
+	name = "Ascension"
+	desc = "Fixed high augmentation formula. Channels every bodily attunement into another."
+	school_id = FORMULA_SCHOOL_AUGMENTATION
+	mana_cost = 16
+	cast_time = 40
+	complexity = 8
+	instability = 3
+	unlock_level = 6
+	tags = list("prebuilt_formula", "prebuilt_ascension")
+	phrases = list("Imagana.")
+	spoken_phrases = list("Imagana.", "Ascende.", "Ultra omnia.", "Corpus perfectum.", "Virtus plena.")
+
+/datum/formula_magic_word/prebuilt/read_omen
+	id = "prebuilt_read_omen"
+	name = "Read Omen"
+	desc = "Fixed general formula. Reads the current divine pressure on the land."
+	school_id = FORMULA_SCHOOL_GENERAL
+	mana_cost = 3
+	cast_time = 20
+	complexity = 2
+	unlock_level = 1
+	tags = list("prebuilt_formula", "prebuilt_read_omen")
+	phrases = list("Imagana.")
+	spoken_phrases = list("Imagana.", "Miror quid.", "Signum audi.")
+
 /datum/formula_magic_word/post_effect/mind
 	id = "mind"
 	name = "Mind"
-	desc = "Touches thought, memory, speech, and mental contact."
-	school_id = FORMULA_SCHOOL_AUGMENTATION
+	desc = "Touches thought, memory, speech, and mental contact. On a hostile target it confuses for two seconds per spoken word."
+	school_id = FORMULA_SCHOOL_GENERAL
 	role = FORMULA_WORD_ELEMENT
 	mana_cost = 2
 	complexity = 2
@@ -537,11 +688,37 @@
 	tags = list("mind")
 	phrases = list("Mens aperi.", "Cogitatio iunge.", "Vox intus.")
 
+/datum/formula_magic_word/prebuilt/message
+	id = "prebuilt_message"
+	name = "Message"
+	desc = "Fixed general formula. Sends a short private thought to the selected target."
+	school_id = FORMULA_SCHOOL_GENERAL
+	mana_cost = 3
+	cast_time = 14
+	complexity = 2
+	unlock_level = 1
+	tags = list("prebuilt_formula", "prebuilt_message")
+	phrases = list("Imagana.")
+	spoken_phrases = list("Imagana.", "Mens aperi.", "Vox intus.")
+
+/datum/formula_magic_word/prebuilt/mindlink
+	id = "prebuilt_mindlink"
+	name = "Mindlink"
+	desc = "Fixed general formula. Opens a brief two-way thought thread with the selected target."
+	school_id = FORMULA_SCHOOL_GENERAL
+	mana_cost = 5
+	cast_time = 22
+	complexity = 3
+	unlock_level = 2
+	tags = list("prebuilt_formula", "prebuilt_mindlink")
+	phrases = list("Imagana.")
+	spoken_phrases = list("Imagana.", "Cogitatio iunge.", "Duo corda audiant.")
+
 /datum/formula_magic_word/post_effect/silence
 	id = "silence"
 	name = "Silence"
 	desc = "Suppresses speech through mental pressure."
-	school_id = FORMULA_SCHOOL_AUGMENTATION
+	school_id = FORMULA_SCHOOL_CURSES
 	role = FORMULA_WORD_ELEMENT
 	mana_cost = 3
 	complexity = 2
@@ -565,7 +742,7 @@
 	id = "reduce_size"
 	name = "Diminish"
 	desc = "Draws the body inward and makes the target seem smaller."
-	school_id = FORMULA_SCHOOL_AUGMENTATION
+	school_id = FORMULA_SCHOOL_BIOMANCY
 	role = FORMULA_WORD_ELEMENT
 	mana_cost = 3
 	complexity = 2
@@ -657,29 +834,69 @@
 	tags = list("curse_blindness")
 	phrases = list("Caecitas.", "Lux moriatur.", "Oculus cinis.")
 
-/datum/formula_magic_word/post_effect/stumble
-	id = "stumble"
-	name = "Stumble"
-	desc = "Turns footing against the target."
-	school_id = FORMULA_SCHOOL_CURSES
-	role = FORMULA_WORD_ELEMENT
-	mana_cost = 2
-	complexity = 1
-	unlock_level = 1
-	tags = list("stumble")
-	phrases = list("Pes cadat.", "Gradus frange.", "Terra fallat.")
-
 /datum/formula_magic_word/post_effect/enlarge
 	id = "enlarge"
 	name = "Enlarge"
 	desc = "Bloats the target's presence and frame."
-	school_id = FORMULA_SCHOOL_CURSES
+	school_id = FORMULA_SCHOOL_BIOMANCY
 	role = FORMULA_WORD_ELEMENT
 	mana_cost = 3
 	complexity = 2
 	unlock_level = 2
 	tags = list("size_up")
 	phrases = list("Maior esto.", "Forma tumescat.", "Corpus crescat.")
+
+/datum/formula_magic_word/prebuilt/blood_rush
+	id = "prebuilt_blood_rush"
+	name = "Blood Rush"
+	desc = "Fixed biomantic formula. Drives blood into a brief surge of vigor."
+	school_id = FORMULA_SCHOOL_BIOMANCY
+	mana_cost = 5
+	cast_time = 14
+	complexity = 2
+	unlock_level = 1
+	tags = list("prebuilt_formula", "prebuilt_blood_rush")
+	phrases = list("Imagana.")
+	spoken_phrases = list("Imagana.", "Sanguis fervet.", "Corpus arde.")
+
+/datum/formula_magic_word/prebuilt/fortitude
+	id = "prebuilt_fortitude"
+	name = "Fortitude"
+	desc = "Fixed biomantic formula. Hardens the body against fatigue."
+	school_id = FORMULA_SCHOOL_BIOMANCY
+	mana_cost = 5
+	cast_time = 16
+	complexity = 2
+	unlock_level = 2
+	tags = list("prebuilt_formula", "prebuilt_fortitude")
+	phrases = list("Imagana.")
+	spoken_phrases = list("Imagana.", "Corpus firma.", "Pondus leve.")
+
+/datum/formula_magic_word/prebuilt/mirror_transform
+	id = "prebuilt_mirror_transform"
+	name = "Mirror Transform"
+	desc = "Fixed biomantic formula. Opens the body to mirror-wrought reshaping."
+	school_id = FORMULA_SCHOOL_BIOMANCY
+	mana_cost = 5
+	cast_time = 20
+	complexity = 2
+	unlock_level = 2
+	tags = list("prebuilt_formula", "prebuilt_mirror_transform")
+	phrases = list("Imagana.")
+	spoken_phrases = list("Imagana.", "Speculum carnis.", "Forma fluat.")
+
+/datum/formula_magic_word/prebuilt/airhead
+	id = "prebuilt_airhead"
+	name = "Airhead"
+	desc = "Fixed curse formula. Scatters focus and breaks arcyne guidance."
+	school_id = FORMULA_SCHOOL_CURSES
+	mana_cost = 4
+	cast_time = 16
+	complexity = 2
+	unlock_level = 1
+	tags = list("prebuilt_formula", "prebuilt_airhead")
+	phrases = list("Imagana.")
+	spoken_phrases = list("Imagana.", "Mens vacua.", "Ducere frange.")
 
 /datum/formula_magic_word/post_effect/reveal
 	id = "reveal"
@@ -696,7 +913,7 @@
 /datum/formula_magic_word/element/iron
 	id = "iron"
 	name = "Iron"
-	desc = "Shapes metal, tools, wards, or blades."
+	desc = "Shapes hard metal force, tools, and iron impact."
 	school_id = FORMULA_SCHOOL_ARTIFICE_WARDING
 	tags = list("metal")
 	phrases = list("Ferrum.", "Chalybs pare.", "Malleus somni.")
@@ -705,97 +922,277 @@
 	..()
 	formula.power += 6
 
-/datum/formula_magic_word/post_effect/blade
+/datum/formula_magic_word/element/blade
 	id = "blade"
 	name = "Blade"
-	desc = "Forms cutting metal as the payload or trap."
+	desc = "Plants a spinning arcyne blade in the affected zone."
 	school_id = FORMULA_SCHOOL_ARTIFICE_WARDING
 	role = FORMULA_WORD_ELEMENT
 	mana_cost = 2
 	complexity = 2
-	tags = list("cut", "weapon")
+	tags = list("blade_field")
 	phrases = list("Lamina.", "Acies aperi.", "Seca.")
 
-/datum/formula_magic_word/post_effect/ward
-	id = "ward"
-	name = "Ward"
-	desc = "Turns the formula into protection or a warding trigger."
-	school_id = FORMULA_SCHOOL_ARTIFICE_WARDING
-	role = FORMULA_WORD_ELEMENT
-	mana_cost = 2
-	complexity = 2
-	tags = list("ward")
-	phrases = list("Custodia.", "Tutela sta.", "Sigillum serva.")
-
-/datum/formula_magic_word/post_effect/armor
-	id = "armor"
-	name = "Armor"
-	desc = "Shapes a protective metal shell."
-	school_id = FORMULA_SCHOOL_ARTIFICE_WARDING
-	role = FORMULA_WORD_ELEMENT
-	mana_cost = 2
-	complexity = 2
-	unlock_level = 2
-	tags = list("armor")
-	phrases = list("Lorica.", "Ferrum protegat.", "Carapax sta.")
-
-/datum/formula_magic_word/post_effect/mending
+/datum/formula_magic_word/prebuilt/mending
 	id = "mending"
 	name = "Mending"
-	desc = "Repairs shaped matter and artificial bodies."
+	desc = "Fixed artifice formula. Repairs shaped matter and artificial bodies."
+	school_id = FORMULA_SCHOOL_ARTIFICE_WARDING
+	role = FORMULA_WORD_ELEMENT
+	mana_cost = 4
+	cast_time = 18
+	complexity = 3
+	unlock_level = 2
+	tags = list("prebuilt_formula", "prebuilt_mending")
+	phrases = list("Imagana.")
+	spoken_phrases = list("Imagana.", "Reficio.", "Fractum iunge.", "Opera sana.")
+
+/datum/formula_magic_word/prebuilt/lesser_knock
+	id = "prebuilt_lesser_knock"
+	name = "Knock"
+	desc = "Fixed artifice formula. Conjures a spectral lockpick."
 	school_id = FORMULA_SCHOOL_ARTIFICE_WARDING
 	role = FORMULA_WORD_ELEMENT
 	mana_cost = 3
+	cast_time = 10
 	complexity = 2
-	unlock_level = 2
-	tags = list("repair")
-	phrases = list("Reficio.", "Fractum iunge.", "Opera sana.")
+	unlock_level = 1
+	tags = list("prebuilt_formula", "prebuilt_lesser_knock")
+	phrases = list("Imagana.")
+	spoken_phrases = list("Imagana.", "Parvus pulso.", "Ferrum pateat.")
 
-/datum/formula_magic_word/element/life
-	id = "life"
-	name = "Life"
-	desc = "Animates living patterns and familiar spirits."
-	school_id = FORMULA_SCHOOL_LIFE
+/datum/formula_magic_word/prebuilt/conjure_spectacles
+	id = "prebuilt_conjure_spectacles"
+	name = "Conjure Spectacles"
+	desc = "Fixed artifice formula. Conjures a harmless pair of spectacles."
+	school_id = FORMULA_SCHOOL_ARTIFICE_WARDING
+	role = FORMULA_WORD_ELEMENT
+	mana_cost = 2
+	cast_time = 10
+	complexity = 1
+	unlock_level = 1
+	tags = list("prebuilt_formula", "prebuilt_conjure_spectacles")
+	phrases = list("Imagana.")
+	spoken_phrases = list("Imagana.", "Caeca sum.", "Vitrum pare.")
+
+/datum/formula_magic_word/prebuilt/great_shelter
+	id = "prebuilt_great_shelter"
+	name = "Great Shelter"
+	desc = "Fixed artifice formula. Raises a short-lived arcyne shelter wall around the caster."
+	school_id = FORMULA_SCHOOL_ARTIFICE_WARDING
+	role = FORMULA_WORD_ELEMENT
+	mana_cost = 7
+	cast_time = 28
+	complexity = 5
+	unlock_level = 3
+	required_school_points = list(FORMULA_SCHOOL_GEOMANCY = 1)
+	tags = list("prebuilt_formula", "prebuilt_great_shelter")
+	phrases = list("Imagana.")
+	spoken_phrases = list("Imagana.", "Domus parva.", "Saxum protegat.", "Tectum sta.")
+
+/datum/formula_magic_word/prebuilt/form_blade
+	id = "prebuilt_form_blade"
+	name = "Form Blade"
+	desc = "Fixed artifice formula. Conjures a chosen arcyne weapon."
+	school_id = FORMULA_SCHOOL_ARTIFICE_WARDING
+	role = FORMULA_WORD_ELEMENT
+	mana_cost = 5
+	cast_time = 18
+	complexity = 3
+	unlock_level = 2
+	tags = list("prebuilt_formula", "prebuilt_form_blade")
+	phrases = list("Imagana.")
+	spoken_phrases = list("Imagana.", "Forma ferri.", "Manus armetur.")
+
+/datum/formula_magic_word/prebuilt/bind_armament
+	id = "prebuilt_bind_armament"
+	name = "Bind Armament"
+	desc = "Fixed artifice formula. Binds a held weapon to Arcyne Armament, or releases such bonds with an empty hand."
+	school_id = FORMULA_SCHOOL_ARTIFICE_WARDING
+	role = FORMULA_WORD_ELEMENT
+	mana_cost = 3
+	cast_time = 12
+	complexity = 2
+	unlock_level = 1
+	tags = list("prebuilt_formula", "prebuilt_bind_armament")
+	phrases = list("Imagana.")
+	spoken_phrases = list("Imagana.", "Vinculum ferri.", "Arma pare.")
+
+/datum/formula_magic_word/prebuilt/summon_instrument
+	id = "prebuilt_summon_instrument"
+	name = "Summon Instrument"
+	desc = "Fixed artifice formula. Conjures a chosen musical instrument."
+	school_id = FORMULA_SCHOOL_ARTIFICE_WARDING
+	role = FORMULA_WORD_ELEMENT
+	mana_cost = 3
+	cast_time = 14
+	complexity = 2
+	unlock_level = 1
+	tags = list("prebuilt_formula", "prebuilt_summon_instrument")
+	phrases = list("Imagana.")
+	spoken_phrases = list("Imagana.", "Tempus spectaculi.", "Carmen forma.")
+
+/datum/formula_magic_word/element/creation
+	id = "creation"
+	name = "Creation"
+	desc = "Animates short-lived predatory plant matter for ten seconds per spoken word."
+	school_id = FORMULA_SCHOOL_BIOMANCY
 	role = FORMULA_WORD_ELEMENT
 	mana_cost = 3
 	cast_time = 10
 	complexity = 2
 	unlock_level = 1
-	tags = list("life")
+	tags = list("creation")
 	phrases = list("Vita.", "Spiritus surgat.", "Anima tene.")
 
-/datum/formula_magic_word/element/death
-	id = "death"
-	name = "Death"
-	desc = "Shapes bones, deadite echoes, and lifeless servants."
-	school_id = FORMULA_SCHOOL_LIFE
+/datum/formula_magic_word/element/bone
+	id = "bone"
+	name = "Bone"
+	desc = "Hurls a bone-hard arcyne impact."
+	school_id = FORMULA_SCHOOL_NECROMANCY
 	role = FORMULA_WORD_ELEMENT
 	mana_cost = 3
 	cast_time = 10
 	complexity = 2
 	unlock_level = 1
-	tags = list("death")
+	tags = list("bone")
 	phrases = list("Mors.", "Ossa surgant.", "Cinis pare.")
+
+/datum/formula_magic_word/prebuilt/familiar
+	id = "prebuilt_familiar"
+	name = "Familiar"
+	desc = "Fixed biomancy formula. Calls a fae familiar shape."
+	school_id = FORMULA_SCHOOL_BIOMANCY
+	role = FORMULA_WORD_ELEMENT
+	mana_cost = 4
+	cast_time = 18
+	complexity = 3
+	unlock_level = 1
+	tags = list("prebuilt_formula", "prebuilt_familiar")
+	phrases = list("Imagana.")
+	spoken_phrases = list("Imagana.", "Vita minor.", "Spiritus comes.")
+
+/datum/formula_magic_word/prebuilt/elemental_familiar
+	id = "prebuilt_elemental_familiar"
+	name = "Elemental Familiar"
+	desc = "Fixed biomancy formula. Calls an elemental familiar shape."
+	school_id = FORMULA_SCHOOL_BIOMANCY
+	role = FORMULA_WORD_ELEMENT
+	mana_cost = 5
+	cast_time = 20
+	complexity = 3
+	unlock_level = 2
+	tags = list("prebuilt_formula", "prebuilt_elemental_familiar")
+	phrases = list("Imagana.")
+	spoken_phrases = list("Imagana.", "Vita elementi.", "Spiritus comes.")
+
+/datum/formula_magic_word/prebuilt/raise_deadite
+	id = "prebuilt_raise_deadite"
+	name = "Raise Deadite"
+	desc = "Fixed necromancy formula. Calls a weak deadite guard."
+	school_id = FORMULA_SCHOOL_NECROMANCY
+	role = FORMULA_WORD_ELEMENT
+	mana_cost = 6
+	cast_time = 30
+	complexity = 4
+	unlock_level = 1
+	tags = list("prebuilt_formula", "prebuilt_raise_deadite")
+	phrases = list("Imagana.")
+	spoken_phrases = list("Imagana.", "Ossa surgant.", "Servus mortis.")
+
+/datum/formula_magic_word/prebuilt/conjure_undead
+	id = "prebuilt_conjure_undead"
+	name = "Conjure Undead"
+	desc = "Fixed necromancy formula. Calls a sturdier undead servant."
+	school_id = FORMULA_SCHOOL_NECROMANCY
+	role = FORMULA_WORD_ELEMENT
+	mana_cost = 8
+	cast_time = 36
+	complexity = 5
+	unlock_level = 2
+	tags = list("prebuilt_formula", "prebuilt_conjure_undead")
+	phrases = list("Imagana.")
+	spoken_phrases = list("Imagana.", "Manus mortua.", "Custos surge.")
+
+/datum/formula_magic_word/prebuilt/raise_skeleton
+	id = "prebuilt_raise_skeleton"
+	name = "Raise to Skeleton"
+	desc = "Fixed necromancy formula. Raises a skeleton servant."
+	school_id = FORMULA_SCHOOL_NECROMANCY
+	role = FORMULA_WORD_ELEMENT
+	mana_cost = 9
+	cast_time = 40
+	complexity = 6
+	unlock_level = 3
+	tags = list("prebuilt_formula", "prebuilt_raise_skeleton")
+	phrases = list("Imagana.")
+	spoken_phrases = list("Imagana.", "Corpus vacuum.", "Miles ossium.")
+
+/datum/formula_magic_word/element/time
+	id = "time"
+	name = "Time"
+	desc = "Binds the formula to Origin timeflow. By itself it adds light temporal stress."
+	school_id = FORMULA_SCHOOL_CHRONOMANCY
+	role = FORMULA_WORD_ELEMENT
+	mana_cost = 3
+	cast_time = 10
+	complexity = 2
+	unlock_level = 1
+	tags = list("time")
+	phrases = list("Tempus.", "Origo temporis.", "Momentum ligat.")
+
+/datum/formula_magic_word/element/time/apply_to(datum/formula_magic_formula/formula)
+	..()
+	formula.power += 4
+
+/datum/formula_magic_word/post_effect/restoration
+	id = "restoration"
+	name = "Restoration"
+	desc = "Recalls an earlier bodily state, removing embedded objects or bleeding before restoring damage."
+	school_id = FORMULA_SCHOOL_CHRONOMANCY
+	role = FORMULA_WORD_ELEMENT
+	mana_cost = 25
+	cast_time = 16
+	complexity = 4
+	unlock_level = 2
+	tags = list("time", "temporal_restore", "chronomancy_full")
+	phrases = list("Memoria corporis.", "Redi integer.", "Forma prior.")
+
+/datum/formula_magic_word/prebuilt/reversion
+	id = "reversion"
+	name = "Reversion"
+	desc = "Fixed chronomancy formula. Marks affected bodies with a brief temporal anchor; on injury, the mark snaps them back toward the stored moment."
+	school_id = FORMULA_SCHOOL_CHRONOMANCY
+	mana_cost = 6
+	cast_time = 18
+	complexity = 5
+	instability = 1
+	unlock_level = 3
+	tags = list("prebuilt_formula", "prebuilt_reversion", "chronomancy_full")
+	phrases = list("Imagana.")
+	spoken_phrases = list("Imagana.", "Nodus originis.", "Tempus serva.", "Reditus paratus.")
 
 /datum/formula_magic_word/link/sequence
 	id = "sequence"
 	name = "Sequence"
-	desc = "Links multiple forms in order, such as Orb + Arrow."
+	desc = "Links formula segments in order. The next segment starts after the previous one resolves."
 	role = FORMULA_WORD_LINK
 	is_stop_word = TRUE
-	mana_cost = 1
-	complexity = 2
+	mana_cost = 5
+	cast_time = 18
+	complexity = 4
+	instability = 2
 	tags = list("sequence")
 	phrases = list("Deinde.", "Post hoc.", "Vinculum sequitur.")
 
 /datum/formula_magic_word/link/sequence/apply_to(datum/formula_magic_formula/formula)
 	..()
-	formula.projectile_count += max(0, length(formula.forms) - 1)
+	return
 
 /datum/formula_magic_word/stabilizer/anchor
 	id = "anchor"
 	name = "Anchor"
-	desc = "Stabilizes long formulae at the cost of time and mana."
+	desc = "Stabilizes long formulae at the cost of time and mana, reducing interruption risk."
 	role = FORMULA_WORD_STABILIZER
 	is_stop_word = TRUE
 	mana_cost = 2
@@ -821,17 +1218,7 @@
 
 /datum/formula_magic_word/modifier/efficient/apply_to(datum/formula_magic_formula/formula)
 	..()
-	formula.mana_cost = max(1, round(formula.mana_cost * 0.75))
-
-/datum/formula_magic_word/modifier/trigger_child
-	id = "trigger_child"
-	name = "Triggered Chain"
-	desc = "Marks the formula as able to trigger another prepared formula at impact in future scroll work."
-	role = FORMULA_WORD_MODIFIER
-	mana_cost = 2
-	complexity = 2
-	tags = list("trigger_child")
-	phrases = list("Post ictum.", "Altera porta.", "Ex vulnere sequitur.")
+	return
 
 /datum/formula_magic_word/modifier/ricochet
 	id = "ricochet"

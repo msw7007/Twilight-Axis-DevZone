@@ -19,6 +19,7 @@
 #define FORMULA_FORM_NOVA "nova"
 #define FORMULA_FORM_TOUCH "touch"
 
+#define FORMULA_SCHOOL_GENERAL "general_magic"
 #define FORMULA_SCHOOL_PYROMANCY "pyromancy"
 #define FORMULA_SCHOOL_CRYOMANCY "cryomancy"
 #define FORMULA_SCHOOL_FULGURMANCY "fulgurmancy"
@@ -28,12 +29,17 @@
 #define FORMULA_SCHOOL_AUGMENTATION "augmentation"
 #define FORMULA_SCHOOL_CURSES "curses"
 #define FORMULA_SCHOOL_ARTIFICE_WARDING "artifice_warding"
-#define FORMULA_SCHOOL_LIFE "life"
+#define FORMULA_SCHOOL_BIOMANCY "biomancy"
+#define FORMULA_SCHOOL_NECROMANCY "necromancy"
+#define FORMULA_SCHOOL_CHRONOMANCY "chronomancy"
 
 #define FORMULA_MAJOR_POINTS 8
 #define FORMULA_MINOR_POINTS 3
+#define FORMULA_UTILITY_POINTS 1
 #define FORMULA_ARCANE_POINT_FACTOR 5
 
 #define FORMULA_PRESET_LIMIT 12
 #define FORMULA_DEFAULT_WORD_DELAY 10
 #define FORMULA_SPELL_ACTION_LIMIT 8
+
+#define TRAIT_REVERSE_GUIDANCE "reverse_guidance"
