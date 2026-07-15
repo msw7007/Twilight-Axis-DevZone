@@ -114,6 +114,11 @@ export const FormulaSpellcraft = () => {
       committed_school_points: {},
       committed_form_points: {},
     };
+  progression.school_points = progression.school_points || {};
+  progression.form_points = progression.form_points || {};
+  progression.committed_school_points = progression.committed_school_points || {};
+  progression.committed_form_points = progression.committed_form_points || {};
+  progression.school_access = progression.school_access || {};
   const words = asArray<Word>(data.words);
   const draft_words = asArray<string>(data.draft_words);
   const draft_parts = asArray<DraftPart>(data.draft_parts);
@@ -136,28 +141,34 @@ export const FormulaSpellcraft = () => {
   const schoolEntries = Object.entries(school_names).filter(([id]) => id !== 'arcane' && school_access[id] !== false);
   const activeSchool = selectedSchool && schoolEntries.some(([id]) => id === selectedSchool) ? selectedSchool : schoolEntries[0]?.[0] || '';
   const isPrebuilt = (word: Word) => word.tags?.includes('prebuilt_formula');
-  const formWords = words.filter((word) => word.role === 'form' && !isPrebuilt(word));
+  const isFreeModifier = (word: Word) => word.role === 'modifier';
+  const formWords = words.filter((word) => word.role === 'form' && !word.school_id && !isPrebuilt(word));
   const schoolWords = words.filter((word) => word.school_id === activeSchool && word.role !== 'form');
 
   const canLearn = (word: Word) => {
+    if (isFreeModifier(word)) {
+      return true;
+    }
     if (isPrebuilt(word)) {
       return !!word.school_id && (progression.school_points[word.school_id] || 0) >= word.unlock_level;
     }
-    if (word.role === 'form') {
+    if (!word.school_id && word.role === 'form') {
       return (progression.form_points[word.id] || 0) >= (form_unlocks[word.id] || 1);
     }
     return !!word.school_id && (progression.school_points[word.school_id] || 0) >= word.unlock_level;
   };
 
   const canUseCommitted = (word: Word) => {
+    if (isFreeModifier(word)) {
+      return true;
+    }
     if (!progression.committed || progression.dirty) return false;
     if (isPrebuilt(word)) {
       return (known_word_counts[word.id] || 0) > 0;
     }
-    if (word.role === 'form') {
+    if (!word.school_id && word.role === 'form') {
       return ((progression.committed_form_points || {})[word.id] || 0) >= (form_unlocks[word.id] || 1);
     }
-    if (!word.school_id) return true;
     return (known_word_counts[word.id] || 0) > 0;
   };
 
@@ -324,14 +335,20 @@ export const FormulaSpellcraft = () => {
                 <div style={titleStyle}>Formula Sequence</div>
                 <div style={sequenceStyle}>
                   {draft_parts.map((part, index) => (
-                    <button key={`${part.name}-${index}-${part.indexes.join('-')}`} type="button" onClick={() => act('remove_part', { indexes: part.indexes })} style={tokenStyle}>
-                      {part.name}
-                      {part.words.length > 1 && (
-                        <div style={tokenSubStyle}>
-                          {part.words.map((wordId) => byId.get(wordId)?.name || wordId).join(' + ')}
-                        </div>
-                      )}
-                    </button>
+                    <div key={`${part.name}-${index}-${part.indexes.join('-')}`} style={partGroupStyle}>
+                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
+                        {part.words.map((wordId, wordIndex) => (
+                          <button
+                            key={`${wordId}-${part.indexes[wordIndex]}`}
+                            type="button"
+                            onClick={() => act('remove_word', { index: part.indexes[wordIndex] })}
+                            style={wordTokenStyle}
+                          >
+                            {byId.get(wordId)?.name || wordId}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
                   ))}
                   {!draft_words.length && <div style={mutedStyle}>Choose words from the left.</div>}
                 </div>
@@ -508,7 +525,6 @@ const WordRow = (props: { word: Word; knownCount: number; available: boolean; co
       </div>
     </div>
     <div style={descStyle}>{props.word.desc}</div>
-    <WordCombos word={props.word} />
     <div style={tagLineStyle}>{props.word.phrases?.[0] || ''}</div>
   </div>
 );
@@ -525,24 +541,8 @@ const WordPicker = (props: { word: Word; knownCount: number; schoolNames: Record
       </div>
     </div>
     <div style={descStyle}>{props.word.desc}</div>
-    <WordCombos word={props.word} compact />
   </button>
 );
-
-const WordCombos = (props: { word: Word; compact?: boolean }) => {
-  const combos = wordCombos(props.word);
-  if (!combos.length) {
-    return null;
-  }
-  return (
-    <div style={{ marginTop: '6px', display: 'flex', flexDirection: 'column', gap: '3px' } as const}>
-      {!props.compact && <div style={comboTitleStyle}>Possible combos</div>}
-      {combos.map((combo) => (
-        <div key={combo} style={comboLineStyle}>{combo}</div>
-      ))}
-    </div>
-  );
-};
 
 const Stepper = (props: { canMinus: boolean; canPlus: boolean; onMinus: () => void; onPlus: () => void }) => (
   <div style={{ display: 'flex', gap: '6px' }}>
@@ -576,8 +576,8 @@ const descStyle = { color: '#c5d2e8', fontSize: '12px', marginTop: '4px' } as co
 const tagLineStyle = { color: '#7f8ca3', fontSize: '11px', marginTop: '4px' } as const;
 const wordListStyle = { marginTop: '10px', display: 'flex', flexDirection: 'column', gap: '6px' } as const;
 const sequenceStyle = { display: 'flex', flexWrap: 'wrap', gap: '8px', alignItems: 'center', marginTop: '8px' } as const;
-const tokenStyle = { minWidth: '84px', minHeight: '44px', background: '#171d27', color: '#f1f3f7', border: '1px solid #4f6f9f', borderRadius: '4px', fontWeight: 800 } as const;
-const tokenSubStyle = { color: '#9fb1ce', fontSize: '10px', marginTop: '4px', fontWeight: 500 } as const;
+const partGroupStyle = { minWidth: '110px', background: '#111722', color: '#f1f3f7', border: '1px solid #4f6f9f', borderRadius: '4px', padding: '6px' } as const;
+const wordTokenStyle = { minWidth: '64px', minHeight: '30px', background: '#171d27', color: '#f1f3f7', border: '1px solid #34445e', borderRadius: '4px', fontWeight: 800, cursor: 'pointer' } as const;
 const selectStyle = { width: '100%', marginTop: '8px', background: '#171d27', color: '#dce6f5', border: '1px solid #394455', padding: '6px' } as const;
 const inputStyle = { flex: 1, background: '#171d27', color: '#dce6f5', border: '1px solid #394455', padding: '6px' } as const;
 const textareaStyle = { width: '100%', minHeight: '92px', marginTop: '8px', background: '#0f131a', color: '#dce6f5', border: '1px solid #394455', padding: '6px', resize: 'vertical' as const, fontFamily: 'monospace', fontSize: '11px' } as const;
@@ -618,9 +618,6 @@ const schoolTabStyle = (active: boolean) => ({
   cursor: 'pointer',
 } as const);
 
-const comboTitleStyle = { color: '#8fa6d8', fontSize: '11px', fontWeight: 800, marginTop: '2px' } as const;
-const comboLineStyle = { color: '#d6dfef', fontSize: '11px', paddingLeft: '6px', borderLeft: '2px solid #34445e' } as const;
-
 const schoolDescription = (schoolId: string) => {
   const descriptions: Record<string, string> = {
     general_magic: 'Neuromancy holds mind-work and broad utility: omen reading, mental messages, mindlinks, and the Mind effect. Mind confuses hostile targets for two seconds per spoken word.',
@@ -638,57 +635,6 @@ const schoolDescription = (schoolId: string) => {
     chronomancy: 'Chronomancy is restricted Origin magic.',
   };
   return descriptions[schoolId] || 'A formula school. Invest points to unlock words, then save knowledge to make them usable.';
-};
-
-const wordCombos = (word: Word) => {
-  const tags = word.tags || [];
-  const combos: string[] = [];
-  const add = (line: string) => combos.push(line);
-  if (word.id === 'fire') {
-    add('Summon + Fire: temporary campfire.');
-    add('Summon + Creation + Fire: fire primordial.');
-    add('Orb + Fire: basic fireball.');
-  }
-  if (word.id === 'frost') {
-    add('Summon + Frost: temporary chill on a food container.');
-    add('Summon + Creation + Frost: water primordial.');
-    add('Summon + Frost + Frostbite: frozen mist zone.');
-  }
-  if (word.id === 'lightning') {
-    add('Summon + Lightning: formula light.');
-    add('Summon + Creation + Lightning: air primordial.');
-    add('Moment + Lightning + Discharge.');
-  }
-  if (word.id === 'stone') {
-    add('Summon + Stone: formula brick, one per Stone word.');
-    add('Creation + Stone: Ratmouse, large rats in affected tiles.');
-  }
-  if (word.id === 'immobilize') {
-    add('Summon + Dirt: temporary muddy ground patch.');
-    add('Summon + Dirt + Existence: earthen wall, 150 integrity + 50 per Existence word.');
-  }
-  if (word.id === 'creation') {
-    add('Creation + Stone: Ratmouse.');
-    add('Summon + Creation + Fire/Frost/Lightning: matching primordial.');
-  }
-  if (word.id === 'iron') {
-    add('Aura + Iron: protective iron ring.');
-    add('Cloak + Iron: dragon-hide protection.');
-  }
-  if (word.id === 'mind') {
-    add('Moment + Mind: mind message style target contact.');
-    add('Aura + Mind + Existence: mindlink style connection.');
-    add('On hostile hit: confusion for two seconds per Mind word.');
-  }
-  if (word.id === 'prebuilt_teleport_rune') {
-    add('Creates a permanent displacement rune.');
-    add('Limit: Arcane skill + 1 active runes created by that mage.');
-    add('Examining a rune remembers it; clicking another rune moves nearby bodies to the remembered rune.');
-  }
-  if (tags.includes('ignite')) add('Summon + Burning: brief burning tile.');
-  if (tags.includes('frost_stack')) add('Summon + Frostbite: icy tiles.');
-  if (tags.includes('electrocute')) add('Summon + Discharge: smoke/discharge mark.');
-  return combos;
 };
 
 function asArray<T>(value: T[] | Record<string, T> | undefined): T[] {

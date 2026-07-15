@@ -1,3 +1,6 @@
+#if 0
+// OLD FORMULA MAGIC REFERENCE. DO NOT EXECUTE.
+// Full rewrite starts below this reference block. Port old behavior only by explicit request.
 /datum/mind/proc/perform_formula_magic_cast(mob/living/carbon/human/caster, list/word_ids, atom/cast_on, speak_words = TRUE, atom/guidance_start)
 	if(!caster || !length(word_ids))
 		return FALSE
@@ -2825,3 +2828,264 @@
 	. = ..()
 	if(isliving(AM))
 		trap_effect(AM)
+
+#endif
+
+
+/datum/mind/proc/perform_formula_magic_cast(mob/living/carbon/human/caster, list/word_ids, atom/cast_on, speak_words = TRUE, atom/guidance_start)
+	if(!caster)
+		return FALSE
+	var/datum/formula_magic_formula/formula = build_formula_magic_formula(word_ids)
+	if(!formula || !validate_formula_magic_formula(formula, TRUE))
+		qdel(formula)
+		return FALSE
+	var/datum/formula_magic_context/context = new
+	context.caster = caster
+	context.cast_on = cast_on
+	context.source_turf = get_turf(caster)
+	context.target_turf = get_turf(cast_on) || context.source_turf
+	var/resolved = FALSE
+	for(var/datum/formula_magic_part/part in formula.parts)
+		if(part.execute(context))
+			resolved = TRUE
+	qdel(context)
+	qdel(formula)
+	return resolved
+
+/proc/formula_magic_execute_orb_part(datum/formula_magic_context/context, datum/formula_magic_part/part)
+	if(!context?.caster || !part)
+		return FALSE
+	var/turf/source = get_turf(context.caster)
+	var/turf/target = context.target_turf || get_ranged_target_turf(context.caster, context.caster.dir, part.range)
+	if(!target)
+		target = get_step(source, context.caster.dir)
+	if(!target)
+		target = source
+	var/projectiles_to_fire = max(1, part.projectile_count || 1)
+	var/spread_step = projectiles_to_fire > 1 ? 12 : 0
+	var/start_spread = -round((projectiles_to_fire - 1) * spread_step / 2)
+	for(var/i in 1 to projectiles_to_fire)
+		var/obj/projectile/magic/formula_magic_orb/bolt = new(source)
+		bolt.firer = context.caster
+		bolt.fired_from = source
+		bolt.def_zone = context.caster.zone_selected
+		bolt.damage = max(1, round(part.power / projectiles_to_fire))
+		bolt.damage_type = part.impact_damage_type
+		bolt.flag = part.impact_flag
+		bolt.woundclass = part.impact_woundclass
+		bolt.intdamfactor = part.impact_intdamfactor
+		bolt.spell_impact_color = part.impact_color
+		bolt.arcane_radius = max(0, part.radius || 0)
+		bolt.chain_remaining = max(0, part.tags["chain"] || 0)
+		bolt.ricochet_remaining = max(0, part.tags["ricochet"] || 0)
+		bolt.pierce_remaining = max(0, part.tags["pierce"] || 0)
+		bolt.existence_repeats = max(0, part.tags["existence"] || 0)
+		bolt.shrapnel_remaining = max(0, part.tags["shrapnel"] || 0)
+		bolt.chain_visited = list()
+		bolt.range = max(1, min(part.range, 14))
+		bolt.max_range = bolt.range
+		bolt.preparePixelProjectile(target, context.caster, null, start_spread + ((i - 1) * spread_step))
+		bolt.fire()
+	context.caster.visible_message(span_notice("[context.caster] releases [projectiles_to_fire] arcyne orb[projectiles_to_fire == 1 ? "" : "s"]."))
+	return TRUE
+
+/proc/formula_magic_fire_orb_followup(mob/living/carbon/human/caster, turf/start, atom/target, power, radius, chain_remaining, ricochet_remaining, pierce_remaining, existence_repeats, shrapnel_remaining, damage_type, damage_flag, woundclass, intdamfactor, impact_color, list/chain_visited, forced_angle = null)
+	if(!caster || !start)
+		return FALSE
+	var/obj/projectile/magic/formula_magic_orb/bolt = new(start)
+	bolt.firer = caster
+	bolt.fired_from = start
+	bolt.def_zone = caster.zone_selected
+	bolt.damage = max(1, power || 1)
+	bolt.damage_type = damage_type || BRUTE
+	bolt.flag = damage_flag || "blunt"
+	bolt.woundclass = woundclass || BCLASS_BLUNT
+	bolt.intdamfactor = intdamfactor || BLUNT_DEFAULT_INT_DAMAGEFACTOR
+	bolt.spell_impact_color = impact_color || "#B96DFF"
+	bolt.arcane_radius = max(0, radius || 0)
+	bolt.chain_remaining = max(0, chain_remaining || 0)
+	bolt.ricochet_remaining = max(0, ricochet_remaining || 0)
+	bolt.pierce_remaining = max(0, pierce_remaining || 0)
+	bolt.existence_repeats = max(0, existence_repeats || 0)
+	bolt.shrapnel_remaining = max(0, shrapnel_remaining || 0)
+	bolt.chain_visited = chain_visited?.Copy() || list()
+	bolt.range = 7
+	bolt.max_range = 7
+	if(target)
+		bolt.preparePixelProjectile(target, start)
+	else
+		var/turf/angle_target = get_ranged_target_turf(start, angle2dir(forced_angle), bolt.range)
+		bolt.preparePixelProjectile(angle_target || start, start)
+		bolt.setAngle(forced_angle)
+	bolt.fire()
+	return TRUE
+
+/proc/formula_magic_fire_orb_shrapnel(mob/living/carbon/human/caster, turf/start, power, damage_type, damage_flag, woundclass, intdamfactor, impact_color, shrapnel_count)
+	if(!caster || !start)
+		return FALSE
+	var/count = max(0, shrapnel_count || 0)
+	if(count <= 0)
+		return FALSE
+	for(var/i in 1 to count)
+		formula_magic_fire_orb_followup(caster, start, null, power, 0, 0, 0, 0, 0, 0, damage_type, damage_flag, woundclass, intdamfactor, impact_color, list(), rand(0, 359))
+	return TRUE
+
+/proc/formula_magic_apply_payload_hit(mob/living/target, mob/living/carbon/human/caster, amount, damage_type = BRUTE, damage_flag = "blunt", woundclass = BCLASS_BLUNT, intdamfactor = BLUNT_DEFAULT_INT_DAMAGEFACTOR)
+	if(!target || amount <= 0)
+		return FALSE
+	var/def_zone = caster?.zone_selected || BODY_ZONE_CHEST
+	var/armor = target.run_armor_check(def_zone, damage_flag || "blunt", "", "", armor_penetration = PEN_NONE, damage = amount, blade_dulling = woundclass || BCLASS_BLUNT, intdamfactor = intdamfactor || BLUNT_DEFAULT_INT_DAMAGEFACTOR)
+	return target.apply_damage(amount, damage_type || BRUTE, def_zone, armor)
+
+/proc/formula_magic_apply_orb_impact(mob/living/carbon/human/caster, turf/impact, atom/direct_target, power, radius, damage_type = BRUTE, damage_flag = "blunt", woundclass = BCLASS_BLUNT, intdamfactor = BLUNT_DEFAULT_INT_DAMAGEFACTOR, impact_color = "#B96DFF")
+	if(!impact)
+		return FALSE
+	var/effective_radius = max(0, min(radius || 0, 8))
+	if(!effective_radius)
+		return TRUE
+	for(var/turf/T in range(effective_radius, impact))
+		new /obj/effect/temp_visual/spell_impact(T, impact_color || "#B96DFF", SPELL_IMPACT_LOW)
+		for(var/mob/living/L in T)
+			if(L == caster || L == direct_target)
+				continue
+			formula_magic_apply_payload_hit(L, caster, max(1, power || 1), damage_type, damage_flag, woundclass, intdamfactor)
+	return TRUE
+
+/proc/formula_magic_impact_turfs(turf/impact, radius)
+	var/list/result = list()
+	if(!impact)
+		return result
+	var/effective_radius = max(0, min(radius || 0, 8))
+	for(var/turf/T in range(effective_radius, impact))
+		result += T
+	return result
+
+/proc/formula_magic_repeat_instant_impact(mob/living/carbon/human/caster, turf/impact, power, radius, damage_type = BRUTE, damage_flag = "blunt", woundclass = BCLASS_BLUNT, intdamfactor = BLUNT_DEFAULT_INT_DAMAGEFACTOR, impact_color = "#B96DFF")
+	if(!impact)
+		return FALSE
+	var/effective_radius = max(0, min(radius || 0, 8))
+	for(var/turf/T in range(effective_radius, impact))
+		new /obj/effect/temp_visual/spell_impact(T, impact_color || "#B96DFF", SPELL_IMPACT_LOW)
+		for(var/mob/living/L in T)
+			if(L == caster)
+				continue
+			formula_magic_apply_payload_hit(L, caster, max(1, power || 1), damage_type, damage_flag, woundclass, intdamfactor)
+	return TRUE
+
+/proc/formula_magic_schedule_instant_existence(mob/living/carbon/human/caster, list/affected_turfs, power, repeats, damage_type = BRUTE, damage_flag = "blunt", woundclass = BCLASS_BLUNT, intdamfactor = BLUNT_DEFAULT_INT_DAMAGEFACTOR, impact_color = "#B96DFF")
+	if(!length(affected_turfs) || repeats <= 0)
+		return FALSE
+	var/list/pool = affected_turfs.Copy()
+	var/max_echoes = min(length(pool), max(0, repeats || 0) * 3)
+	for(var/i in 1 to max_echoes)
+		var/turf/selected = pick(pool)
+		pool -= selected
+		addtimer(CALLBACK(GLOBAL_PROC, GLOBAL_PROC_REF(formula_magic_repeat_instant_impact), caster, selected, power, 0, damage_type, damage_flag, woundclass, intdamfactor, impact_color), 2 SECONDS + ((i - 1) * 0.5 SECONDS))
+	return TRUE
+
+/proc/formula_magic_nearest_chain_target(mob/living/carbon/human/caster, turf/source, list/excluded)
+	if(!source)
+		return null
+	if(!excluded)
+		excluded = list()
+	var/mob/living/next_target
+	var/best_distance = 999
+	for(var/mob/living/L in view(7, source))
+		if(L == caster || (L in excluded) || QDELETED(L))
+			continue
+		var/distance = get_dist(source, L)
+		if(distance < best_distance)
+			best_distance = distance
+			next_target = L
+	return next_target
+
+/proc/formula_magic_reflected_angle(turf/approach, atom/target, current_angle)
+	if(!target)
+		return SIMPLIFY_DEGREES((current_angle || 0) + 180)
+	var/face_direction = get_dir(target, approach) || angle2dir(SIMPLIFY_DEGREES((current_angle || 0) + 180))
+	var/face_angle = dir2angle(face_direction)
+	var/incidence = GET_ANGLE_OF_INCIDENCE(face_angle, ((current_angle || 0) + 180))
+	return SIMPLIFY_DEGREES(face_angle + incidence)
+
+/proc/formula_magic_ricochet_start_turf(turf/approach, atom/target, new_angle)
+	if(approach && !approach.density)
+		return approach
+	var/turf/impact = get_turf(target)
+	if(!impact)
+		return approach
+	var/turf/reflected_step = get_step(impact, angle2dir(new_angle))
+	if(reflected_step && !reflected_step.density)
+		return reflected_step
+	var/turf/back_step = get_step(impact, angle2dir(SIMPLIFY_DEGREES((new_angle || 0) + 180)))
+	if(back_step && !back_step.density)
+		return back_step
+	return impact
+
+/obj/projectile/magic/formula_magic_orb
+	name = "formula orb"
+	icon = 'modular_twilight_axis/icons/effects/formula_magic.dmi'
+	icon_state = "formula_orb"
+	guard_deflectable = TRUE
+	damage = 30
+	damage_type = BRUTE
+	flag = "blunt"
+	woundclass = BCLASS_BLUNT
+	intdamfactor = BLUNT_DEFAULT_INT_DAMAGEFACTOR
+	armor_penetration = PEN_NONE
+	nodamage = FALSE
+	range = 7
+	max_range = 7
+	hitsound = 'sound/combat/hits/blunt/shovel_hit2.ogg'
+	spell_impact_intensity = SPELL_IMPACT_LOW
+	var/arcane_radius = 0
+	var/chain_remaining = 0
+	var/ricochet_remaining = 0
+	var/pierce_remaining = 0
+	var/existence_repeats = 0
+	var/shrapnel_remaining = 0
+	var/list/chain_visited = list()
+
+/obj/projectile/magic/formula_magic_orb/on_hit(atom/target, blocked = FALSE)
+	var/current_angle = Angle
+	var/turf/impact_before = get_turf(target)
+	var/turf/approach = impact_before ? get_step(impact_before, angle2dir(SIMPLIFY_DEGREES((current_angle || 0) + 180))) : get_turf(src)
+	if(!approach)
+		approach = get_turf(src)
+	if(ismob(target))
+		var/mob/M = target
+		if(M.anti_magic_check())
+			visible_message(span_warning("[src] fizzles on contact with [target]!"))
+			playsound(get_turf(target), 'sound/magic/magic_nulled.ogg', 100)
+			qdel(src)
+			return BULLET_ACT_BLOCK
+		hitsound = pick('sound/combat/hits/blunt/shovel_hit.ogg', 'sound/combat/hits/blunt/shovel_hit2.ogg', 'sound/combat/hits/blunt/shovel_hit3.ogg')
+	. = ..()
+	if(out_of_effective_range())
+		return
+	var/mob/living/carbon/human/caster
+	if(istype(firer, /mob/living/carbon/human))
+		caster = firer
+	var/turf/impact = get_turf(target)
+	formula_magic_apply_orb_impact(caster, impact, target, damage, arcane_radius, damage_type, flag, woundclass, intdamfactor, spell_impact_color)
+	var/list/affected_turfs = formula_magic_impact_turfs(impact, arcane_radius)
+	if(existence_repeats > 0 && length(affected_turfs))
+		formula_magic_schedule_instant_existence(caster, affected_turfs, damage, existence_repeats, damage_type, flag, woundclass, intdamfactor, spell_impact_color)
+	if(shrapnel_remaining > 0 && impact)
+		formula_magic_fire_orb_shrapnel(caster, impact, damage, damage_type, flag, woundclass, intdamfactor, spell_impact_color, shrapnel_remaining)
+	if(chain_remaining > 0 && impact)
+		if(target && !(target in chain_visited))
+			chain_visited += target
+		var/mob/living/next_target = formula_magic_nearest_chain_target(caster, impact, chain_visited)
+		if(next_target)
+			var/list/next_visited = chain_visited.Copy()
+			next_visited += next_target
+			formula_magic_fire_orb_followup(caster, impact, next_target, damage, arcane_radius, chain_remaining - 1, ricochet_remaining, pierce_remaining, existence_repeats, shrapnel_remaining, damage_type, flag, woundclass, intdamfactor, spell_impact_color, next_visited)
+	if(ricochet_remaining > 0 && target)
+		var/new_angle = formula_magic_reflected_angle(approach, target, current_angle)
+		var/turf/start = formula_magic_ricochet_start_turf(approach, target, new_angle)
+		if(start)
+			formula_magic_fire_orb_followup(caster, start, null, damage, arcane_radius, chain_remaining, ricochet_remaining - 1, pierce_remaining, existence_repeats, shrapnel_remaining, damage_type, flag, woundclass, intdamfactor, spell_impact_color, chain_visited, new_angle)
+	if(pierce_remaining > 0)
+		pierce_remaining--
+		return BULLET_ACT_FORCE_PIERCE
+	return BULLET_ACT_HIT

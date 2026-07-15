@@ -302,7 +302,8 @@
 			span_danger("I'm hit by \a [P][organ_hit_text]![next_attack_msg.Join()]"), null, COMBAT_MESSAGE_RANGE)
 	next_attack_msg.Cut()
 
-
+	if(on_hit_state == BULLET_ACT_FORCE_PIERCE)
+		return BULLET_ACT_FORCE_PIERCE
 	return on_hit_state ? BULLET_ACT_HIT : BULLET_ACT_BLOCK
 
 /mob/living/proc/check_projectile_dismemberment(obj/projectile/P, def_zone)
