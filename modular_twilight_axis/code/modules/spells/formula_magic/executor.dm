@@ -1467,8 +1467,14 @@
 			if(tags["damage_burn"])
 				formula_magic_apply_damage(L, max(1, round(power * 0.6)), BURN)
 			if(tags["ignite"])
-				if(formula_magic_stack_chance_succeeds(summary))
+				var/ignite_words = max(1, tags["ignite"] || 1)
+				var/applied_ignite = FALSE
+				for(var/i in 1 to ignite_words)
+					if(!formula_magic_stack_chance_succeeds(summary))
+						continue
 					L.adjust_fire_stacks(1)
+					applied_ignite = TRUE
+				if(applied_ignite)
 					L.ignite_mob()
 			if(tags["damage_cold"] || tags["frost_stack"])
 				formula_magic_apply_damage(L, max(1, round(power * 0.35)), BURN)

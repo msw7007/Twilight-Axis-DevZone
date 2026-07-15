@@ -74,16 +74,7 @@
 	return list(get_phrase())
 
 /proc/formula_magic_widen_step(repeat_index)
-	switch(max(1, repeat_index || 1))
-		if(1)
-			return 1
-		if(2)
-			return 1
-		if(3)
-			return 2
-		if(4)
-			return 4
-	return 8
+	return 1
 
 /datum/formula_magic_word/form/orb
 	id = FORMULA_FORM_ORB
@@ -298,7 +289,7 @@
 /datum/formula_magic_word/modifier/widen
 	id = "widen"
 	name = "Widen"
-	desc = "Expands the formula according to its form. Repeats scale as +1, +1, +2, +4, +8."
+	desc = "Expands the formula according to its form. Each repeat adds one step."
 	role = FORMULA_WORD_MODIFIER
 	mana_cost = 2
 	complexity = 2
