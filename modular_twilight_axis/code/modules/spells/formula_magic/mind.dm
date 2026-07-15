@@ -179,21 +179,26 @@
 			modifier_slot_counts[word.id] = (modifier_slot_counts[word.id] || 0) + 1
 			slot_keys["modifier:[word.id]:[modifier_slot_counts[word.id]]"] = TRUE
 			modifier_slots_used++
-	var/combo_count = min(form_slot_counts[FORMULA_FORM_ORB] || 0, form_slot_counts[FORMULA_FORM_INSTANT] || 0)
+	var/combo_count = min(form_slot_counts[FORMULA_FORM_ORB] || 0, form_slot_counts[FORMULA_FORM_WAVE] || 0)
 	if(combo_count)
-		slot_keys["form_combo:meteor"] = TRUE
+		slot_keys["form_combo:seeker"] = TRUE
 		form_slot_counts[FORMULA_FORM_ORB] -= combo_count
-		form_slot_counts[FORMULA_FORM_INSTANT] -= combo_count
-	combo_count = min(form_slot_counts[FORMULA_FORM_CLOAK] || 0, form_slot_counts[FORMULA_FORM_TOUCH] || 0)
+		form_slot_counts[FORMULA_FORM_WAVE] -= combo_count
+	combo_count = min(form_slot_counts[FORMULA_FORM_TOUCH] || 0, form_slot_counts[FORMULA_FORM_NOVA] || 0)
 	if(combo_count)
 		slot_keys["form_combo:breath"] = TRUE
-		form_slot_counts[FORMULA_FORM_CLOAK] -= combo_count
 		form_slot_counts[FORMULA_FORM_TOUCH] -= combo_count
-	combo_count = min(form_slot_counts[FORMULA_FORM_AURA] || 0, form_slot_counts[FORMULA_FORM_WAVE] || 0)
+		form_slot_counts[FORMULA_FORM_NOVA] -= combo_count
+	combo_count = min(form_slot_counts[FORMULA_FORM_INSTANT] || 0, form_slot_counts[FORMULA_FORM_BEAM] || 0)
 	if(combo_count)
-		slot_keys["form_combo:nova"] = TRUE
+		slot_keys["form_combo:fall"] = TRUE
+		form_slot_counts[FORMULA_FORM_INSTANT] -= combo_count
+		form_slot_counts[FORMULA_FORM_BEAM] -= combo_count
+	combo_count = min(form_slot_counts[FORMULA_FORM_SPIRAL] || 0, form_slot_counts[FORMULA_FORM_AURA] || 0)
+	if(combo_count)
+		slot_keys["form_combo:cloak"] = TRUE
+		form_slot_counts[FORMULA_FORM_SPIRAL] -= combo_count
 		form_slot_counts[FORMULA_FORM_AURA] -= combo_count
-		form_slot_counts[FORMULA_FORM_WAVE] -= combo_count
 	combo_count = min(form_slot_counts[FORMULA_FORM_SUMMON] || 0, form_slot_counts[FORMULA_FORM_GUIDANCE] || 0)
 	if(combo_count)
 		slot_keys["form_combo:rune"] = TRUE
@@ -468,6 +473,10 @@
 		return FALSE
 	if(delta < 0 && !formula_magic_can_reassign && current_points + delta < (formula_magic_form_points[form_id] || 0))
 		return FALSE
+	if(delta < 0 && !can_reduce_formula_magic_form(form_id, current_points + delta))
+		return FALSE
+	if(delta > 0 && !can_raise_formula_magic_form(form_id, current_points + delta))
+		return FALSE
 	formula_magic_draft_form_points[form_id] = current_points + delta
 	return TRUE
 
@@ -547,6 +556,34 @@
 	var/used = get_formula_magic_school_word_points(word.school_id)
 	return max(0, (formula_magic_school_points[word.school_id] || 0) - used)
 
+/proc/formula_magic_form_parent(form_id)
+	switch(form_id)
+		if(FORMULA_FORM_BEAM)
+			return FORMULA_FORM_ORB
+		if(FORMULA_FORM_NOVA)
+			return FORMULA_FORM_SPIRAL
+		if(FORMULA_FORM_GUIDANCE)
+			return FORMULA_FORM_INSTANT
+		if(FORMULA_FORM_AURA)
+			return FORMULA_FORM_SUMMON
+		if(FORMULA_FORM_WAVE)
+			return FORMULA_FORM_TOUCH
+	return null
+
+/datum/mind/proc/can_raise_formula_magic_form(form_id, new_points)
+	var/parent = formula_magic_form_parent(form_id)
+	if(!parent)
+		return TRUE
+	return (formula_magic_draft_form_points[parent] || 0) >= max(1, new_points)
+
+/datum/mind/proc/can_reduce_formula_magic_form(form_id, new_points)
+	for(var/child_id in formula_magic_form_ids())
+		if(formula_magic_form_parent(child_id) != form_id)
+			continue
+		if((formula_magic_draft_form_points[child_id] || 0) > new_points)
+			return FALSE
+	return TRUE
+
 /datum/mind/proc/can_learn_formula_magic_word(word_id, committed_values = FALSE)
 	word_id = formula_magic_normalize_word_id(word_id)
 	var/datum/formula_magic_word/word = resolve_formula_magic_word(word_id)
@@ -574,6 +611,9 @@
 	ensure_formula_magic_allocations()
 	var/required = formula_magic_form_unlock_level(form_id)
 	var/list/source = committed_values ? formula_magic_form_points : formula_magic_draft_form_points
+	var/parent = formula_magic_form_parent(form_id)
+	if(parent && ((source[parent] || 0) < max(1, source[form_id] || required)))
+		return FALSE
 	return (source[form_id] || 0) >= required
 
 /datum/mind/proc/can_use_formula_magic_word(word_id)
@@ -638,8 +678,6 @@
 	var/orb_words = 0
 	var/moment_words = 0
 	for(var/datum/formula_magic_word/word in formula.words)
-		if(word.id == FORMULA_FORM_FALL)
-			meteor_words++
 		if(word.id == FORMULA_FORM_ORB)
 			orb_words++
 		if(word.id == FORMULA_FORM_INSTANT)
@@ -657,12 +695,14 @@
 	var/widen_amount = formula.tags["widen_amount"] || 0
 	if(widen_amount <= 0)
 		return
-	if((FORMULA_FORM_AURA in formula.forms) && (FORMULA_FORM_WAVE in formula.forms))
+	if((FORMULA_FORM_TOUCH in formula.forms) && (FORMULA_FORM_NOVA in formula.forms))
 		formula.radius += widen_amount
 	else if((FORMULA_FORM_SUMMON in formula.forms) && (FORMULA_FORM_GUIDANCE in formula.forms))
 		formula.tags["rune_spread"] = widen_amount
 	else if(FORMULA_FORM_GUIDANCE in formula.forms)
 		formula.tags["guidance_width"] = widen_amount
+	else if(FORMULA_FORM_SPIRAL in formula.forms)
+		formula.tags["spiral_radius"] = widen_amount
 	else if(FORMULA_FORM_WAVE in formula.forms)
 		formula.tags["wave_width"] = widen_amount
 	else
@@ -671,6 +711,17 @@
 	if(widen_words > 0)
 		formula.tags["pre_widen_power"] = max(formula.tags["pre_widen_power"] || 0, formula.power)
 		formula.power = max(1, round(formula.power * (0.8 ** widen_words)))
+		for(var/datum/formula_magic_part/part in formula.parts)
+			part.power = max(1, round(part.power * (0.8 ** widen_words)))
+
+/proc/formula_magic_count_formula_form(datum/formula_magic_formula/formula, form_id)
+	if(!formula || !form_id)
+		return 0
+	var/count = 0
+	for(var/current_form in formula.forms)
+		if(current_form == form_id)
+			count++
+	return count
 
 /datum/mind/proc/apply_formula_magic_repeat_costs(datum/formula_magic_formula/formula)
 	if(!formula)
@@ -710,6 +761,8 @@
 		highest_extra = max(highest_extra, (school_counts[school_id] || 1) - 1)
 	if(highest_extra > 0)
 		formula.power = round(formula.power * (1 + highest_extra * 0.25))
+		for(var/datum/formula_magic_part/part in formula.parts)
+			part.power = round(part.power * (1 + highest_extra * 0.25))
 	apply_formula_magic_word_speed(formula)
 
 /datum/mind/proc/apply_formula_magic_interrupt_risk(datum/formula_magic_formula/formula)
@@ -808,21 +861,26 @@
 				break
 	if(formula_magic_is_overloaded_fixed_combo(formula))
 		formula.add_tag("unstable_fixed_combo")
-	var/combo_count = min(form_slot_counts[FORMULA_FORM_ORB] || 0, form_slot_counts[FORMULA_FORM_INSTANT] || 0)
+	var/combo_count = min(form_slot_counts[FORMULA_FORM_ORB] || 0, form_slot_counts[FORMULA_FORM_WAVE] || 0)
 	if(combo_count)
-		slot_keys["form_combo:meteor"] = TRUE
+		slot_keys["form_combo:seeker"] = TRUE
 		form_slot_counts[FORMULA_FORM_ORB] -= combo_count
-		form_slot_counts[FORMULA_FORM_INSTANT] -= combo_count
-	combo_count = min(form_slot_counts[FORMULA_FORM_CLOAK] || 0, form_slot_counts[FORMULA_FORM_TOUCH] || 0)
+		form_slot_counts[FORMULA_FORM_WAVE] -= combo_count
+	combo_count = min(form_slot_counts[FORMULA_FORM_TOUCH] || 0, form_slot_counts[FORMULA_FORM_NOVA] || 0)
 	if(combo_count)
 		slot_keys["form_combo:breath"] = TRUE
-		form_slot_counts[FORMULA_FORM_CLOAK] -= combo_count
 		form_slot_counts[FORMULA_FORM_TOUCH] -= combo_count
-	combo_count = min(form_slot_counts[FORMULA_FORM_AURA] || 0, form_slot_counts[FORMULA_FORM_WAVE] || 0)
+		form_slot_counts[FORMULA_FORM_NOVA] -= combo_count
+	combo_count = min(form_slot_counts[FORMULA_FORM_INSTANT] || 0, form_slot_counts[FORMULA_FORM_BEAM] || 0)
 	if(combo_count)
-		slot_keys["form_combo:nova"] = TRUE
+		slot_keys["form_combo:fall"] = TRUE
+		form_slot_counts[FORMULA_FORM_INSTANT] -= combo_count
+		form_slot_counts[FORMULA_FORM_BEAM] -= combo_count
+	combo_count = min(form_slot_counts[FORMULA_FORM_SPIRAL] || 0, form_slot_counts[FORMULA_FORM_AURA] || 0)
+	if(combo_count)
+		slot_keys["form_combo:cloak"] = TRUE
+		form_slot_counts[FORMULA_FORM_SPIRAL] -= combo_count
 		form_slot_counts[FORMULA_FORM_AURA] -= combo_count
-		form_slot_counts[FORMULA_FORM_WAVE] -= combo_count
 	combo_count = min(form_slot_counts[FORMULA_FORM_SUMMON] || 0, form_slot_counts[FORMULA_FORM_GUIDANCE] || 0)
 	if(combo_count)
 		slot_keys["form_combo:rune"] = TRUE
@@ -890,6 +948,8 @@
 		return
 	formula.add_tag("damage_arcane")
 	formula.power = max(formula.power, 30)
+	for(var/datum/formula_magic_part/part in formula.parts)
+		part.power = max(part.power, 30)
 
 /datum/mind/proc/save_formula_magic_preset(preset_name, list/word_ids)
 	ensure_formula_magic_allocations()
@@ -1031,10 +1091,9 @@
 	return list(
 		FORMULA_FORM_ORB,
 		FORMULA_FORM_AURA,
-		FORMULA_FORM_CLOAK,
 		FORMULA_FORM_INSTANT,
+		FORMULA_FORM_BEAM,
 		FORMULA_FORM_SUMMON,
-		FORMULA_FORM_GUIDANCE,
 		FORMULA_FORM_WAVE,
 		FORMULA_FORM_TOUCH,
 	)
@@ -1045,23 +1104,13 @@
 			return 1
 		if(FORMULA_FORM_AURA)
 			return 2
-		if(FORMULA_FORM_CLOAK)
-			return 2
 		if(FORMULA_FORM_INSTANT)
 			return 2
-		if(FORMULA_FORM_FALL)
-			return 3
+		if(FORMULA_FORM_BEAM)
+			return 2
 		if(FORMULA_FORM_SUMMON)
 			return 3
-		if(FORMULA_FORM_RUNE)
-			return 3
-		if(FORMULA_FORM_GUIDANCE)
-			return 4
 		if(FORMULA_FORM_WAVE)
-			return 2
-		if(FORMULA_FORM_BREATH)
-			return 2
-		if(FORMULA_FORM_NOVA)
 			return 2
 		if(FORMULA_FORM_TOUCH)
 			return 1
@@ -1071,15 +1120,10 @@
 	return list(
 		FORMULA_FORM_ORB = "Orb",
 		FORMULA_FORM_AURA = "Aura",
-		FORMULA_FORM_CLOAK = "Cloak",
 		FORMULA_FORM_INSTANT = "Moment",
-		FORMULA_FORM_FALL = "Meteor",
+		FORMULA_FORM_BEAM = "Beam",
 		FORMULA_FORM_SUMMON = "Summon",
-		FORMULA_FORM_RUNE = "Rune",
-		FORMULA_FORM_GUIDANCE = "Guidance",
 		FORMULA_FORM_WAVE = "Wave",
-		FORMULA_FORM_BREATH = "Breath",
-		FORMULA_FORM_NOVA = "Nova",
 		FORMULA_FORM_TOUCH = "Touch",
 	)
 
@@ -1162,7 +1206,20 @@
 		if(!formula.add_word(word_id))
 			qdel(formula)
 			return null
+	formula_magic_finalize_formula_power(formula)
 	return formula
+
+/proc/formula_magic_finalize_formula_power(datum/formula_magic_formula/formula)
+	if(!formula)
+		return
+	formula.power = 0
+	for(var/datum/formula_magic_part/part in formula.parts)
+		if(length(part.forms))
+			part.power = max(part.power, 30)
+		var/widen_words = part.tags["widen"] || 0
+		if(widen_words > 0 && part.power > 0)
+			part.power = max(1, round(part.power * (0.8 ** widen_words)))
+		formula.power = max(formula.power, part.power)
 
 /datum/mind/proc/build_formula_magic_raw_formula(list/word_ids)
 	return build_formula_magic_formula(word_ids)
@@ -1175,7 +1232,7 @@
 		word_counts[word.id] = (word_counts[word.id] || 0) + 1
 		if(word.role == FORMULA_WORD_MODIFIER)
 			continue
-		if((formula_magic_form_points[word.id] || 0) < (word_counts[word.id] || 0))
+		if(formula_magic_form_rank(word.id, formula_magic_form_points[word.id] || 0) < (word_counts[word.id] || 0))
 			if(feedback && current)
 				to_chat(current, span_warning("I have not fixed enough knowledge for [word.name]."))
 			return FALSE
@@ -1236,7 +1293,9 @@
 		return FALSE
 	if(word.role == FORMULA_WORD_MODIFIER)
 		return TRUE
-	return (formula_magic_form_points[word.id] || 0) > 0
+	if(word.role == FORMULA_WORD_FORM)
+		return formula_magic_form_rank(word.id, formula_magic_form_points[word.id] || 0) > 0
+	return FALSE
 
 /datum/mind/proc/know_formula_magic_word(word_id)
 	return adjust_formula_magic_form_points(word_id, 1)
@@ -1274,6 +1333,37 @@
 /datum/mind/proc/get_formula_magic_school_access()
 	return list()
 
+/proc/formula_magic_form_rank(form_id, points)
+	var/cost = formula_magic_form_unlock_level(form_id)
+	if(cost <= 0)
+		return max(0, points || 0)
+	var/rank = 0
+	var/remaining = max(0, points || 0)
+	while(remaining >= cost)
+		rank++
+		remaining -= cost
+	return rank
+
+/proc/formula_magic_form_parent(form_id)
+	switch(form_id)
+		if(FORMULA_FORM_BEAM)
+			return FORMULA_FORM_ORB
+		if(FORMULA_FORM_NOVA)
+			return FORMULA_FORM_SPIRAL
+		if(FORMULA_FORM_GUIDANCE)
+			return FORMULA_FORM_INSTANT
+		if(FORMULA_FORM_AURA)
+			return FORMULA_FORM_SUMMON
+		if(FORMULA_FORM_WAVE)
+			return FORMULA_FORM_TOUCH
+	return null
+
+/datum/mind/proc/can_raise_formula_magic_form(form_id, new_points)
+	return TRUE
+
+/datum/mind/proc/can_reduce_formula_magic_form(form_id, new_points)
+	return TRUE
+
 /datum/mind/proc/adjust_formula_magic_school_points(school_id, delta)
 	return FALSE
 
@@ -1282,14 +1372,21 @@
 	var/datum/formula_magic_word/word = resolve_formula_magic_word(form_id)
 	if(!word || word.school_id || word.role != FORMULA_WORD_FORM || !delta)
 		return FALSE
+	var/cost = formula_magic_form_unlock_level(word.id)
+	var/step = delta > 0 ? cost : -cost
 	var/current_points = formula_magic_draft_form_points[word.id] || 0
-	if(delta > 0 && get_formula_magic_free_points() < delta)
+	var/new_points = current_points + step
+	if(delta > 0 && get_formula_magic_free_points() < cost)
 		return FALSE
-	if(delta < 0 && !formula_magic_can_reassign && current_points + delta < (formula_magic_form_points[word.id] || 0))
+	if(delta < 0 && !formula_magic_can_reassign && new_points < (formula_magic_form_points[word.id] || 0))
 		return FALSE
-	if(current_points + delta < 0)
+	if(new_points < 0)
 		return FALSE
-	formula_magic_draft_form_points[word.id] = current_points + delta
+	if(delta > 0 && !can_raise_formula_magic_form(word.id, new_points))
+		return FALSE
+	if(delta < 0 && !can_reduce_formula_magic_form(word.id, new_points))
+		return FALSE
+	formula_magic_draft_form_points[word.id] = new_points
 	return TRUE
 
 /datum/mind/proc/commit_formula_magic_allocations()

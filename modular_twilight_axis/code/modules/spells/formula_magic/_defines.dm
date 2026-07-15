@@ -11,9 +11,11 @@
 
 #define FORMULA_FORM_ORB "orb"
 #define FORMULA_FORM_AURA "aura"
+#define FORMULA_FORM_BEAM "beam"
 #define FORMULA_FORM_CLOAK "cloak"
 #define FORMULA_FORM_INSTANT "instant"
 #define FORMULA_FORM_FALL "fall"
+#define FORMULA_FORM_SPIRAL "spiral"
 #define FORMULA_FORM_SUMMON "summon"
 #define FORMULA_FORM_RUNE "rune"
 #define FORMULA_FORM_GUIDANCE "guidance"
@@ -62,9 +64,11 @@
 
 #define FORMULA_FORM_ORB "orb"
 #define FORMULA_FORM_AURA "aura"
+#define FORMULA_FORM_BEAM "beam"
 #define FORMULA_FORM_CLOAK "cloak"
 #define FORMULA_FORM_INSTANT "instant"
 #define FORMULA_FORM_FALL "fall"
+#define FORMULA_FORM_SPIRAL "spiral"
 #define FORMULA_FORM_SUMMON "summon"
 #define FORMULA_FORM_RUNE "rune"
 #define FORMULA_FORM_GUIDANCE "guidance"

@@ -144,6 +144,15 @@ export const FormulaSpellcraft = () => {
   const isFreeModifier = (word: Word) => word.role === 'modifier';
   const formWords = words.filter((word) => word.role === 'form' && !word.school_id && !isPrebuilt(word));
   const schoolWords = words.filter((word) => word.school_id === activeSchool && word.role !== 'form');
+  const formCost = (formId: string) => form_unlocks[formId] || byId.get(formId)?.learn_cost || 1;
+  const formRank = (formId: string, points = progression.form_points[formId] || 0) => Math.floor(points / Math.max(1, formCost(formId)));
+  const canRaiseForm = (formId: string) => {
+    return progression.free_points >= formCost(formId);
+  };
+  const canLowerForm = (formId: string, lockedFloor: number) => {
+    const points = progression.form_points[formId] || 0;
+    return points > lockedFloor;
+  };
 
   const canLearn = (word: Word) => {
     if (isFreeModifier(word)) {
@@ -262,32 +271,35 @@ export const FormulaSpellcraft = () => {
 
           {tab === 'forms' && (
             <div style={bodyStyle}>
-              <div style={gridStyle}>
-                {formWords.map((word) => {
-                  const points = progression.form_points[word.id] || 0;
-                  const required = form_unlocks[word.id] || 1;
-                  const committedPoints = (progression.committed_form_points || {})[word.id] || 0;
-                  const lockedFloor = progression.can_reassign ? 0 : committedPoints;
-                  return (
-                    <div key={word.id} style={panelStyle}>
-                      <div style={rowStyle}>
-                        <div>
-                          <div style={titleStyle}>{form_names[word.id] || word.name}</div>
-                          <div style={mutedStyle}>
-                            {points}/{required} invested | {points >= required ? 'Open' : 'Locked'}
-                          </div>
-                        </div>
-                        <Stepper
-                          canMinus={points > lockedFloor}
-                          canPlus={progression.free_points > 0}
-                          onMinus={() => act('adjust_form', { form_id: word.id, delta: -1 })}
-                          onPlus={() => act('adjust_form', { form_id: word.id, delta: 1 })}
-                        />
-                      </div>
-                      <div style={descStyle}>{word.desc}</div>
-                      <div style={tagLineStyle}>{word.tags.join(', ')}</div>
-                    </div>
-                  );
+              <div style={formGridStyle}>
+                {formWords
+                  .slice()
+                  .sort((left, right) => (formOrder[left.id] || 99) - (formOrder[right.id] || 99))
+                  .map((word) => {
+                    const points = progression.form_points[word.id] || 0;
+                    const required = form_unlocks[word.id] || word.learn_cost || 1;
+                    const committedPoints = (progression.committed_form_points || {})[word.id] || 0;
+                    const lockedFloor = progression.can_reassign ? 0 : committedPoints;
+                    return (
+                      <FormCard
+                        key={word.id}
+                        word={word}
+                        name={form_names[word.id] || word.name}
+                        points={points}
+                        required={required}
+                        rank={formRank(word.id)}
+                        canMinus={canLowerForm(word.id, lockedFloor)}
+                        canPlus={canRaiseForm(word.id)}
+                        act={act}
+                      />
+                    );
+                  })}
+              </div>
+              <div style={comboSectionStyle}>
+                <div style={sectionTitleStyle}>Combinations</div>
+                {formCombos.map((combo) => {
+                  const open = combo.forms.every((formId) => formRank(formId) > 0);
+                  return <ComboCard key={combo.id} combo={combo} open={open} formNames={form_names} />;
                 })}
               </div>
             </div>
@@ -445,6 +457,126 @@ export const FormulaSpellcraft = () => {
   );
 };
 
+const formOrder: Record<string, number> = {
+  orb: 1,
+  touch: 2,
+  instant: 3,
+  spiral: 4,
+  summon: 5,
+  beam: 6,
+  wave: 7,
+  nova: 8,
+  guidance: 9,
+  aura: 10,
+};
+
+const formRepeatEffects: Record<string, string> = {
+  orb: 'Each repeat adds another full-strength orb to the same part.',
+  touch: 'Hits harder than baseline because it is melee range; repeated Touch shortens spoken time.',
+  instant: 'Each repeat increases maximum target distance by one tile; the point impact uses slightly reduced payload force.',
+  spiral: 'Each repeat adds another evenly spaced arm. Each contact uses half of the payload force.',
+  summon: 'Repeats add more created payloads or strengthen supported summoned effects; direct impact uses reduced payload force.',
+  beam: 'Each repeat adds one tile of range and reduces per-tile damage fade by 1%; beam impact starts below baseline.',
+  wave: 'Repeats increase moving line reach. Each wave contact uses reduced payload force to preserve DPS over travel.',
+  nova: 'Repeats increase circular pulse radius. Each hit uses reduced payload force because the shape is broad.',
+  guidance: 'Repeats increase maximum line distance and improve guided placement; line hits are slightly below baseline.',
+  aura: 'Repeats extend the duration of the self-centered working; Aura itself is defensive and does not add direct impact.',
+};
+
+const formCombos = [
+  {
+    id: 'combo_seeker',
+    name: 'Seeker',
+    forms: ['orb', 'wave'],
+    does: 'Turns an orb delivery into a seeking moving projectile behavior.',
+    repeat: 'Uses the lower rank of Orb and Wave. Extra ranks add more seeking projectiles and keep the wave-carried orb behavior.',
+    recipe: 'Assembled by placing Orb and Wave in the same formula part.',
+  },
+  {
+    id: 'combo_breath',
+    name: 'Breath',
+    forms: ['touch', 'nova'],
+    does: 'Projects a short aggressive area from the caster instead of a simple adjacent touch.',
+    repeat: 'Uses the lower rank of Touch and Nova. Extra ranks widen the breathing pattern and add more pulses.',
+    recipe: 'Assembled by placing Touch and Nova in the same formula part.',
+  },
+  {
+    id: 'combo_fall',
+    name: 'Fall',
+    forms: ['instant', 'beam'],
+    does: 'Turns a point designation and a direct line into a delayed falling strike.',
+    repeat: 'Uses the lower rank of Moment and Beam. Extra ranks add more falling strikes with staged delays.',
+    recipe: 'Assembled by placing Moment and Beam in the same formula part.',
+  },
+  {
+    id: 'combo_cloak',
+    name: 'Cloak',
+    forms: ['spiral', 'aura'],
+    does: 'Carries an aggressive rotating effect around the caster.',
+    repeat: 'Uses the lower rank of Spiral and Aura. Extra ranks add more rotating arms and extend the carried effect.',
+    recipe: 'Assembled by placing Spiral and Aura in the same formula part.',
+  },
+  {
+    id: 'combo_rune',
+    name: 'Rune',
+    forms: ['summon', 'guidance'],
+    does: 'Creates a guided placed trigger instead of a simple summoned payload.',
+    repeat: 'Uses the lower rank of Summon and Guidance. Extra ranks create more guided rune placements.',
+    recipe: 'Assembled by placing Summon and Guidance in the same formula part.',
+  },
+];
+
+const FormCard = (props: {
+  word: Word;
+  name: string;
+  points: number;
+  required: number;
+  rank: number;
+  canMinus: boolean;
+  canPlus: boolean;
+  act: (action: string, params?: Record<string, unknown>) => void;
+}) => (
+  <div style={formCardStyle(props.rank > 0)}>
+    <div style={rowStyle}>
+      <div>
+        <div style={titleStyle}>{props.name}</div>
+        <div style={mutedStyle}>{props.points}/{props.required} invested | {props.rank > 0 ? 'Open' : 'Locked'}</div>
+      </div>
+      <Stepper
+        canMinus={props.canMinus}
+        canPlus={props.canPlus}
+        onMinus={() => props.act('adjust_form', { form_id: props.word.id, delta: -1 })}
+        onPlus={() => props.act('adjust_form', { form_id: props.word.id, delta: 1 })}
+      />
+    </div>
+    <InfoLine label="Effect" text={props.word.desc} />
+    <InfoLine label="Amplify" text={formRepeatEffects[props.word.id] || 'Repeats improve this form according to its delivery role.'} />
+  </div>
+);
+
+const ComboCard = (props: { combo: (typeof formCombos)[number]; open: boolean; formNames: Record<string, string> }) => (
+  <div style={comboCardStyle(props.open)}>
+    <div style={rowStyle}>
+      <div>
+        <div style={titleStyle}>{props.combo.name}</div>
+        <div style={mutedStyle}>{props.combo.forms.map((formId) => props.formNames[formId] || formId).join(' + ')} | {props.open ? 'Open' : 'Locked'}</div>
+      </div>
+    </div>
+    <div style={comboDescriptionGridStyle}>
+      <InfoLine label="Effect" text={props.combo.does} />
+      <InfoLine label="Amplify" text={props.combo.repeat} />
+      <InfoLine label="Combination" text={props.combo.recipe} />
+    </div>
+  </div>
+);
+
+const InfoLine = (props: { label: string; text: string }) => (
+  <div style={infoLineStyle}>
+    <span style={infoLabelStyle}>{props.label}: </span>
+    <span style={descInlineStyle}>{props.text}</span>
+  </div>
+);
+
 const Requirements = (props: { validation?: Validation }) => (
   <div style={{ marginTop: '8px' }}>
     <div style={{ color: props.validation?.valid ? '#9ee6a0' : '#c58b75', fontSize: '12px', fontWeight: 800 }}>
@@ -568,11 +700,18 @@ const rootStyle = { display: 'flex', flexDirection: 'column', height: '100%', ba
 const bodyStyle = { flex: 1, minHeight: 0, padding: '10px', overflowY: 'auto' } as const;
 const tabsStyle = { display: 'flex', gap: '8px', padding: '8px 10px', borderBottom: '1px solid #273142' } as const;
 const gridStyle = { display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: '8px' } as const;
+const formGridStyle = { display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: '8px' } as const;
+const comboSectionStyle = { marginTop: '14px', display: 'flex', flexDirection: 'column', gap: '8px' } as const;
+const sectionTitleStyle = { color: '#f1f3f7', fontWeight: 900, fontSize: '14px', letterSpacing: 0 } as const;
 const rowStyle = { display: 'flex', justifyContent: 'space-between', gap: '8px', alignItems: 'flex-start' } as const;
 const panelStyle = { border: '1px solid #273142', background: '#141a23', borderRadius: '4px', padding: '8px' } as const;
 const titleStyle = { color: '#f1f3f7', fontWeight: 800 } as const;
 const mutedStyle = { color: '#9fb1ce', fontSize: '11px' } as const;
 const descStyle = { color: '#c5d2e8', fontSize: '12px', marginTop: '4px' } as const;
+const infoLineStyle = { marginTop: '6px', fontSize: '12px', lineHeight: 1.35 } as const;
+const infoLabelStyle = { color: '#8fa6d8', fontSize: '11px', fontWeight: 900 } as const;
+const descInlineStyle = { color: '#c5d2e8', fontSize: '12px' } as const;
+const comboDescriptionGridStyle = { display: 'grid', gridTemplateColumns: 'repeat(3, minmax(0, 1fr))', gap: '10px', marginTop: '8px' } as const;
 const tagLineStyle = { color: '#7f8ca3', fontSize: '11px', marginTop: '4px' } as const;
 const wordListStyle = { marginTop: '10px', display: 'flex', flexDirection: 'column', gap: '6px' } as const;
 const sequenceStyle = { display: 'flex', flexWrap: 'wrap', gap: '8px', alignItems: 'center', marginTop: '8px' } as const;
@@ -609,6 +748,22 @@ const wordPickerStyle = {
   textAlign: 'left' as const,
   cursor: 'pointer',
 } as const;
+
+const formCardStyle = (open: boolean) => ({
+  border: `1px solid ${open ? '#8fa6d8' : '#273142'}`,
+  background: open ? '#162033' : '#141a23',
+  borderRadius: '4px',
+  padding: '8px',
+  opacity: open ? 1 : 0.72,
+} as const);
+
+const comboCardStyle = (open: boolean) => ({
+  border: `1px solid ${open ? '#9ee6a0' : '#273142'}`,
+  background: open ? '#14231a' : '#141a23',
+  borderRadius: '4px',
+  padding: '8px',
+  opacity: open ? 1 : 0.72,
+} as const);
 
 const schoolTabStyle = (active: boolean) => ({
   border: `1px solid ${active ? '#8fa6d8' : '#273142'}`,

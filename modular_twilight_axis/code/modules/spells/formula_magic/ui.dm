@@ -490,9 +490,19 @@
 	return list()
 
 /proc/formula_magic_form_unlocks()
-	return list(FORMULA_FORM_ORB = 1)
+	var/list/result = list()
+	for(var/form_id in formula_magic_form_ids())
+		result[form_id] = formula_magic_form_unlock_level(form_id)
+	return result
 
 /proc/formula_magic_display_parts(list/word_ids)
+	var/list/combo_names = list(
+		"[FORMULA_FORM_ORB]|[FORMULA_FORM_WAVE]" = "Seeker",
+		"[FORMULA_FORM_TOUCH]|[FORMULA_FORM_NOVA]" = "Breath",
+		"[FORMULA_FORM_INSTANT]|[FORMULA_FORM_BEAM]" = "Fall",
+		"[FORMULA_FORM_SPIRAL]|[FORMULA_FORM_AURA]" = "Cloak",
+		"[FORMULA_FORM_SUMMON]|[FORMULA_FORM_GUIDANCE]" = "Rune",
+	)
 	var/list/words = list()
 	var/list/indexes = list()
 	var/list/names = list()
@@ -506,7 +516,17 @@
 		names += word.name
 	if(!length(words))
 		return list()
-	return list(list("name" = jointext(names, " + "), "words" = words, "indexes" = indexes))
+	var/list/form_ids = list()
+	for(var/word_id in words)
+		var/datum/formula_magic_word/word = resolve_formula_magic_word(word_id)
+		if(word?.role == FORMULA_WORD_FORM)
+			form_ids += word.id
+	var/display_name = jointext(names, " + ")
+	if(length(form_ids) == 2)
+		var/combo_key = "[form_ids[1]]|[form_ids[2]]"
+		var/reverse_key = "[form_ids[2]]|[form_ids[1]]"
+		display_name = combo_names[combo_key] || combo_names[reverse_key] || display_name
+	return list(list("name" = display_name, "words" = words, "indexes" = indexes))
 
 /mob/living/carbon/human/verb/open_formula_spellcraft()
 	set name = "Formula Spellcraft"

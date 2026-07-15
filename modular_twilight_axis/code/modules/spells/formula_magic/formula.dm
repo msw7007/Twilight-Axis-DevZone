@@ -166,14 +166,12 @@
 	return jointext(names, " + ")
 
 /datum/formula_magic_part/proc/can_execute()
-	return form_id == FORMULA_FORM_ORB && projectile_count > 0
+	return length(forms) > 0
 
 /datum/formula_magic_part/proc/execute(datum/formula_magic_context/context)
 	if(!can_execute() || !context)
 		return FALSE
-	if(form_id == FORMULA_FORM_ORB)
-		return formula_magic_execute_orb_part(context, src)
-	return FALSE
+	return formula_magic_execute_part(context, src)
 
 /datum/formula_magic_part/proc/get_summary()
 	return list(
@@ -292,7 +290,7 @@
 	schools += school_id
 
 /datum/formula_magic_formula/proc/can_resolve()
-	return length(parts) && projectile_count > 0
+	return length(parts) && length(forms)
 
 /datum/formula_magic_formula/proc/get_word_names()
 	var/list/names = list()
