@@ -331,11 +331,71 @@
 	name = "sending stone"
 	desc = "One of a pair of sending stones."
 	var/obj/item/natural/stone/sending/paired_with
+	var/mob/listening_to
+	var/receive_sound = 'sound/items/gem.ogg'
+
+/obj/item/natural/stone/sending/Destroy()
+	stop_listening_to_holder()
+	paired_with = null
+	return ..()
+
+/obj/item/natural/stone/sending/equipped(mob/user, slot)
+	. = ..()
+	start_listening_to_holder(user)
+
+/obj/item/natural/stone/sending/dropped(mob/user, silent)
+	. = ..()
+	stop_listening_to_holder()
+
+/obj/item/natural/stone/sending/proc/start_listening_to_holder(mob/user)
+	if(!user || listening_to == user)
+		return
+	stop_listening_to_holder()
+	listening_to = user
+	RegisterSignal(user, COMSIG_MOB_SAY_POSTPROCESS, PROC_REF(handle_holder_speech))
+
+/obj/item/natural/stone/sending/proc/stop_listening_to_holder()
+	if(!listening_to)
+		return
+	UnregisterSignal(listening_to, COMSIG_MOB_SAY_POSTPROCESS)
+	listening_to = null
+
+/obj/item/natural/stone/sending/proc/get_sending_holder()
+	var/atom/current_loc = loc
+	while(current_loc)
+		if(ismob(current_loc))
+			return current_loc
+		current_loc = current_loc.loc
+	return null
+
+/obj/item/natural/stone/sending/proc/handle_holder_speech(datum/source, list/speech_args)
+	SIGNAL_HANDLER
+	if(!paired_with || !speech_args)
+		return
+	var/mob/speaker = source
+	if(!speaker || get_sending_holder() != speaker)
+		return
+	var/message = speech_args[SPEECH_MESSAGE]
+	if(!message)
+		return
+	var/message_mode = speech_args[SPEECH_MODE]
+	if(message_mode != MODE_WHISPER && message_mode != MODE_WHISPER_CRIT)
+		message_mode = null
+	transmit_sending_message(message, speech_args[SPEECH_SPANS], speech_args[SPEECH_LANGUAGE], message_mode)
+
+/obj/item/natural/stone/sending/proc/transmit_sending_message(message, list/spans, datum/language/language, message_mode)
+	if(!paired_with || !message)
+		return FALSE
+	var/mob/receiver = paired_with.get_sending_holder()
+	if(receiver)
+		receiver.playsound_local(receiver, paired_with.receive_sound, 45, TRUE)
+	paired_with.say(message, spans = spans?.Copy() || list(), sanitize = FALSE, language = language, message_mode = message_mode)
+	return TRUE
 
 /obj/item/natural/stone/sending/attack_self(mob/user)
 	var/input_text = input(user, "Enter your message:", "Message")
 	if(input_text)
-		paired_with.say(input_text)
+		transmit_sending_message(input_text, list(), null, null)
 
 /obj/item/clothing/neck/roguetown/collar/leather/nomagic
 	name = "mana-binding collar"

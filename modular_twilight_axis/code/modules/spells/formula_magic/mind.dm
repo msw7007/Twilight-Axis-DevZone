@@ -6,6 +6,10 @@
 	var/list/formula_magic_draft_form_points
 	var/list/formula_magic_known_words
 	var/list/formula_magic_saved_formulas
+	var/formula_magic_loaded_library_key
+	var/list/formula_magic_teleport_runes
+	var/list/formula_magic_remembered_teleport_runes
+	var/obj/structure/formula_magic_teleport_rune/formula_magic_remembered_teleport_rune
 	var/formula_magic_committed = FALSE
 	var/formula_magic_can_reassign = TRUE
 
@@ -55,6 +59,331 @@
 	normalize_formula_magic_known_words()
 	if(!formula_magic_saved_formulas)
 		formula_magic_saved_formulas = list()
+	load_formula_magic_persistent_library()
+	if(!formula_magic_teleport_runes)
+		formula_magic_teleport_runes = list()
+	if(!formula_magic_remembered_teleport_runes)
+		formula_magic_remembered_teleport_runes = list()
+	clean_formula_magic_teleport_runes()
+
+/datum/mind/proc/get_formula_magic_library_key()
+	if(!current?.ckey)
+		return null
+	return ckey(current.ckey)
+
+/datum/mind/proc/get_formula_magic_library_path()
+	var/key = get_formula_magic_library_key()
+	if(!key)
+		return null
+	return "[FORMULA_LIBRARY_FILE_PREFIX][key].json"
+
+/datum/mind/proc/load_formula_magic_persistent_library()
+	var/key = get_formula_magic_library_key()
+	if(!key || formula_magic_loaded_library_key == key)
+		return
+	formula_magic_loaded_library_key = key
+	var/path = get_formula_magic_library_path()
+	if(!path || !fexists(path))
+		return
+	var/list/decoded = safe_json_decode(file2text(path))
+	if(!islist(decoded))
+		return
+	var/list/loaded = list()
+	var/count = 0
+	for(var/list/entry as anything in decoded)
+		if(!islist(entry))
+			continue
+		var/list/words = formula_magic_normalized_word_list(entry["words"])
+		if(!length(words))
+			continue
+		count++
+		if(count > FORMULA_LIBRARY_LIMIT)
+			break
+		loaded += list(formula_magic_make_library_entry(entry["name"], words))
+	formula_magic_saved_formulas = loaded
+
+/datum/mind/proc/save_formula_magic_persistent_library()
+	var/path = get_formula_magic_library_path()
+	if(!path)
+		return FALSE
+	var/list/exported = list()
+	for(var/list/preset as anything in formula_magic_saved_formulas)
+		var/list/words = formula_magic_normalized_word_list(preset["words"])
+		if(!length(words))
+			continue
+		exported += list(list(
+			"name" = sanitize(copytext("[preset["name"] || "Formula"]", 1, 48)),
+			"words" = words,
+		))
+	fdel(path)
+	WRITE_FILE(path, json_encode(exported))
+	return TRUE
+
+/datum/mind/proc/formula_magic_normalized_word_list(list/word_ids)
+	var/list/normalized_words = list()
+	if(!islist(word_ids))
+		return normalized_words
+	for(var/word_id in word_ids)
+		var/normalized_id = formula_magic_normalize_word_id(word_id)
+		if(resolve_formula_magic_word(normalized_id))
+			normalized_words += normalized_id
+	return normalized_words
+
+/datum/mind/proc/build_formula_magic_raw_formula(list/word_ids)
+	var/datum/formula_magic_formula/formula = new
+	for(var/word_id in word_ids)
+		word_id = formula_magic_normalize_word_id(word_id)
+		if(!resolve_formula_magic_word(word_id) || !formula.add_word(word_id))
+			qdel(formula)
+			return null
+	apply_formula_magic_form_scaling(formula)
+	apply_formula_magic_widen_scaling(formula)
+	apply_formula_magic_repeat_costs(formula)
+	apply_formula_magic_efficiency(formula)
+	apply_formula_magic_school_scaling(formula)
+	apply_formula_magic_interrupt_risk(formula)
+	apply_formula_magic_base_arcane(formula)
+	return formula
+
+/datum/mind/proc/get_formula_magic_arcane_requirement(list/word_ids)
+	var/datum/formula_magic_formula/formula = build_formula_magic_raw_formula(word_ids)
+	if(!formula || !formula.can_resolve())
+		qdel(formula)
+		return 0
+	var/list/part_data = get_formula_magic_formula_part_data(formula)
+	qdel(formula)
+	var/slots_used = part_data["slots_used"] || 0
+	var/modifier_slots_used = part_data["modifier_slots_used"] || 0
+	for(var/rank in 1 to SKILL_LEVEL_LEGENDARY)
+		var/base_slot_limit = rank + 1
+		var/bonus_modifier_slots = rank >= 3 ? 1 : 0
+		var/effective_slot_limit = base_slot_limit + min(bonus_modifier_slots, modifier_slots_used)
+		if(slots_used <= effective_slot_limit)
+			return rank
+	return SKILL_LEVEL_LEGENDARY + 1
+
+/datum/mind/proc/get_formula_magic_formula_part_data(datum/formula_magic_formula/formula)
+	var/list/slot_keys = list()
+	var/list/modifier_slot_counts = list()
+	var/list/form_slot_counts = list()
+	var/modifier_slots_used = 0
+	for(var/datum/formula_magic_word/word in formula.words)
+		if(word.role == FORMULA_WORD_FORM)
+			form_slot_counts[word.id] = (form_slot_counts[word.id] || 0) + 1
+		else if(word.school_id && (word.role == FORMULA_WORD_ELEMENT || word.role == FORMULA_WORD_POST_EFFECT))
+			slot_keys["school:[word.school_id]"] = TRUE
+		else if(word.role == FORMULA_WORD_MODIFIER || word.role == FORMULA_WORD_LINK || word.role == FORMULA_WORD_STABILIZER)
+			modifier_slot_counts[word.id] = (modifier_slot_counts[word.id] || 0) + 1
+			slot_keys["modifier:[word.id]:[modifier_slot_counts[word.id]]"] = TRUE
+			modifier_slots_used++
+	var/combo_count = min(form_slot_counts[FORMULA_FORM_ORB] || 0, form_slot_counts[FORMULA_FORM_INSTANT] || 0)
+	if(combo_count)
+		slot_keys["form_combo:meteor"] = TRUE
+		form_slot_counts[FORMULA_FORM_ORB] -= combo_count
+		form_slot_counts[FORMULA_FORM_INSTANT] -= combo_count
+	combo_count = min(form_slot_counts[FORMULA_FORM_CLOAK] || 0, form_slot_counts[FORMULA_FORM_TOUCH] || 0)
+	if(combo_count)
+		slot_keys["form_combo:breath"] = TRUE
+		form_slot_counts[FORMULA_FORM_CLOAK] -= combo_count
+		form_slot_counts[FORMULA_FORM_TOUCH] -= combo_count
+	combo_count = min(form_slot_counts[FORMULA_FORM_AURA] || 0, form_slot_counts[FORMULA_FORM_WAVE] || 0)
+	if(combo_count)
+		slot_keys["form_combo:nova"] = TRUE
+		form_slot_counts[FORMULA_FORM_AURA] -= combo_count
+		form_slot_counts[FORMULA_FORM_WAVE] -= combo_count
+	combo_count = min(form_slot_counts[FORMULA_FORM_SUMMON] || 0, form_slot_counts[FORMULA_FORM_GUIDANCE] || 0)
+	if(combo_count)
+		slot_keys["form_combo:rune"] = TRUE
+		form_slot_counts[FORMULA_FORM_SUMMON] -= combo_count
+		form_slot_counts[FORMULA_FORM_GUIDANCE] -= combo_count
+	for(var/form_id in form_slot_counts)
+		if((form_slot_counts[form_id] || 0) > 0)
+			slot_keys["form:[form_id]"] = TRUE
+	return list("slots_used" = length(slot_keys), "modifier_slots_used" = modifier_slots_used)
+
+/datum/mind/proc/get_formula_magic_formula_requirements(list/word_ids)
+	var/list/words = formula_magic_normalized_word_list(word_ids)
+	var/list/requirements = list()
+	var/list/form_counts = list()
+	var/list/school_counts = list()
+	var/list/word_counts = list()
+	for(var/word_id in words)
+		var/datum/formula_magic_word/word = resolve_formula_magic_word(word_id)
+		if(!word)
+			continue
+		word_counts[word_id] = (word_counts[word_id] || 0) + 1
+		if(word.role == FORMULA_WORD_FORM)
+			form_counts[word.id] = (form_counts[word.id] || 0) + 1
+		else if(word.school_id && !word.tags?["prebuilt_formula"])
+			school_counts[word.school_id] = (school_counts[word.school_id] || 0) + 1
+	var/list/form_names = formula_magic_form_names()
+	var/list/school_names = formula_magic_school_names()
+	for(var/form_id in form_counts)
+		requirements += "[form_names[form_id] || form_id] [form_counts[form_id]]"
+	for(var/school_id in school_counts)
+		requirements += "[school_names[school_id] || school_id] [school_counts[school_id]]"
+	var/arcane_required = get_formula_magic_arcane_requirement(words)
+	if(arcane_required)
+		requirements += "Arcane [arcane_required]"
+		requirements += "Reading [arcane_required]"
+	return list(
+		"words" = words,
+		"requirements" = requirements,
+		"arcane_required" = arcane_required,
+		"reading_required" = arcane_required,
+		"word_counts" = word_counts,
+		"form_counts" = form_counts,
+		"school_counts" = school_counts,
+	)
+
+/datum/mind/proc/formula_magic_make_library_entry(preset_name, list/word_ids)
+	var/list/words = formula_magic_normalized_word_list(word_ids)
+	var/name = sanitize(copytext("[preset_name]", 1, 48))
+	if(!length(name))
+		name = "Formula [length(formula_magic_saved_formulas) + 1]"
+	var/datum/formula_magic_formula/formula = build_formula_magic_raw_formula(words)
+	var/list/requirements = get_formula_magic_formula_requirements(words)
+	var/list/entry = list(
+		"name" = name,
+		"words" = words.Copy(),
+		"summary" = formula?.get_formula_text() || jointext(words, " + "),
+		"mana_cost" = formula?.mana_cost || 0,
+		"cast_time" = formula?.cast_time || 0,
+		"word_cast_times" = formula?.word_cast_times?.Copy() || list(),
+		"complexity" = formula?.complexity || 0,
+		"instability" = formula?.instability || 0,
+		"interrupt_chance" = formula?.interrupt_chance || 10,
+		"arcane_required" = requirements["arcane_required"] || 0,
+		"reading_required" = requirements["reading_required"] || 0,
+		"requirements" = requirements["requirements"] || list(),
+		"export_json" = formula_magic_export_json(name, words),
+	)
+	qdel(formula)
+	return entry
+
+/datum/mind/proc/formula_magic_export_json(preset_name, list/word_ids)
+	var/list/words = formula_magic_normalized_word_list(word_ids)
+	var/list/requirements = get_formula_magic_formula_requirements(words)
+	return json_encode(list(
+		"kind" = "twilight_axis_formula",
+		"version" = 1,
+		"name" = sanitize(copytext("[preset_name || "Formula"]", 1, 48)),
+		"words" = words,
+		"arcane_required" = requirements["arcane_required"] || 0,
+		"requirements" = requirements["requirements"] || list(),
+	))
+
+/datum/mind/proc/formula_magic_import_json(raw_json, save_to_library = TRUE)
+	var/list/decoded = safe_json_decode(raw_json)
+	if(!islist(decoded))
+		return FALSE
+	var/list/words = formula_magic_normalized_word_list(decoded["words"])
+	if(!length(words))
+		return FALSE
+	if(save_to_library)
+		if(length(formula_magic_saved_formulas) >= FORMULA_LIBRARY_LIMIT)
+			return FALSE
+		formula_magic_saved_formulas += list(formula_magic_make_library_entry(decoded["name"], words))
+		save_formula_magic_persistent_library()
+		refresh_formula_magic_preset_spells()
+	return TRUE
+
+/datum/mind/proc/validate_formula_magic_word_list(list/word_ids)
+	ensure_formula_magic_allocations()
+	var/list/words = formula_magic_normalized_word_list(word_ids)
+	var/list/requirements = get_formula_magic_formula_requirements(words)
+	var/list/missing = list()
+	var/arcane_required = requirements["arcane_required"] || 0
+	if(!formula_magic_committed)
+		missing += "Knowledge is not saved."
+	if(formula_magic_has_uncommitted_allocations())
+		missing += "Knowledge has unsaved changes."
+	if(current && current.get_skill_level(/datum/skill/magic/arcane) < arcane_required)
+		missing += "Arcane [arcane_required]"
+	var/list/word_counts = requirements["word_counts"] || list()
+	for(var/word_id in word_counts)
+		var/datum/formula_magic_word/word = resolve_formula_magic_word(word_id)
+		if(!word)
+			missing += "Unknown word [word_id]"
+			continue
+		if(word.role == FORMULA_WORD_FORM)
+			if((formula_magic_form_points[word.id] || 0) < (word_counts[word_id] || 0))
+				missing += "[word.name] form rank [word_counts[word_id]]"
+		else if(word.school_id)
+			if((formula_magic_known_words[word_id] || 0) < (word_counts[word_id] || 0))
+				missing += "[word.name] word rank [word_counts[word_id]]"
+		else if(!can_use_formula_magic_word(word_id))
+			missing += "[word.name]"
+	var/datum/formula_magic_formula/formula = build_formula_magic_raw_formula(words)
+	if(!formula || !formula.can_resolve())
+		missing += "At least one form"
+	qdel(formula)
+	return list(
+		"valid" = !length(missing),
+		"missing" = missing,
+		"requirements" = requirements["requirements"] || list(),
+		"arcane_required" = arcane_required,
+		"reading_required" = requirements["reading_required"] || 0,
+	)
+
+/datum/mind/proc/clean_formula_magic_teleport_runes()
+	if(!formula_magic_teleport_runes)
+		formula_magic_teleport_runes = list()
+	for(var/obj/structure/formula_magic_teleport_rune/rune as anything in formula_magic_teleport_runes.Copy())
+		if(!rune || QDELETED(rune))
+			formula_magic_teleport_runes -= rune
+	for(var/obj/structure/formula_magic_teleport_rune/rune as anything in formula_magic_remembered_teleport_runes.Copy())
+		if(!rune || QDELETED(rune))
+			formula_magic_remembered_teleport_runes -= rune
+	if(formula_magic_remembered_teleport_rune && QDELETED(formula_magic_remembered_teleport_rune))
+		formula_magic_remembered_teleport_rune = null
+
+/datum/mind/proc/get_formula_magic_teleport_rune_limit()
+	var/arcane_rank = current?.get_skill_level(/datum/skill/magic/arcane) || 0
+	return max(1, arcane_rank + 1)
+
+/datum/mind/proc/can_register_formula_magic_teleport_rune()
+	clean_formula_magic_teleport_runes()
+	return length(formula_magic_teleport_runes) < get_formula_magic_teleport_rune_limit()
+
+/datum/mind/proc/register_formula_magic_teleport_rune(obj/structure/formula_magic_teleport_rune/rune)
+	if(!rune)
+		return FALSE
+	clean_formula_magic_teleport_runes()
+	if(!(rune in formula_magic_teleport_runes))
+		if(length(formula_magic_teleport_runes) >= get_formula_magic_teleport_rune_limit())
+			return FALSE
+		formula_magic_teleport_runes += rune
+	remember_formula_magic_teleport_rune(rune)
+	return TRUE
+
+/datum/mind/proc/unregister_formula_magic_teleport_rune(obj/structure/formula_magic_teleport_rune/rune)
+	if(!formula_magic_teleport_runes)
+		return
+	formula_magic_teleport_runes -= rune
+	if(formula_magic_remembered_teleport_runes)
+		formula_magic_remembered_teleport_runes -= rune
+	if(formula_magic_remembered_teleport_rune == rune)
+		formula_magic_remembered_teleport_rune = null
+
+/datum/mind/proc/remember_formula_magic_teleport_rune(obj/structure/formula_magic_teleport_rune/rune)
+	if(!rune || QDELETED(rune))
+		return FALSE
+	if(!formula_magic_remembered_teleport_runes)
+		formula_magic_remembered_teleport_runes = list()
+	if(!(rune in formula_magic_remembered_teleport_runes))
+		formula_magic_remembered_teleport_runes += rune
+	formula_magic_remembered_teleport_rune = rune
+	return TRUE
+
+/datum/mind/proc/get_formula_magic_remembered_teleport_runes(obj/structure/formula_magic_teleport_rune/exclude_rune)
+	clean_formula_magic_teleport_runes()
+	var/list/result = list()
+	for(var/obj/structure/formula_magic_teleport_rune/rune as anything in formula_magic_remembered_teleport_runes)
+		if(rune == exclude_rune)
+			continue
+		result += rune
+	return result
 
 /datum/mind/proc/formula_magic_migrate_biomancy_allocations(list/allocations)
 	if(!allocations)
@@ -564,31 +893,15 @@
 		return FALSE
 	if(!length(word_ids))
 		return FALSE
-	if(length(formula_magic_saved_formulas) >= FORMULA_PRESET_LIMIT)
+	if(length(formula_magic_saved_formulas) >= FORMULA_LIBRARY_LIMIT)
 		return FALSE
-	var/name = sanitize(copytext("[preset_name]", 1, 48))
-	if(!length(name))
-		name = "Formula [length(formula_magic_saved_formulas) + 1]"
-	var/list/normalized_words = list()
-	for(var/word_id in word_ids)
-		normalized_words += formula_magic_normalize_word_id(word_id)
-	word_ids = normalized_words
 	var/datum/formula_magic_formula/formula = build_formula_magic_formula(word_ids)
 	if(!formula || !formula.can_resolve())
 		qdel(formula)
 		return FALSE
-	formula_magic_saved_formulas += list(list(
-		"name" = name,
-		"words" = word_ids.Copy(),
-		"summary" = formula.get_formula_text(),
-		"mana_cost" = formula.mana_cost,
-		"cast_time" = formula.cast_time,
-		"word_cast_times" = formula.word_cast_times.Copy(),
-		"complexity" = formula.complexity,
-		"instability" = formula.instability,
-		"interrupt_chance" = formula.interrupt_chance,
-	))
 	qdel(formula)
+	formula_magic_saved_formulas += list(formula_magic_make_library_entry(preset_name, word_ids))
+	save_formula_magic_persistent_library()
 	refresh_formula_magic_preset_spells()
 	return TRUE
 
@@ -597,12 +910,37 @@
 	if(index < 1 || index > length(formula_magic_saved_formulas))
 		return FALSE
 	formula_magic_saved_formulas.Cut(index, index + 1)
+	save_formula_magic_persistent_library()
+	refresh_formula_magic_preset_spells()
+	return TRUE
+
+/datum/mind/proc/rename_formula_magic_preset(index, new_name)
+	ensure_formula_magic_allocations()
+	if(index < 1 || index > length(formula_magic_saved_formulas))
+		return FALSE
+	var/list/preset = formula_magic_saved_formulas[index]
+	var/list/words = formula_magic_normalized_word_list(preset["words"])
+	formula_magic_saved_formulas[index] = formula_magic_make_library_entry(new_name, words)
+	save_formula_magic_persistent_library()
+	refresh_formula_magic_preset_spells()
+	return TRUE
+
+/datum/mind/proc/update_formula_magic_preset(index, list/word_ids)
+	ensure_formula_magic_allocations()
+	if(index < 1 || index > length(formula_magic_saved_formulas))
+		return FALSE
+	var/list/preset = formula_magic_saved_formulas[index]
+	formula_magic_saved_formulas[index] = formula_magic_make_library_entry(preset["name"], word_ids)
+	save_formula_magic_persistent_library()
 	refresh_formula_magic_preset_spells()
 	return TRUE
 
 /datum/mind/proc/get_formula_magic_presets()
 	ensure_formula_magic_allocations()
-	return formula_magic_saved_formulas.Copy()
+	var/list/result = list()
+	for(var/list/preset as anything in formula_magic_saved_formulas)
+		result += list(formula_magic_make_library_entry(preset["name"], preset["words"]))
+	return result
 
 /datum/mind/proc/get_formula_magic_progression_data()
 	ensure_formula_magic_allocations()

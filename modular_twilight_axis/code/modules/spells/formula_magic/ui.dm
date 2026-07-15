@@ -47,7 +47,15 @@
 	data["school_access"] = H?.mind?.get_formula_magic_school_access() || list()
 	data["form_names"] = formula_magic_form_names()
 	data["form_unlocks"] = formula_magic_form_unlocks()
-	data["presets"] = H?.mind?.get_formula_magic_presets() || list()
+	var/list/presets = H?.mind?.get_formula_magic_presets() || list()
+	var/reading_rank = H?.get_skill_level(/datum/skill/misc/reading) || 0
+	for(var/list/preset as anything in presets)
+		if(reading_rank < (preset["reading_required"] || 0))
+			preset["export_json"] = ""
+	data["presets"] = presets
+	var/list/draft_validation = H?.mind?.validate_formula_magic_word_list(draft_words) || list()
+	data["draft_validation"] = draft_validation
+	data["draft_export_json"] = (reading_rank >= (draft_validation["reading_required"] || 0)) ? (H?.mind?.formula_magic_export_json("Draft formula", draft_words) || "") : ""
 	qdel(preview)
 	return data
 
@@ -134,6 +142,21 @@
 			SStgui.update_uis(src)
 			return TRUE
 
+		if("import_formula")
+			var/raw_json = params["json"]
+			if(istext(raw_json))
+				var/list/decoded = safe_json_decode(raw_json)
+				if(!islist(decoded))
+					return TRUE
+				var/list/import_words = H.mind.formula_magic_normalized_word_list(decoded["words"])
+				var/reading_required = H.mind.get_formula_magic_arcane_requirement(import_words)
+				if(H.get_skill_level(/datum/skill/misc/reading) < reading_required)
+					to_chat(H, span_warning("I need Reading [reading_required] to import that formula."))
+					return TRUE
+				H.mind.formula_magic_import_json(raw_json, TRUE)
+				SStgui.update_uis(src)
+			return TRUE
+
 		if("load_preset")
 			var/index = text2num(params["index"])
 			var/list/presets = H.mind.get_formula_magic_presets()
@@ -150,11 +173,59 @@
 			SStgui.update_uis(src)
 			return TRUE
 
+		if("rename_preset")
+			var/index = text2num(params["index"])
+			var/list/presets = H.mind.get_formula_magic_presets()
+			if(index >= 1 && index <= length(presets))
+				var/list/preset = presets[index]
+				var/new_name = tgui_input_text(H, "Rename this formula.", "Formula Name", preset["name"], MAX_NAME_LEN)
+				if(new_name)
+					H.mind.rename_formula_magic_preset(index, new_name)
+					SStgui.update_uis(src)
+			return TRUE
+
+		if("update_preset")
+			var/index = text2num(params["index"])
+			if(index >= 1)
+				H.mind.update_formula_magic_preset(index, draft_words)
+				SStgui.update_uis(src)
+			return TRUE
+
+		if("create_formula_scroll")
+			var/name = params["name"]
+			var/list/validation = H.mind.validate_formula_magic_word_list(draft_words)
+			var/reading_required = validation["reading_required"] || 0
+			if(H.get_skill_level(/datum/skill/misc/reading) < reading_required)
+				to_chat(H, span_warning("I need Reading [reading_required] to scribe that formula."))
+				return TRUE
+			if(!validation["valid"])
+				to_chat(H, span_warning("The formula is not valid enough to scribe."))
+				return TRUE
+			var/obj/item/paper/scroll/formula_magic/scroll = new(get_turf(H))
+			scroll.set_formula_magic_scroll(name, draft_words, H.mind)
+			H.put_in_hands(scroll, TRUE)
+			return TRUE
+
+		if("read_formula_scroll")
+			var/obj/item/paper/scroll/formula_magic/scroll
+			for(var/obj/item/paper/scroll/formula_magic/held in H.held_items)
+				scroll = held
+				break
+			if(!scroll)
+				to_chat(H, span_warning("I need to hold a formula scroll."))
+				return TRUE
+			if(H.get_skill_level(/datum/skill/misc/reading) < scroll.reading_required)
+				to_chat(H, span_warning("I need Reading [scroll.reading_required] to read that formula."))
+				return TRUE
+			draft_words = scroll.formula_words.Copy()
+			SStgui.update_uis(src)
+			return TRUE
+
 	return FALSE
 
 /proc/formula_magic_school_names()
 	return list(
-		FORMULA_SCHOOL_GENERAL = "General Magic",
+		FORMULA_SCHOOL_GENERAL = "Neuromancy",
 		FORMULA_SCHOOL_PYROMANCY = "Pyromancy",
 		FORMULA_SCHOOL_CRYOMANCY = "Cryomancy",
 		FORMULA_SCHOOL_FULGURMANCY = "Fulgurmancy",

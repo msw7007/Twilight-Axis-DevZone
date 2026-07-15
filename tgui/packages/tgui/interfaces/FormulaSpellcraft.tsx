@@ -58,12 +58,24 @@ type Preset = {
   mana_cost: number;
   cast_time: number;
   complexity: number;
+  arcane_required?: number;
+  reading_required?: number;
+  requirements?: string[];
+  export_json?: string;
 };
 
 type DraftPart = {
   name: string;
   words: string[];
   indexes: number[];
+};
+
+type Validation = {
+  valid?: boolean;
+  missing?: string[];
+  requirements?: string[];
+  arcane_required?: number;
+  reading_required?: number;
 };
 
 type Data = {
@@ -79,6 +91,8 @@ type Data = {
   form_names?: Record<string, string>;
   form_unlocks?: Record<string, number>;
   presets?: Preset[];
+  draft_export_json?: string;
+  draft_validation?: Validation;
 };
 
 const roleNames: Record<string, string> = {
@@ -111,11 +125,12 @@ export const FormulaSpellcraft = () => {
   const form_names = data.form_names || {};
   const form_unlocks = data.form_unlocks || {};
 
-  const [tab, setTab] = useState<'forms' | 'schools' | 'presets'>('forms');
+  const [tab, setTab] = useState<'forms' | 'schools' | 'presets' | 'library'>('forms');
   const [role, setRole] = useState('form');
   const [schoolFilter, setSchoolFilter] = useState('all');
   const [selectedSchool, setSelectedSchool] = useState('');
   const [presetName, setPresetName] = useState('');
+  const [importJson, setImportJson] = useState('');
 
   const byId = useMemo(() => new Map(words.map((word) => [word.id, word])), [words]);
   const schoolEntries = Object.entries(school_names).filter(([id]) => id !== 'arcane' && school_access[id] !== false);
@@ -167,6 +182,7 @@ export const FormulaSpellcraft = () => {
             <TabButton active={tab === 'forms'} onClick={() => setTab('forms')} label="Forms" />
             <TabButton active={tab === 'schools'} onClick={() => setTab('schools')} label="Schools" />
             <TabButton active={tab === 'presets'} onClick={() => setTab('presets')} label="Precreation" />
+            <TabButton active={tab === 'library'} onClick={() => setTab('library')} label="Library" />
             <button
               type="button"
               disabled={!progression.dirty}
@@ -336,7 +352,41 @@ export const FormulaSpellcraft = () => {
                   <span style={mutedStyle}>Saved presets become spell buttons on the hotbar.</span>
                 </div>
 
-                <div style={{ marginTop: '16px', ...titleStyle }}>Presets</div>
+                <div style={{ marginTop: '12px', ...mutedStyle }}>Saved formulas are managed in Library.</div>
+              </div>
+            </div>
+          )}
+
+          {tab === 'library' && (
+            <div style={{ ...bodyStyle, display: 'grid', gridTemplateColumns: '360px minmax(0, 1fr)', gap: '10px', minHeight: 0 }}>
+              <div style={{ overflowY: 'auto' }}>
+                <FormulaDetails preview={preview} />
+                <div style={panelStyle}>
+                  <div style={titleStyle}>Current Draft JSON</div>
+                  <textarea readOnly value={data.draft_export_json || ''} style={textareaStyle} />
+                  <Requirements validation={data.draft_validation} />
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', marginTop: '8px' }}>
+                    <button type="button" onClick={() => act('create_formula_scroll', { name: presetName || 'Formula Scroll' })} style={buttonStyle('#8fa6d8')}>
+                      Create Scroll
+                    </button>
+                    <button type="button" onClick={() => act('read_formula_scroll')} style={buttonStyle('#5f6f89')}>
+                      Read Held Scroll
+                    </button>
+                  </div>
+                </div>
+
+                <div style={{ ...panelStyle, marginTop: '10px' }}>
+                  <div style={titleStyle}>Import JSON</div>
+                  <textarea value={importJson} onChange={(event: ChangeEvent<HTMLTextAreaElement>) => setImportJson(event.currentTarget.value)} style={textareaStyle} />
+                  <button type="button" onClick={() => act('import_formula', { json: importJson })} style={buttonStyle('#426f55')}>
+                    Import
+                  </button>
+                </div>
+              </div>
+
+              <div style={{ overflowY: 'auto' }}>
+                <div style={titleStyle}>Saved Formula Library</div>
+                <div style={mutedStyle}>No availability filter. Entries can be loaded even if the current build cannot cast them yet.</div>
                 <div style={wordListStyle}>
                   {presets.map((preset, index) => (
                     <div key={`${preset.name}-${index}`} style={panelStyle}>
@@ -345,20 +395,29 @@ export const FormulaSpellcraft = () => {
                           <div style={titleStyle}>{preset.name}</div>
                           <div style={mutedStyle}>{preset.summary}</div>
                           <div style={tagLineStyle}>
-                            Mana {preset.mana_cost} | Time {preset.cast_time} | Complexity {preset.complexity}
+                            Mana {preset.mana_cost} | Time {preset.cast_time} | Complexity {preset.complexity} | Arcane {preset.arcane_required || 0} | Reading {preset.reading_required || 0}
                           </div>
+                          {!!preset.requirements?.length && <div style={descStyle}>Requires: {preset.requirements.join(', ')}</div>}
                         </div>
-                        <div style={{ display: 'flex', gap: '6px' }}>
+                        <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', justifyContent: 'flex-end' }}>
                           <button type="button" onClick={() => act('load_preset', { index: index + 1 })} style={buttonStyle('#5f6f89')}>
                             Load
                           </button>
+                          <button type="button" onClick={() => act('rename_preset', { index: index + 1 })} style={buttonStyle('#5f6f89')}>
+                            Rename
+                          </button>
+                          <button type="button" onClick={() => act('update_preset', { index: index + 1 })} style={buttonStyle('#756142')}>
+                            Update
+                          </button>
                           <button type="button" onClick={() => act('delete_preset', { index: index + 1 })} style={buttonStyle('#76505a')}>
-                            X
+                            Delete
                           </button>
                         </div>
                       </div>
+                      <textarea readOnly value={preset.export_json || ''} style={textareaStyle} />
                     </div>
                   ))}
+                  {!presets.length && <div style={mutedStyle}>No saved formulas.</div>}
                 </div>
               </div>
             </div>
@@ -368,6 +427,16 @@ export const FormulaSpellcraft = () => {
     </Window>
   );
 };
+
+const Requirements = (props: { validation?: Validation }) => (
+  <div style={{ marginTop: '8px' }}>
+    <div style={{ color: props.validation?.valid ? '#9ee6a0' : '#c58b75', fontSize: '12px', fontWeight: 800 }}>
+      {props.validation?.valid ? 'Validator: ready' : 'Validator: incomplete'}
+    </div>
+    {!!props.validation?.requirements?.length && <div style={descStyle}>Requires: {props.validation.requirements.join(', ')}</div>}
+    {!!props.validation?.missing?.length && <div style={descStyle}>Missing: {props.validation.missing.join(', ')}</div>}
+  </div>
+);
 
 const Header = (props: { progression: Progression }) => (
   <div style={{ padding: '10px 12px', borderBottom: '1px solid #273142' }}>
@@ -511,6 +580,7 @@ const tokenStyle = { minWidth: '84px', minHeight: '44px', background: '#171d27',
 const tokenSubStyle = { color: '#9fb1ce', fontSize: '10px', marginTop: '4px', fontWeight: 500 } as const;
 const selectStyle = { width: '100%', marginTop: '8px', background: '#171d27', color: '#dce6f5', border: '1px solid #394455', padding: '6px' } as const;
 const inputStyle = { flex: 1, background: '#171d27', color: '#dce6f5', border: '1px solid #394455', padding: '6px' } as const;
+const textareaStyle = { width: '100%', minHeight: '92px', marginTop: '8px', background: '#0f131a', color: '#dce6f5', border: '1px solid #394455', padding: '6px', resize: 'vertical' as const, fontFamily: 'monospace', fontSize: '11px' } as const;
 
 const buttonStyle = (color: string) => ({
   background: '#171d27',
@@ -553,19 +623,19 @@ const comboLineStyle = { color: '#d6dfef', fontSize: '11px', paddingLeft: '6px',
 
 const schoolDescription = (schoolId: string) => {
   const descriptions: Record<string, string> = {
-    general_magic: 'Common magic holds mind-work and broad utility: omen reading, mental messages, mindlinks, and the Mind effect. Mind confuses hostile targets for two seconds per spoken word.',
+    general_magic: 'Neuromancy holds mind-work and broad utility: omen reading, mental messages, mindlinks, and the Mind effect. Mind confuses hostile targets for two seconds per spoken word.',
     pyromancy: 'Pyromancy adds heat, direct fire damage, and burning. Fire is raw damage; Burning is the separate ignition word and handles fire stacks.',
-    cryomancy: 'Cryomancy adds cold damage and frostbite. Frostbite builds frost stacks, damps flames, and supports freezing zones or preservation through Summon + Frost.',
+    cryomancy: 'Cryomancy adds cold damage and frostbite. Frostbite builds frost stacks, damps flames, and supports freezing zones through Summon + Frost + Frostbite or preservation through Summon + Frost.',
     fulgurmancy: 'Fulgurmancy adds lightning damage and discharge. Lightning is direct shock; Discharge adds brief electrical disruption and smoke marks through Summon.',
-    geomancy: 'Geomancy adds stone force and immobilizing earth. Stone is blunt force and brick material; Immobilize pins targets or raises a stone wall through Summon.',
+    geomancy: 'Geomancy adds stone force and dirt. Stone is blunt force and brick material; Dirt slows struck targets for 3 seconds plus 3 per extra word, shapes temporary muddy ground through Summon, and hardens into an earthen wall when Summon is paired with Existence.',
     kinesis: 'Kinesis changes motion: force, repulse, gravity, pull, and cleanse. Repulse is not damage; its strength is distance and control.',
-    displacement: 'Displacement moves or anchors space: shift, phase, and holdfast. It drives blink-like effects and counters movement by anchoring targets.',
+    displacement: 'Displacement moves or anchors space: shift, phase, holdfast, and fixed teleport runes. A teleport rune is permanent, remembered by creation or examination, and moves the clicking mage plus nearby bodies to the remembered rune.',
     augmentation: 'Augmentation improves the caster through Aura, stats, darkvision, nondetection, and fixed high-grade support formulas.',
     curses: 'Curses weaken and disrupt: stat curses, blindness, silence, reveal, and fixed counter-guidance effects.',
     artifice_warding: 'Artifice shapes metal and blades. Iron damages armor layers and forms protections through Aura/Cloak; Blade plants spinning blade fields.',
-    biomancy: 'Biomancy shapes living matter. Creation produces short-lived predatory plant matter and combines with elements for higher summons.',
+    biomancy: 'Biomancy shapes living matter. Creation produces short-lived man-eater plant matter and combines with elements for higher summons.',
     necromancy: 'Necromancy is restricted test magic. Bone hits harder than pure arcane force and supports necromantic fixed formulas.',
-    chronomancy: 'Chronomancy is restricted Origin magic. Time creates temporal stress; Restoration is expensive healing/rewind work; Reversion is a fixed anchor formula.',
+    chronomancy: 'Chronomancy is restricted Origin magic.',
   };
   return descriptions[schoolId] || 'A formula school. Invest points to unlock words, then save knowledge to make them usable.';
 };
@@ -582,52 +652,42 @@ const wordCombos = (word: Word) => {
   if (word.id === 'frost') {
     add('Summon + Frost: temporary chill on a food container.');
     add('Summon + Creation + Frost: water primordial.');
-    add('Nova + Frost + Frostbite + Widen + Existence: frozen mist style zone.');
+    add('Summon + Frost + Frostbite: frozen mist zone.');
   }
   if (word.id === 'lightning') {
     add('Summon + Lightning: formula light.');
     add('Summon + Creation + Lightning: air primordial.');
-    add('Moment + Lightning + Discharge + Widen + Recall: sundering lightning style strike.');
+    add('Moment + Lightning + Discharge.');
   }
   if (word.id === 'stone') {
     add('Summon + Stone: formula brick, one per Stone word.');
     add('Creation + Stone: Ratmouse, large rats in affected tiles.');
-    add('Meteor + Stone + Widen: cataclysm-like impact.');
+  }
+  if (word.id === 'immobilize') {
+    add('Summon + Dirt: temporary muddy ground patch.');
+    add('Summon + Dirt + Existence: earthen wall, 150 integrity + 50 per Existence word.');
   }
   if (word.id === 'creation') {
-    add('Summon + Creation: temporary man-eater plant.');
     add('Creation + Stone: Ratmouse.');
     add('Summon + Creation + Fire/Frost/Lightning: matching primordial.');
   }
   if (word.id === 'iron') {
     add('Aura + Iron: protective iron ring.');
     add('Cloak + Iron: dragon-hide protection.');
-    add('Orb + Iron + Pierce: arcyne lance style armor-piercing hit.');
-  }
-  if (word.id === 'blade') {
-    add('Summon + Blade: spinning blade field.');
-    add('Cloak + Blade + Existence: blade dance style aura.');
-    add('Wave + Blade: falling crescent style slash line.');
   }
   if (word.id === 'mind') {
     add('Moment + Mind: mind message style target contact.');
     add('Aura + Mind + Existence: mindlink style connection.');
     add('On hostile hit: confusion for two seconds per Mind word.');
   }
-  if (word.id === 'time') {
-    add('Time alone: temporal stress.');
-    add('Time + Restoration: expensive temporal repair.');
-    add('Reversion: fixed formula, not mixed into custom formulas.');
+  if (word.id === 'prebuilt_teleport_rune') {
+    add('Creates a permanent displacement rune.');
+    add('Limit: Arcane skill + 1 active runes created by that mage.');
+    add('Examining a rune remembers it; clicking another rune moves nearby bodies to the remembered rune.');
   }
   if (tags.includes('ignite')) add('Summon + Burning: brief burning tile.');
-  if (tags.includes('frost_stack')) add('Summon + Frostbite: icy mark.');
+  if (tags.includes('frost_stack')) add('Summon + Frostbite: icy tiles.');
   if (tags.includes('electrocute')) add('Summon + Discharge: smoke/discharge mark.');
-  if (tags.includes('anchor_target')) add('Summon + Holdfast/Immobilize: wall or anchored target.');
-  if (tags.includes('cleanse')) add('Wave/Nova + Cleanse: broad cleaning pulse.');
-  if (tags.includes('push')) add('Nova + Repulse: outward shove around caster.');
-  if (tags.includes('pull')) add('Touch/Moment + Pull: draw target toward impact.');
-  if (tags.includes('curse_blindness')) add('Moment + Blindness: first target on tile is blinded.');
-  if (tags.includes('silence')) add('Moment + Silence: suppresses speech.');
   return combos;
 };
 

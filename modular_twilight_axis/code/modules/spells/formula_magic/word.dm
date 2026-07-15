@@ -413,15 +413,15 @@
 
 /datum/formula_magic_word/post_effect/immobilize
 	id = "immobilize"
-	name = "Immobilize"
-	desc = "Anchors struck targets in stone and can shape a stone wall when summoned."
+	name = "Dirt"
+	desc = "Turns earth against movement. Struck targets are slowed for 3 seconds plus 3 per extra word; Summon shapes a temporary muddy patch."
 	school_id = FORMULA_SCHOOL_GEOMANCY
 	role = FORMULA_WORD_ELEMENT
 	mana_cost = 2
 	cast_time = 6
 	complexity = 2
-	tags = list("anchor_target")
-	phrases = list("Tene terra.", "Radices lapidis.", "Saxum ligat.")
+	tags = list("dirt", "slow")
+	phrases = list("Lutum.", "Terra lenta.", "Pedem tene.")
 
 /datum/formula_magic_word/element/force
 	id = "force"
@@ -513,6 +513,19 @@
 	unlock_level = 2
 	tags = list("anchor_target")
 	phrases = list("Tene.", "Locus tene.", "Nodus figat.")
+
+/datum/formula_magic_word/prebuilt/teleport_rune
+	id = "prebuilt_teleport_rune"
+	name = "Teleport Rune"
+	desc = "Fixed displacement formula. Creates a permanent travel rune. Arcane skill limits how many a mage may hold."
+	school_id = FORMULA_SCHOOL_DISPLACEMENT
+	mana_cost = 12
+	cast_time = 30
+	complexity = 4
+	unlock_level = 2
+	tags = list("prebuilt_formula", "prebuilt_teleport_rune")
+	phrases = list("Imagana.")
+	spoken_phrases = list("Imagana.", "Locus memor.", "Porta sine via.", "Nodus redit.")
 
 /datum/formula_magic_word/post_effect/stat_strength
 	id = "stat_strength"

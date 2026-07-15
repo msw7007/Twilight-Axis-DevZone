@@ -176,3 +176,48 @@
 		for(var/i in 1 to length(phrases))
 			result += phrase_delay
 	return result
+
+/obj/item/paper/scroll/formula_magic
+	name = "formula scroll"
+	desc = "A scroll bearing a modular formula written in exacting arcyne notation."
+	icon = 'icons/obj/wizard.dmi'
+	icon_state = "scroll"
+	var/list/formula_words = list()
+	var/formula_name = "Formula"
+	var/formula_json = ""
+	var/arcane_required = 1
+	var/reading_required = 1
+
+/obj/item/paper/scroll/formula_magic/proc/set_formula_magic_scroll(new_name, list/word_ids, datum/mind/writer)
+	formula_name = sanitize(copytext("[new_name || "Formula Scroll"]", 1, 48))
+	if(!length(formula_name))
+		formula_name = "Formula Scroll"
+	formula_words = writer?.formula_magic_normalized_word_list(word_ids) || list()
+	arcane_required = writer?.get_formula_magic_arcane_requirement(formula_words) || 1
+	reading_required = arcane_required
+	formula_json = writer?.formula_magic_export_json(formula_name, formula_words) || json_encode(list("kind" = "twilight_axis_formula", "version" = 1, "name" = formula_name, "words" = formula_words))
+	name = "[formula_name] formula scroll"
+	desc = "A scroll bearing [formula_name]. It requires Reading [reading_required] to read or invoke."
+
+/obj/item/paper/scroll/formula_magic/attack_self(mob/user)
+	if(!ishuman(user))
+		return ..()
+	var/mob/living/carbon/human/H = user
+	if(H.get_skill_level(/datum/skill/misc/reading) < reading_required)
+		to_chat(H, span_warning("I need Reading [reading_required] to read this formula."))
+		return
+	to_chat(H, span_notice("[formula_name]: [formula_json]"))
+	return TRUE
+
+/obj/item/paper/scroll/formula_magic/afterattack(atom/target, mob/living/user, proximity, click_parameters)
+	. = ..()
+	if(!ishuman(user))
+		return
+	var/mob/living/carbon/human/H = user
+	if(H.get_skill_level(/datum/skill/misc/reading) < reading_required)
+		to_chat(H, span_warning("I need Reading [reading_required] to invoke this scroll."))
+		return
+	if(!H.mind)
+		return
+	if(H.mind.perform_formula_magic_scroll_cast(H, formula_words, target))
+		qdel(src)

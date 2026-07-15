@@ -23,6 +23,25 @@
 	qdel(formula)
 	return TRUE
 
+/datum/mind/proc/perform_formula_magic_scroll_cast(mob/living/carbon/human/caster, list/word_ids, atom/cast_on)
+	if(!caster || !length(word_ids))
+		return FALSE
+	var/arcane_required = get_formula_magic_arcane_requirement(word_ids)
+	if(caster.get_skill_level(/datum/skill/misc/reading) < arcane_required)
+		to_chat(caster, span_warning("I need Reading [arcane_required] to follow this formula scroll."))
+		return FALSE
+	var/datum/formula_magic_formula/formula = build_formula_magic_raw_formula(word_ids)
+	if(!formula || !formula.can_resolve())
+		to_chat(caster, span_warning("The scroll's formula refuses to resolve."))
+		qdel(formula)
+		return FALSE
+	var/list/speech_phrases = formula_magic_speech_phrases_for_words(word_ids)
+	for(var/phrase in speech_phrases)
+		caster.say(phrase, forced = "spell", language = /datum/language/common)
+	resolve_formula_magic_effect(caster, formula, cast_on)
+	qdel(formula)
+	return TRUE
+
 /proc/resolve_formula_magic_effect(mob/living/carbon/human/caster, datum/formula_magic_formula/formula, atom/cast_on, atom/guidance_start)
 	if(!caster || !formula)
 		return FALSE
@@ -309,6 +328,8 @@
 		return formula_magic_prebuilt_message(caster)
 	if(tags["prebuilt_mindlink"])
 		return formula_magic_prebuilt_mindlink(caster)
+	if(tags["prebuilt_teleport_rune"])
+		return formula_magic_prebuilt_teleport_rune(caster, cast_on)
 	if(tags["prebuilt_reversion"])
 		return formula_magic_prebuilt_reversion(caster, cast_on, formula)
 	if(tags["prebuilt_lesser_knock"])
@@ -533,6 +554,26 @@
 		to_chat(caster, span_warning("The shelter formula finds no open ground."))
 		return FALSE
 	caster.visible_message(span_notice("[caster] raises a brief arcyne shelter."))
+	return TRUE
+
+/proc/formula_magic_prebuilt_teleport_rune(mob/living/carbon/human/caster, atom/cast_on)
+	if(!caster?.mind)
+		return FALSE
+	var/turf/T = formula_magic_prebuilt_turf(caster, cast_on)
+	if(!T || !isopenturf(T) || T.is_blocked_turf(exclude_mobs = TRUE))
+		to_chat(caster, span_warning("The teleport rune needs open ground."))
+		return FALSE
+	if(!caster.mind.can_register_formula_magic_teleport_rune())
+		to_chat(caster, span_warning("My arcane memory can only bind [caster.mind.get_formula_magic_teleport_rune_limit()] teleport rune(s)."))
+		return FALSE
+	if(locate(/obj/structure/formula_magic_teleport_rune) in T)
+		to_chat(caster, span_warning("A teleport rune already holds this ground."))
+		return FALSE
+	var/obj/structure/formula_magic_teleport_rune/rune = new(T)
+	if(!rune.setup_formula_teleport_rune(caster))
+		qdel(rune)
+		return FALSE
+	caster.visible_message(span_notice("[caster] fixes a displacement rune into the ground."))
 	return TRUE
 
 /proc/formula_magic_apply_surge(mob/living/target)
@@ -1182,7 +1223,7 @@
 /proc/formula_magic_has_pulse_payload(list/tags)
 	if(!length(tags))
 		return FALSE
-	if(tags["damage_arcane"] || tags["damage_burn"] || tags["ignite"] || tags["damage_cold"] || tags["frost_stack"] || tags["damage_shock"] || tags["electrocute"] || tags["damage_blunt"] || tags["damage_force"] || tags["metal"] || tags["bone"] || tags["blade_field"] || tags["shrapnel"] || tags["push"] || tags["pull"] || tags["gravity"] || tags["cleanse"] || tags["shift_target"] || tags["anchor_target"] || tags["silence"] || tags["repair"] || tags["mind"] || tags["time"] || tags["temporal_acceleration"] || tags["temporal_deceleration"] || tags["temporal_restore"] || tags["temporal_reversion"])
+	if(tags["damage_arcane"] || tags["damage_burn"] || tags["ignite"] || tags["damage_cold"] || tags["frost_stack"] || tags["damage_shock"] || tags["electrocute"] || tags["damage_blunt"] || tags["damage_force"] || tags["metal"] || tags["bone"] || tags["blade_field"] || tags["shrapnel"] || tags["push"] || tags["pull"] || tags["gravity"] || tags["cleanse"] || tags["shift_target"] || tags["anchor_target"] || tags["dirt"] || tags["silence"] || tags["repair"] || tags["mind"] || tags["time"] || tags["temporal_acceleration"] || tags["temporal_deceleration"] || tags["temporal_restore"] || tags["temporal_reversion"])
 		return TRUE
 	return FALSE
 
@@ -1245,6 +1286,14 @@
 		target.fire_act()
 		caster.visible_message(span_notice("[caster] summons a brief burning tile."))
 		return TRUE
+	if(formula.tags["damage_cold"] && formula.tags["frost_stack"])
+		var/list/mist_summary = formula.get_summary()
+		var/mist_radius = max(1, formula.radius || 1)
+		var/mist_duration = max(10 SECONDS, mist_summary["duration"] || 10 SECONDS)
+		mist_summary["tags"]["existence_duration"] = mist_duration
+		formula_magic_create_lingering_zones(caster, mist_summary, target, mist_radius)
+		caster.visible_message(span_notice("[caster] summons a frozen mist."))
+		return TRUE
 	if(formula.tags["damage_cold"])
 		if(formula.tags["creation"])
 			return formula_magic_summon_primordial(caster, target, /mob/living/simple_animal/hostile/retaliate/rogue/primordial/water)
@@ -1258,7 +1307,7 @@
 		return TRUE
 	if(formula.tags["frost_stack"])
 		new /obj/effect/temp_visual/snap_freeze(target)
-		caster.visible_message(span_notice("[caster] freezes the tile into a brittle patch of ice."))
+		caster.visible_message(span_notice("[caster] freezes the ground into brittle ice."))
 		return TRUE
 	if(formula.tags["blade_field"])
 		new /obj/effect/formula_magic_blade_field(target, caster, max(1, round(formula.power * 0.35)), max(10 SECONDS, formula.duration || 10 SECONDS), formula.radius || 0)
@@ -1274,11 +1323,21 @@
 		new /obj/effect/temp_visual/small_smoke(target)
 		caster.visible_message(span_notice("[caster] summons a smoking discharge mark."))
 		return TRUE
+	if(formula.tags["dirt"])
+		var/existence_words = max(0, formula.tags["existence"] || 0)
+		if(existence_words > 0)
+			var/obj/structure/earthen_wall/formula/wall = new(target)
+			var/wall_integrity = 150 + (existence_words * 50)
+			wall.setup_formula_earthen_wall(max(30 SECONDS, formula.duration || 60 SECONDS), wall_integrity)
+			caster.visible_message(span_notice("[caster] hardens formula mud into a temporary wall."))
+		else
+			var/obj/effect/formula_magic_dirt/dirt = new(target)
+			dirt.setup_formula_dirt(max(10 SECONDS, formula.duration || 30 SECONDS), max(1, formula.tags["dirt"] || 1))
+			caster.visible_message(span_notice("[caster] churns the ground into formula mud."))
+		return TRUE
 	if(formula.tags["anchor_target"])
-		var/obj/structure/earthen_pillar/pillar = new(target)
-		pillar.max_integrity = max(pillar.max_integrity, formula.power * 5)
-		pillar.obj_integrity = pillar.max_integrity
-		caster.visible_message(span_notice("[caster] raises a stone wall from the formula."))
+		resolve_formula_magic_area_effect(caster, formula.get_summary(), target)
+		caster.visible_message(span_notice("[caster] anchors the target space."))
 		return TRUE
 	if(formula.tags["ratmouse"])
 		return formula_magic_spawn_ratmouse(caster, target, max(10 SECONDS, formula.duration || 30 SECONDS))
@@ -1425,6 +1484,10 @@
 			if(tags["anchor_target"] && formula_magic_stack_chance_succeeds(summary))
 				L.apply_status_effect(STATUS_EFFECT_IMMOBILIZED, max(1 SECONDS, tags["anchor_target"] * 2 SECONDS))
 				new /obj/effect/temp_visual/gravity(get_turf(L))
+			if(tags["dirt"] && formula_magic_stack_chance_succeeds(summary))
+				var/dirt_words = max(1, tags["dirt"] || 1)
+				L.Slowdown(3 + ((dirt_words - 1) * 3))
+				new /obj/effect/temp_visual/spell_impact(get_turf(L), "#7A5B35", SPELL_IMPACT_LOW)
 			if(tags["damage_blunt"] || tags["damage_force"])
 				formula_magic_apply_damage(L, max(1, round(power * 0.5)), BRUTE)
 			if(tags["metal"])
@@ -2446,6 +2509,15 @@
 		set_light(1, 1, 1, l_color = effect_color)
 	QDEL_IN(src, max(10 SECONDS, lifespan || 60 SECONDS))
 
+/obj/structure/earthen_wall/formula
+	name = "formula earthen wall"
+	timeleft = 0
+
+/obj/structure/earthen_wall/formula/proc/setup_formula_earthen_wall(lifespan, integrity)
+	max_integrity = max(1, integrity || 150)
+	obj_integrity = max_integrity
+	QDEL_IN(src, max(10 SECONDS, lifespan || 60 SECONDS))
+
 /obj/structure/formula_magic_forge
 	name = "formula forge"
 	desc = "A temporary arcyne working surface."
@@ -2458,6 +2530,124 @@
 	add_atom_colour("#36B36A", FIXED_COLOUR_PRIORITY)
 	set_light(2, 1, 1, l_color = "#36B36A")
 	QDEL_IN(src, max(30 SECONDS, lifespan || 5 MINUTES))
+
+/obj/effect/formula_magic_dirt
+	name = "formula mud"
+	desc = "A temporary patch of earth churned by spoken geomancy."
+	icon = 'modular_twilight_axis/icons/effects/formula_magic.dmi'
+	icon_state = "formula_summon"
+	anchored = TRUE
+	density = FALSE
+	alpha = 135
+	layer = ABOVE_NORMAL_TURF_LAYER
+	var/slow_amount = 3
+
+/obj/effect/formula_magic_dirt/proc/setup_formula_dirt(lifespan, dirt_words)
+	add_atom_colour("#7A5B35", FIXED_COLOUR_PRIORITY)
+	var/word_count = max(1, dirt_words || 1)
+	slow_amount = 3 + ((word_count - 1) * 3)
+	for(var/mob/living/L in loc)
+		L.Slowdown(slow_amount)
+	QDEL_IN(src, max(10 SECONDS, lifespan || 30 SECONDS))
+	return TRUE
+
+/obj/effect/formula_magic_dirt/Crossed(atom/movable/AM, oldloc)
+	. = ..()
+	if(isliving(AM))
+		var/mob/living/L = AM
+		L.Slowdown(slow_amount)
+
+/obj/structure/formula_magic_teleport_rune
+	name = "formula teleport rune"
+	desc = "A permanent displacement rune fixed into the ground."
+	icon = 'modular_twilight_axis/icons/effects/formula_magic.dmi'
+	icon_state = "formula_rune"
+	anchored = TRUE
+	density = FALSE
+	alpha = 190
+	layer = ABOVE_NORMAL_TURF_LAYER
+	resistance_flags = FIRE_PROOF | ACID_PROOF
+	var/datum/mind/creator_mind
+
+/obj/structure/formula_magic_teleport_rune/Destroy()
+	if(creator_mind)
+		creator_mind.unregister_formula_magic_teleport_rune(src)
+	creator_mind = null
+	. = ..()
+
+/obj/structure/formula_magic_teleport_rune/proc/setup_formula_teleport_rune(mob/living/carbon/human/caster)
+	if(!caster?.mind)
+		return FALSE
+	creator_mind = caster.mind
+	add_atom_colour("#A040FF", FIXED_COLOUR_PRIORITY)
+	set_light(1, 1, 1, l_color = "#A040FF")
+	return creator_mind.register_formula_magic_teleport_rune(src)
+
+/obj/structure/formula_magic_teleport_rune/examine(mob/user)
+	. = ..()
+	var/mob/living/carbon/human/H = user
+	if(istype(H) && H.mind)
+		H.mind.remember_formula_magic_teleport_rune(src)
+		. += span_notice("The rune settles into my arcane memory.")
+
+/obj/structure/formula_magic_teleport_rune/attack_hand(mob/user)
+	. = ..()
+	var/mob/living/carbon/human/H = user
+	if(!istype(H) || !H.mind)
+		return
+	if(!H.mind.formula_magic_committed)
+		to_chat(H, span_warning("I do not know how to wake this rune."))
+		return
+	H.mind.remember_formula_magic_teleport_rune(src)
+	var/list/known_runes = H.mind.get_formula_magic_remembered_teleport_runes(src)
+	if(!length(known_runes))
+		H.mind.remember_formula_magic_teleport_rune(src)
+		to_chat(H, span_notice("I commit this rune to memory."))
+		return
+	var/list/rune_choices = list()
+	for(var/obj/structure/formula_magic_teleport_rune/rune as anything in known_runes)
+		var/turf/T = get_turf(rune)
+		if(!T)
+			continue
+		rune_choices["Rune at [T.x], [T.y], [T.z]"] = rune
+	if(!length(rune_choices))
+		to_chat(H, span_warning("No remembered rune can answer this one."))
+		return
+	var/choice = tgui_input_list(H, "Choose the remembered rune to travel to.", "Teleport Rune", rune_choices)
+	if(!choice)
+		return
+	var/obj/structure/formula_magic_teleport_rune/destination = rune_choices[choice]
+	if(!destination || QDELETED(destination) || destination == src)
+		to_chat(H, span_warning("The chosen rune slips from memory."))
+		return
+	formula_magic_teleport_rune_group(H, destination)
+
+/obj/structure/formula_magic_teleport_rune/proc/formula_magic_teleport_rune_group(mob/living/carbon/human/user, obj/structure/formula_magic_teleport_rune/destination)
+	var/turf/source = get_turf(src)
+	var/turf/destination_center = get_turf(destination)
+	if(!source || !destination_center)
+		return FALSE
+	var/moved = 0
+	for(var/mob/living/L in range(1, source))
+		if(!L || QDELETED(L))
+			continue
+		var/turf/current = get_turf(L)
+		if(!current)
+			continue
+		var/dx = current.x - source.x
+		var/dy = current.y - source.y
+		var/turf/landing = locate(destination_center.x + dx, destination_center.y + dy, destination_center.z)
+		if(!landing || !isopenturf(landing) || landing.is_blocked_turf(exclude_mobs = FALSE))
+			landing = destination_center
+		if(do_teleport(L, landing, channel = TELEPORT_CHANNEL_MAGIC))
+			moved++
+	if(moved)
+		playsound(source, 'sound/magic/teleport_diss.ogg', 80, TRUE)
+		playsound(destination_center, 'sound/magic/teleport_diss.ogg', 80, TRUE)
+		user.visible_message(span_notice("[user] wakes the displacement rune."))
+		return TRUE
+	to_chat(user, span_warning("The remembered rune rejects the passage."))
+	return FALSE
 
 /obj/effect/temp_visual/formula_magic_zone
 	icon = 'modular_twilight_axis/icons/effects/formula_magic.dmi'
