@@ -1216,9 +1216,6 @@
 	for(var/datum/formula_magic_part/part in formula.parts)
 		if(length(part.forms))
 			part.power = max(part.power, 30)
-		var/widen_words = part.tags["widen"] || 0
-		if(widen_words > 0 && part.power > 0)
-			part.power = max(1, round(part.power * (0.8 ** widen_words)))
 		formula.power = max(formula.power, part.power)
 
 /datum/mind/proc/build_formula_magic_raw_formula(list/word_ids)
@@ -1242,6 +1239,9 @@
 	var/datum/formula_magic_formula/formula = build_formula_magic_formula(word_ids)
 	var/valid = validate_formula_magic_formula(formula, feedback)
 	var/list/requirements = get_formula_magic_formula_requirements(word_ids)
+	var/max_mana = current?.max_stamina || 0
+	if(max_mana && formula?.mana_cost > max_mana)
+		valid = FALSE
 	qdel(formula)
 	return list(
 		"valid" = valid,
@@ -1249,6 +1249,7 @@
 		"arcane_required" = requirements["arcane_required"],
 		"reading_required" = requirements["reading_required"],
 		"requirements" = requirements["requirements"],
+		"max_mana" = max_mana,
 	)
 
 /datum/mind/proc/get_formula_magic_arcane_requirement(list/word_ids)
@@ -1405,8 +1406,12 @@
 /datum/mind/proc/formula_magic_make_library_entry(preset_name, list/word_ids)
 	var/list/words = formula_magic_normalized_word_list(word_ids)
 	var/datum/formula_magic_formula/formula = build_formula_magic_formula(words)
+	var/name = sanitize(copytext("[preset_name || formula_magic_default_formula_name(words)]", 1, 48))
+	if(!length(name))
+		name = formula_magic_default_formula_name(words)
+	var/list/requirements = get_formula_magic_formula_requirements(words)
 	var/list/entry = list(
-		"name" = sanitize(copytext("[preset_name || "Orb Formula"]", 1, 48)),
+		"name" = name,
 		"words" = words.Copy(),
 		"summary" = formula?.get_formula_text() || "Empty formula",
 		"mana_cost" = formula?.mana_cost || 1,
@@ -1414,21 +1419,127 @@
 		"complexity" = formula?.complexity || 1,
 		"interrupt_chance" = formula?.interrupt_chance || 10,
 		"word_cast_times" = formula?.word_cast_times?.Copy() || list(),
-		"arcane_required" = get_formula_magic_arcane_requirement(words),
-		"reading_required" = get_formula_magic_arcane_requirement(words),
+		"arcane_required" = requirements["arcane_required"],
+		"reading_required" = requirements["reading_required"],
+		"requirements" = requirements["requirements"],
+		"export_json" = formula_magic_export_json(name, words),
 	)
 	qdel(formula)
 	return entry
 
+/proc/formula_magic_default_formula_name(list/word_ids)
+	var/list/modifiers = list()
+	var/list/elements = list()
+	var/list/forms = list()
+	for(var/word_id in word_ids)
+		var/datum/formula_magic_word/word = resolve_formula_magic_word(word_id)
+		if(!word)
+			continue
+		switch(word.role)
+			if(FORMULA_WORD_MODIFIER)
+				modifiers += word.id
+			if(FORMULA_WORD_ELEMENT)
+				elements += word.id
+			if(FORMULA_WORD_FORM)
+				forms += word.id
+	if(!length(forms) && !length(elements) && !length(modifiers))
+		return "Formula"
+	var/list/parts = list()
+	if(length(modifiers) >= 4)
+		parts += "Giant"
+	else if(length(modifiers) >= 3)
+		parts += "Huge"
+	else if(length(modifiers) >= 2)
+		parts += "Great"
+	if(length(modifiers))
+		parts += formula_magic_modifier_name_phrase(modifiers[1])
+	if(length(elements))
+		parts += formula_magic_element_name_phrase(elements[1])
+	if(length(forms))
+		parts += formula_magic_form_name_phrase(forms[length(forms)])
+	return jointext(parts, " ")
+
+/proc/formula_magic_modifier_name_phrase(word_id)
+	switch(word_id)
+		if("widen")
+			return "Wide"
+		if("efficient")
+			return "Efficient"
+		if("ricochet")
+			return "Ricocheting"
+		if("chain")
+			return "Chained"
+		if("pierce")
+			return "Piercing"
+		if("existence")
+			return "Lingering"
+		if("shrapnel")
+			return "Shrapnel"
+	var/datum/formula_magic_word/word = resolve_formula_magic_word(word_id)
+	return word?.name || "[word_id]"
+
+/proc/formula_magic_element_name_phrase(word_id)
+	switch(word_id)
+		if("fire")
+			return "Fiery"
+		if("frost")
+			return "Frost"
+		if("frostbite")
+			return "Freezing"
+		if("lightning")
+			return "Lightning"
+		if("discharge")
+			return "Discharging"
+		if("stone")
+			return "Stone"
+		if("dirt")
+			return "Earthen"
+		if("force")
+			return "Kinetic"
+		if("repulse")
+			return "Repulsive"
+		if("pull")
+			return "Pulling"
+		if("shift")
+			return "Shifting"
+		if("iron")
+			return "Iron"
+		if("blade")
+			return "Bladed"
+	var/datum/formula_magic_word/word = resolve_formula_magic_word(word_id)
+	return word?.name || "[word_id]"
+
+/proc/formula_magic_form_name_phrase(word_id)
+	var/list/names = formula_magic_form_names()
+	return names[word_id] || resolve_formula_magic_word(word_id)?.name || "[word_id]"
+
+/datum/mind/proc/find_formula_magic_preset_by_name(preset_name)
+	if(!formula_magic_saved_formulas || !length(preset_name))
+		return 0
+	var/needle = lowertext("[preset_name]")
+	for(var/i in 1 to length(formula_magic_saved_formulas))
+		var/list/preset = formula_magic_saved_formulas[i]
+		if(lowertext("[preset["name"]]") == needle)
+			return i
+	return 0
+
+/datum/mind/proc/get_formula_magic_formula_slot_limit()
+	return 1 + ((current?.get_skill_level(/datum/skill/magic/arcane) || 0) * 2)
+
 /datum/mind/proc/save_formula_magic_preset(preset_name, list/word_ids)
 	if(!formula_magic_saved_formulas)
 		formula_magic_saved_formulas = list()
-	if(length(formula_magic_saved_formulas) >= FORMULA_LIBRARY_LIMIT)
-		return FALSE
 	var/list/entry = formula_magic_make_library_entry(preset_name, word_ids)
+	var/existing_index = find_formula_magic_preset_by_name(entry["name"])
+	if(existing_index)
+		formula_magic_saved_formulas[existing_index] = entry
+		refresh_formula_magic_preset_spells()
+		return existing_index
+	if(length(formula_magic_saved_formulas) >= get_formula_magic_formula_slot_limit())
+		return FALSE
 	formula_magic_saved_formulas += list(entry)
 	refresh_formula_magic_preset_spells()
-	return TRUE
+	return length(formula_magic_saved_formulas)
 
 /datum/mind/proc/get_formula_magic_presets()
 	if(!formula_magic_saved_formulas)
@@ -1450,16 +1561,17 @@
 	refresh_formula_magic_preset_spells()
 	return TRUE
 
-/datum/mind/proc/update_formula_magic_preset(index, list/word_ids)
+/datum/mind/proc/update_formula_magic_preset(index, list/word_ids, new_name = null)
 	if(!formula_magic_saved_formulas || index < 1 || index > length(formula_magic_saved_formulas))
 		return FALSE
 	var/list/preset = formula_magic_saved_formulas[index]
-	formula_magic_saved_formulas[index] = formula_magic_make_library_entry(preset["name"], word_ids)
+	formula_magic_saved_formulas[index] = formula_magic_make_library_entry(new_name || preset["name"], word_ids)
 	refresh_formula_magic_preset_spells()
 	return TRUE
 
 /datum/mind/proc/formula_magic_export_json(preset_name, list/word_ids)
-	return json_encode(list("kind" = "twilight_axis_formula", "version" = 2, "name" = preset_name || "Orb Formula", "words" = formula_magic_normalized_word_list(word_ids)))
+	var/list/words = formula_magic_normalized_word_list(word_ids)
+	return json_encode(list("kind" = "twilight_axis_formula", "version" = 2, "name" = preset_name || formula_magic_default_formula_name(words), "words" = words))
 
 /datum/mind/proc/formula_magic_import_json(raw_json, save_import = FALSE)
 	var/list/decoded = safe_json_decode(raw_json)
@@ -1476,9 +1588,10 @@
 	if(!formula_magic_saved_formulas)
 		return
 	var/count = 0
+	var/slot_limit = get_formula_magic_formula_slot_limit()
 	for(var/list/preset in formula_magic_saved_formulas)
 		count++
-		if(count > FORMULA_SPELL_ACTION_LIMIT)
+		if(count > slot_limit)
 			break
 		AddSpell(new /datum/action/cooldown/spell/formula_preset(preset, count))
 

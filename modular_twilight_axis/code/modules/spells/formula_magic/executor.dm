@@ -2858,32 +2858,26 @@
 	var/list/form_counts = formula_magic_part_form_counts(part)
 	var/resolved = FALSE
 	var/seeker_count = formula_magic_consume_part_form_pair(form_counts, FORMULA_FORM_ORB, FORMULA_FORM_WAVE)
-	for(var/i in 1 to seeker_count)
-		if(formula_magic_execute_seeker_part(context, part))
-			resolved = TRUE
+	if(seeker_count > 0 && formula_magic_cast_shape(context, part, "seeker", 1))
+		resolved = TRUE
 	var/breath_count = formula_magic_consume_part_form_pair(form_counts, FORMULA_FORM_TOUCH, FORMULA_FORM_NOVA)
-	for(var/i in 1 to breath_count)
-		if(formula_magic_execute_breath_part(context, part))
-			resolved = TRUE
+	if(breath_count > 0 && formula_magic_cast_shape(context, part, FORMULA_FORM_BREATH, 1))
+		resolved = TRUE
 	var/meteor_count = formula_magic_consume_part_form_pair(form_counts, FORMULA_FORM_INSTANT, FORMULA_FORM_BEAM)
-	for(var/i in 1 to meteor_count)
-		if(formula_magic_execute_meteor_part(context, part, i))
-			resolved = TRUE
+	if(meteor_count > 0 && formula_magic_cast_shape(context, part, FORMULA_FORM_FALL, 1))
+		resolved = TRUE
 	var/cloak_count = formula_magic_consume_part_form_pair(form_counts, FORMULA_FORM_SPIRAL, FORMULA_FORM_AURA)
-	for(var/i in 1 to cloak_count)
-		if(formula_magic_execute_cloak_part(context, part))
-			resolved = TRUE
+	if(cloak_count > 0 && formula_magic_cast_shape(context, part, FORMULA_FORM_CLOAK, 1))
+		resolved = TRUE
 	var/rune_count = formula_magic_consume_part_form_pair(form_counts, FORMULA_FORM_SUMMON, FORMULA_FORM_GUIDANCE)
-	for(var/i in 1 to rune_count)
-		if(formula_magic_execute_rune_part(context, part, i))
-			resolved = TRUE
+	if(rune_count > 0 && formula_magic_cast_shape(context, part, FORMULA_FORM_RUNE, 1))
+		resolved = TRUE
 	if(formula_magic_remaining_part_form_type_count(form_counts) > 1)
 		return formula_magic_detonate_formula_part(context.caster, part, "unjoined forms")
 	for(var/form_id in form_counts)
 		var/count = form_counts[form_id] || 0
-		for(var/i in 1 to count)
-			if(formula_magic_execute_base_form(context, part, form_id, i))
-				resolved = TRUE
+		if(count > 0 && formula_magic_cast_shape(context, part, form_id, 1))
+			resolved = TRUE
 	return resolved
 
 /proc/formula_magic_part_form_counts(datum/formula_magic_part/part)
@@ -2900,6 +2894,15 @@
 		return 0
 	form_counts[first_form] -= count
 	form_counts[second_form] -= count
+	return count
+
+/proc/formula_magic_part_count_form(datum/formula_magic_part/part, form_id)
+	if(!part || !form_id)
+		return 0
+	var/count = 0
+	for(var/current_form in part.forms)
+		if(current_form == form_id)
+			count++
 	return count
 
 /proc/formula_magic_consume_same_part_form_pair(list/form_counts, form_id)
@@ -2921,33 +2924,363 @@
 /proc/formula_magic_detonate_formula_part(mob/living/carbon/human/caster, datum/formula_magic_part/part, reason)
 	if(!caster || !part)
 		return FALSE
-	caster.visible_message(span_danger("[caster]'s formula detonates from [reason || "instability"]!"), span_userdanger("My formula detonates from [reason || "instability"]!"))
-	caster.adjustBruteLoss(max(10, round(part.power * 0.5)))
+	var/turf/center = get_turf(caster)
+	if(!center)
+		return FALSE
+	var/toxin_force = max(1, part.mana_cost || 1)
+	var/splash_toxin = max(1, round(toxin_force * 0.25))
+	var/knockback = max(1, length(part.words))
+	caster.visible_message(span_danger("[caster]'s formula detonates from [reason || "instability"], blooming into sickly green flame!"), span_userdanger("My formula detonates from [reason || "instability"]!"))
+	caster.adjustToxLoss(toxin_force)
+	var/turf/caster_throw_target = get_ranged_target_turf(caster, turn(caster.dir, 180), knockback)
+	if(caster_throw_target)
+		caster.safe_throw_at(caster_throw_target, knockback, 1, caster, force = MOVE_FORCE_STRONG)
+	for(var/turf/T in range(1, center))
+		new /obj/effect/temp_visual/fire/shortduration/formula_magic_toxic(T)
+		for(var/mob/living/L in T)
+			if(L == caster)
+				continue
+			L.adjustToxLoss(splash_toxin)
+			var/push_dir = get_dir(center, L) || pick(NORTH, SOUTH, EAST, WEST)
+			var/turf/throw_target = get_ranged_target_turf(L, push_dir, knockback)
+			if(throw_target)
+				L.safe_throw_at(throw_target, knockback, 1, caster, force = MOVE_FORCE_STRONG)
+	return TRUE
+
+/obj/effect/temp_visual/fire/shortduration/formula_magic_toxic
+	name = "toxic green flame"
+	color = "#36B36A"
+	light_color = "#36B36A"
+	duration = 4
+
+/obj/item/formula_magic_mud_clod
+	name = "formula mud clod"
+	desc = "A brief lump of churned formula earth."
+	icon = 'modular_twilight_axis/icons/effects/formula_magic.dmi'
+	icon_state = "formula_summon"
+	w_class = WEIGHT_CLASS_SMALL
+
+/obj/item/formula_magic_mud_clod/Initialize(mapload)
+	. = ..()
+	add_atom_colour("#7A5B35", FIXED_COLOUR_PRIORITY)
+	QDEL_IN(src, 30 SECONDS)
+
+/obj/effect/formula_magic_dirt
+	name = "formula mud"
+	desc = "A temporary patch of earth churned by spoken formula."
+	icon = 'modular_twilight_axis/icons/effects/formula_magic.dmi'
+	icon_state = "formula_summon"
+	anchored = TRUE
+	density = FALSE
+	alpha = 135
+	layer = ABOVE_NORMAL_TURF_LAYER
+	var/slow_amount = 3
+
+/obj/effect/formula_magic_dirt/proc/setup_formula_dirt(lifespan, dirt_words)
+	add_atom_colour("#7A5B35", FIXED_COLOUR_PRIORITY)
+	var/word_count = max(1, dirt_words || 1)
+	slow_amount = 3 + ((word_count - 1) * 3)
+	for(var/mob/living/L in loc)
+		L.Slowdown(slow_amount)
+	QDEL_IN(src, max(10 SECONDS, lifespan || 30 SECONDS))
+	return TRUE
+
+/obj/effect/formula_magic_dirt/Crossed(atom/movable/AM, oldloc)
+	. = ..()
+	if(isliving(AM))
+		var/mob/living/L = AM
+		L.Slowdown(slow_amount)
+
+/obj/structure/formula_magic_part_rune
+	name = "formula rune"
+	desc = "A dormant formula waits in the ground."
+	icon = 'modular_twilight_axis/icons/effects/formula_magic.dmi'
+	icon_state = "formula_rune"
+	anchored = TRUE
+	density = FALSE
+	alpha = 150
+	layer = ABOVE_NORMAL_TURF_LAYER
+	var/mob/living/carbon/human/caster
+	var/datum/formula_magic_part/part
+	var/remaining_triggers = 1
+	var/next_trigger_time = 0
+
+/obj/structure/formula_magic_part_rune/Destroy()
+	caster = null
+	part = null
+	. = ..()
+
+/obj/structure/formula_magic_part_rune/proc/setup_formula_rune(mob/living/carbon/human/new_caster, datum/formula_magic_part/new_part, lifespan, trigger_count)
+	caster = new_caster
+	part = new_part
+	remaining_triggers = max(1, trigger_count || 1)
+	if(part?.impact_color)
+		add_atom_colour(part.impact_color, FIXED_COLOUR_PRIORITY)
+		set_light(1, 1, 1, l_color = part.impact_color)
+	QDEL_IN(src, max(10 SECONDS, lifespan || 60 SECONDS))
+	return TRUE
+
+/obj/structure/formula_magic_part_rune/Crossed(atom/movable/AM, oldloc)
+	. = ..()
+	if(isliving(AM))
+		trigger_formula_rune(AM)
+
+/obj/structure/formula_magic_part_rune/proc/trigger_formula_rune(mob/living/L)
+	if(!L || !part || world.time < next_trigger_time)
+		return FALSE
+	if(caster?.mind && L.mind == caster.mind)
+		return FALSE
+	var/turf/source = get_turf(src)
+	if(!source)
+		return FALSE
+	next_trigger_time = world.time + 2 SECONDS
+	var/power = formula_magic_part_power(part, FORMULA_FORM_RUNE)
+	var/ricochet_count = max(0, part.tags["ricochet"] || 0)
+	var/chain_count = max(0, part.tags["chain"] || 0)
+	var/pierce_count = max(0, part.tags["pierce"] || 0)
+	var/shrapnel_count = max(0, part.tags["shrapnel"] || 0)
+	if(ricochet_count > 0)
+		formula_magic_apply_part_area(caster, part, source, max(0, pierce_count), power, list(caster), FORMULA_FORM_NOVA)
+	else
+		formula_magic_apply_part_area(caster, part, source, max(0, part.radius || 0), power, list(caster), FORMULA_FORM_RUNE)
+	if(chain_count > 0)
+		var/list/seen = list(caster, L)
+		for(var/i in 1 to chain_count)
+			var/mob/living/next_target = formula_magic_nearest_chain_target(caster, source, seen)
+			if(!next_target)
+				break
+			seen += next_target
+			formula_magic_apply_beam_line(caster, part, source, get_turf(next_target), 0, FORMULA_FORM_GUIDANCE, FALSE, 0.5)
+	if(shrapnel_count > 0)
+		formula_magic_fire_orb_shrapnel(caster, source, power, part.impact_damage_type, part.impact_flag, part.impact_woundclass, part.impact_intdamfactor, part.impact_color, shrapnel_count)
+	if(pierce_count > 0)
+		remaining_triggers--
+		if(remaining_triggers > 0)
+			return TRUE
+	qdel(src)
+	return TRUE
+
+/obj/effect/formula_magic_part_lingering_zone
+	name = "lingering formula"
+	desc = "A spoken formula hangs here as a temporary payload zone."
+	anchored = TRUE
+	density = FALSE
+	mouse_opacity = MOUSE_OPACITY_TRANSPARENT
+	invisibility = INVISIBILITY_ABSTRACT
+	layer = ABOVE_NORMAL_TURF_LAYER
+	var/mob/living/carbon/human/caster
+	var/datum/formula_magic_part/part
+	var/power = 1
+	var/pulse_interval = 2 SECONDS
+	var/expire_time = 0
+	var/pulse_started = FALSE
+
+/obj/effect/formula_magic_part_lingering_zone/Destroy()
+	caster = null
+	part = null
+	. = ..()
+
+/obj/effect/formula_magic_part_lingering_zone/proc/setup_formula_zone(mob/living/carbon/human/new_caster, datum/formula_magic_part/new_part, new_power, lifespan)
+	caster = new_caster
+	part = new_part
+	power = max(power, new_power || 1)
+	expire_time = max(expire_time, world.time + max(1 SECONDS, lifespan || 5 SECONDS))
+	if(!pulse_started)
+		pulse_started = TRUE
+		addtimer(CALLBACK(src, PROC_REF(pulse_formula_zone)), pulse_interval)
+	return TRUE
+
+/obj/effect/formula_magic_part_lingering_zone/Crossed(atom/movable/AM, oldloc)
+	. = ..()
+	if(isliving(AM))
+		trigger_formula_zone(AM)
+
+/obj/effect/formula_magic_part_lingering_zone/proc/pulse_formula_zone()
+	if(QDELETED(src) || !part)
+		return
+	if(world.time >= expire_time)
+		qdel(src)
+		return
+	for(var/mob/living/L in loc)
+		trigger_formula_zone(L)
+	if(QDELETED(src) || !loc || !part)
+		return
+	addtimer(CALLBACK(src, PROC_REF(pulse_formula_zone)), pulse_interval)
+
+/obj/effect/formula_magic_part_lingering_zone/proc/trigger_formula_zone(mob/living/L)
+	if(!L || !part || L == caster)
+		return FALSE
+	return formula_magic_apply_payload_hit(L, caster, power, part.impact_damage_type, part.impact_flag, part.impact_woundclass, part.impact_intdamfactor)
+
+/proc/formula_magic_part_incompatible_modifier(datum/formula_magic_part/part, form_id)
+	return formula_magic_validate_shape(part, form_id)
+
+/proc/formula_magic_part_modifier_count(datum/formula_magic_part/part, modifier_id)
+	if(!part || !modifier_id)
+		return 0
+	return max(0, part.tags[modifier_id] || 0)
+
+/proc/formula_magic_part_form_repeat_count(datum/formula_magic_part/part, form_id)
+	return max(0, formula_magic_part_count_form(part, form_id))
+
+/proc/formula_magic_random_living_target(mob/living/carbon/human/caster, turf/source, list/excluded)
+	if(!source)
+		return null
+	if(!excluded)
+		excluded = list()
+	var/list/candidates = list()
+	for(var/mob/living/L in view(7, source))
+		if(L == caster || (L in excluded) || QDELETED(L))
+			continue
+		candidates += L
+	if(!length(candidates))
+		return null
+	return pick(candidates)
+
+/proc/formula_magic_random_turf_from(turf/source, radius = 5)
+	if(!source)
+		return null
+	var/list/candidates = orange(max(1, radius || 1), source)
+	if(!length(candidates))
+		return source
+	return pick(candidates)
+
+/proc/formula_magic_apply_lingering_zones(mob/living/carbon/human/caster, datum/formula_magic_part/part, list/affected_turfs, power, lifespan)
+	if(!caster || !part || !length(affected_turfs) || lifespan <= 0)
+		return FALSE
+	for(var/turf/T as anything in affected_turfs)
+		if(!T)
+			continue
+		var/obj/effect/formula_magic_part_lingering_zone/zone
+		for(var/obj/effect/formula_magic_part_lingering_zone/existing in T)
+			if(existing.caster == caster)
+				zone = existing
+				break
+		if(!zone)
+			zone = new(T)
+		zone.setup_formula_zone(caster, part, max(1, power || part.power || 1), lifespan)
+	return TRUE
+
+/proc/formula_magic_apply_form_payload_area(mob/living/carbon/human/caster, datum/formula_magic_part/part, turf/center, radius, power, list/excluded)
+	if(!center || !part)
+		return list("turfs" = list(), "targets" = list())
+	var/list/result_turfs = list()
+	var/list/hit_targets = excluded?.Copy() || list()
+	var/effective_radius = max(0, min(radius || 0, 8))
+	for(var/turf/T in range(effective_radius, center))
+		result_turfs |= T
+		new /obj/effect/temp_visual/spell_impact(T, part.impact_color, SPELL_IMPACT_LOW)
+		for(var/mob/living/L in T)
+			if(L == caster || (hit_targets && (L in hit_targets)))
+				continue
+			hit_targets |= L
+			formula_magic_apply_payload_hit(L, caster, max(1, power || part.power || 1), part.impact_damage_type, part.impact_flag, part.impact_woundclass, part.impact_intdamfactor)
+	return list("turfs" = result_turfs, "targets" = hit_targets)
+
+/proc/formula_magic_apply_instant_existence(mob/living/carbon/human/caster, datum/formula_magic_part/part, list/affected_turfs, power)
+	var/existence_count = formula_magic_part_modifier_count(part, "existence")
+	if(existence_count <= 0 || !length(affected_turfs))
+		return FALSE
+	var/existence_lifespan = max(0, part.tags["existence_duration"] || 0)
+	if(existence_lifespan > 0)
+		return formula_magic_apply_lingering_zones(caster, part, affected_turfs, power, existence_lifespan)
 	return FALSE
 
-/proc/formula_magic_execute_base_form(datum/formula_magic_context/context, datum/formula_magic_part/part, form_id, repeat_index)
-	switch(form_id)
-		if(FORMULA_FORM_ORB)
-			return formula_magic_execute_orb_part(context, part)
-		if(FORMULA_FORM_AURA)
-			return formula_magic_execute_aura_part(context, part)
-		if(FORMULA_FORM_INSTANT)
-			return formula_magic_execute_moment_part(context, part)
-		if(FORMULA_FORM_BEAM)
-			return formula_magic_execute_beam_part(context, part)
-		if(FORMULA_FORM_SPIRAL)
-			return formula_magic_execute_spiral_part(context, part)
-		if(FORMULA_FORM_SUMMON)
-			return formula_magic_execute_summon_part(context, part)
-		if(FORMULA_FORM_GUIDANCE)
-			return formula_magic_execute_guidance_part(context, part)
-		if(FORMULA_FORM_WAVE)
-			return formula_magic_execute_wave_part(context, part)
-		if(FORMULA_FORM_NOVA)
-			return formula_magic_execute_nova_part(context, part)
-		if(FORMULA_FORM_TOUCH)
-			return formula_magic_execute_touch_part(context, part)
-	return FALSE
+/proc/formula_magic_apply_matrix_existence(mob/living/carbon/human/caster, datum/formula_magic_part/part, list/affected_turfs, power)
+	return formula_magic_apply_instant_existence(caster, part, affected_turfs, power)
+
+/proc/formula_magic_apply_touch_chain(mob/living/carbon/human/caster, datum/formula_magic_part/part, turf/source, power, list/excluded)
+	var/chain_count = formula_magic_part_modifier_count(part, "chain")
+	if(chain_count <= 0)
+		return FALSE
+	var/list/visited = excluded?.Copy() || list(caster)
+	for(var/i in 1 to chain_count)
+		var/mob/living/target = formula_magic_random_living_target(caster, source, visited)
+		if(!target)
+			break
+		formula_magic_apply_form_payload_area(caster, part, get_turf(target), 0, max(1, round((power || part.power || 1) * 0.7)), visited)
+		visited |= target
+	return TRUE
+
+/proc/formula_magic_apply_moment_ricochet(mob/living/carbon/human/caster, datum/formula_magic_part/part, turf/source, power)
+	var/ricochet_count = formula_magic_part_modifier_count(part, "ricochet")
+	if(ricochet_count <= 0)
+		return FALSE
+	for(var/i in 1 to ricochet_count)
+		var/turf/random_turf = formula_magic_random_turf_from(source, max(1, part.radius || 1))
+		if(random_turf)
+			formula_magic_apply_form_payload_area(caster, part, random_turf, 0, max(1, power || part.power || 1), list(caster))
+	return TRUE
+
+/proc/formula_magic_apply_moment_chain(mob/living/carbon/human/caster, datum/formula_magic_part/part, turf/source, power, list/excluded)
+	var/chain_count = formula_magic_part_modifier_count(part, "chain")
+	if(chain_count <= 0)
+		return FALSE
+	var/list/visited = excluded?.Copy() || list(caster)
+	for(var/i in 1 to chain_count)
+		var/mob/living/target = formula_magic_random_living_target(caster, source, visited)
+		if(!target)
+			break
+		formula_magic_apply_form_payload_area(caster, part, get_turf(target), 0, max(1, round((power || part.power || 1) * 0.7)), visited)
+		visited |= target
+	return TRUE
+
+/proc/formula_magic_apply_nova_ricochet(mob/living/carbon/human/caster, datum/formula_magic_part/part, turf/source, power, max_distance)
+	var/ricochet_count = formula_magic_part_modifier_count(part, "ricochet")
+	if(ricochet_count <= 0)
+		return FALSE
+	for(var/i in 1 to ricochet_count)
+		var/turf/random_target = get_ranged_target_turf(source, pick(GLOB.alldirs), max(1, max_distance || 1))
+		if(random_target)
+			formula_magic_apply_form_payload_area(caster, part, random_target, 0, max(1, power || part.power || 1), list(caster))
+	return TRUE
+
+/proc/formula_magic_apply_nova_chain(mob/living/carbon/human/caster, datum/formula_magic_part/part, turf/source, power, max_distance, list/excluded)
+	var/chain_count = formula_magic_part_modifier_count(part, "chain")
+	if(chain_count <= 0)
+		return FALSE
+	var/list/visited = excluded?.Copy() || list(caster)
+	for(var/i in 1 to chain_count)
+		var/mob/living/target = formula_magic_nearest_chain_target(caster, source, visited)
+		if(!target || get_dist(source, target) > max(1, max_distance || 1))
+			break
+		formula_magic_apply_form_payload_area(caster, part, get_turf(target), 0, max(1, round((power || part.power || 1) * 0.7)), visited)
+		visited |= target
+	return TRUE
+
+/proc/formula_magic_apply_wave_shrapnel(mob/living/carbon/human/caster, datum/formula_magic_part/part, turf/source, power, list/excluded)
+	var/shrapnel_count = formula_magic_part_modifier_count(part, "shrapnel")
+	if(shrapnel_count <= 0)
+		return FALSE
+	return formula_magic_apply_form_payload_area(caster, part, source, shrapnel_count, max(1, power || part.power || 1), excluded)
+
+/proc/formula_magic_apply_fall_payload(mob/living/carbon/human/caster, datum/formula_magic_part/part, turf/target, power, allow_followups = TRUE)
+	if(!caster || !part || !target)
+		return FALSE
+	var/list/result = formula_magic_apply_form_payload_area(caster, part, target, max(0, part.radius || 0), max(1, power || part.power || 1), null)
+	var/list/affected_turfs = result["turfs"] || list()
+	var/list/hit_targets = result["targets"] || list()
+	formula_magic_apply_instant_existence(caster, part, affected_turfs, max(1, power || part.power || 1))
+	if(!allow_followups)
+		return TRUE
+	var/ricochet_count = formula_magic_part_modifier_count(part, "ricochet")
+	for(var/i in 1 to ricochet_count)
+		var/turf/random_target = formula_magic_random_turf_from(target, 5)
+		if(random_target)
+			addtimer(CALLBACK(GLOBAL_PROC, GLOBAL_PROC_REF(formula_magic_apply_fall_payload), caster, part, random_target, power, FALSE), i * 0.5 SECONDS)
+	var/chain_count = formula_magic_part_modifier_count(part, "chain")
+	var/list/visited = hit_targets?.Copy() || list(caster)
+	if(length(hit_targets) > 1)
+		for(var/i in 1 to chain_count)
+			var/mob/living/next_target = formula_magic_nearest_chain_target(caster, target, visited)
+			if(!next_target || get_dist(target, next_target) > 4)
+				break
+			visited |= next_target
+			addtimer(CALLBACK(GLOBAL_PROC, GLOBAL_PROC_REF(formula_magic_apply_fall_payload), caster, part, get_turf(next_target), power, FALSE), i * 0.5 SECONDS)
+	var/shrapnel_count = formula_magic_part_modifier_count(part, "shrapnel")
+	if(shrapnel_count > 0)
+		formula_magic_fire_orb_shrapnel(caster, target, max(1, power || part.power || 1), part.impact_damage_type, part.impact_flag, part.impact_woundclass, part.impact_intdamfactor, part.impact_color, shrapnel_count)
+	return TRUE
 
 /proc/formula_magic_execute_orb_part(datum/formula_magic_context/context, datum/formula_magic_part/part)
 	if(!context?.caster || !part)
@@ -2989,23 +3322,71 @@
 /proc/formula_magic_execute_seeker_part(datum/formula_magic_context/context, datum/formula_magic_part/part)
 	if(!context?.caster || !part)
 		return FALSE
-	part.tags["seeker"] = max(1, part.tags["seeker"] || 1)
-	return formula_magic_execute_orb_part(context, part)
+	var/turf/source = get_turf(context.caster)
+	var/turf/search_center = formula_magic_limited_part_target(context, part, part.range)
+	if(!source || !search_center)
+		return FALSE
+	var/mob/living/target = formula_magic_nearest_chain_target(context.caster, search_center, list(context.caster))
+	if(!target)
+		target = search_center
+	var/projectiles_to_fire = max(1, min(formula_magic_part_count_form(part, FORMULA_FORM_ORB) || part.projectile_count || 1, formula_magic_part_count_form(part, FORMULA_FORM_WAVE) || 1))
+	for(var/i in 1 to projectiles_to_fire)
+		formula_magic_fire_orb_followup(context.caster, source, target, formula_magic_part_power(part, FORMULA_FORM_ORB), max(0, part.radius || 0), max(0, part.tags["chain"] || 0), max(0, part.tags["ricochet"] || 0), max(0, part.tags["pierce"] || 0), max(0, part.tags["existence"] || 0), max(0, part.tags["shrapnel"] || 0), part.impact_damage_type, part.impact_flag, part.impact_woundclass, part.impact_intdamfactor, part.impact_color, list(), null, 0.2, TRUE)
+	context.caster.visible_message(span_notice("[context.caster] releases a seeking formula orb."))
+	return TRUE
 
 /proc/formula_magic_execute_aura_part(datum/formula_magic_context/context, datum/formula_magic_part/part)
 	var/turf/source = get_turf(context.caster)
 	if(!source)
 		return FALSE
 	new /obj/effect/temp_visual/spell_impact(source, part.impact_color, SPELL_IMPACT_LOW)
+	var/aura_words = max(1, formula_magic_part_form_repeat_count(part, FORMULA_FORM_AURA) || 1)
+	formula_magic_apply_aura_status(context.caster, part, max(30 SECONDS, part.duration || (aura_words * 30 SECONDS)), 1)
+	var/widen_count = formula_magic_part_modifier_count(part, "widen")
+	if(widen_count > 0 && context.caster.current_fellowship)
+		var/list/members = context.caster.current_fellowship.get_members()
+		members -= context.caster
+		for(var/i in 1 to min(length(members), aura_words))
+			var/mob/living/member = pick(members)
+			members -= member
+			if(member)
+				new /obj/effect/temp_visual/spell_impact(get_turf(member), part.impact_color, SPELL_IMPACT_LOW)
+				formula_magic_apply_aura_status(member, part, max(10 SECONDS, round((part.duration || (aura_words * 30 SECONDS)) * 0.3)), 0.3)
+	var/pierce_count = max(0, part.tags["pierce"] || 0)
+	if(pierce_count > 0)
+		var/pierce_fraction = min(1, pierce_count * 0.3)
+		for(var/mob/living/L in range(1, source))
+			if(L == context.caster)
+				continue
+			new /obj/effect/temp_visual/spell_impact(get_turf(L), part.impact_color, SPELL_IMPACT_LOW)
+			formula_magic_apply_aura_status(L, part, max(10 SECONDS, round((part.duration || (aura_words * 30 SECONDS)) * pierce_fraction)), pierce_fraction)
+	var/ricochet_count = max(0, part.tags["ricochet"] || 0)
+	if(ricochet_count > 0 && context.caster.current_fellowship)
+		var/list/members = context.caster.current_fellowship.get_members()
+		members -= context.caster
+		for(var/i in 1 to ricochet_count)
+			if(!length(members))
+				break
+			var/mob/living/member = pick(members)
+			members -= member
+			if(member)
+				new /obj/effect/temp_visual/spell_impact(get_turf(member), part.impact_color, SPELL_IMPACT_LOW)
+				formula_magic_apply_aura_status(member, part, max(10 SECONDS, round((part.duration || (aura_words * 30 SECONDS)) * 0.3)), 0.3)
 	context.caster.visible_message(span_notice("[context.caster] gathers a formula aura."))
 	return TRUE
+
+/proc/formula_magic_apply_aura_status(mob/living/target, datum/formula_magic_part/part, duration, strength_multiplier = 1)
+	if(!target || !part)
+		return FALSE
+	var/datum/status_effect/buff/formula_magic_aura/aura = target.apply_status_effect(/datum/status_effect/buff/formula_magic_aura, max(1 SECONDS, duration || 30 SECONDS), part, strength_multiplier)
+	return !!aura
 
 /proc/formula_magic_execute_moment_part(datum/formula_magic_context/context, datum/formula_magic_part/part)
 	var/turf/target = formula_magic_limited_part_target(context, part, 3 + max(0, (part.tags["moment"] || 1) - 1))
 	if(!target)
 		return FALSE
 	new /obj/effect/temp_visual/spell_impact(target, part.impact_color, SPELL_IMPACT_LOW)
-	addtimer(CALLBACK(GLOBAL_PROC, GLOBAL_PROC_REF(formula_magic_apply_part_area), context.caster, part, target, part.radius, formula_magic_part_power(part, FORMULA_FORM_INSTANT), null), 1 SECONDS)
+	addtimer(CALLBACK(GLOBAL_PROC, GLOBAL_PROC_REF(formula_magic_apply_part_area), context.caster, part, target, part.radius, formula_magic_part_power(part, FORMULA_FORM_INSTANT), null, FORMULA_FORM_INSTANT), 1 SECONDS)
 	return TRUE
 
 /proc/formula_magic_execute_beam_part(datum/formula_magic_context/context, datum/formula_magic_part/part)
@@ -3024,15 +3405,31 @@
 	var/arms = max(1, part.tags["spiral"] || 1)
 	var/radius = max(1, 1 + (part.radius || 0))
 	var/cycles = max(1, 1 + (part.tags["existence"] || 0))
-	INVOKE_ASYNC(GLOBAL_PROC, GLOBAL_PROC_REF(formula_magic_spiral_loop), context.caster, part, arms, radius, cycles, FORMULA_FORM_SPIRAL)
+	INVOKE_ASYNC(GLOBAL_PROC, GLOBAL_PROC_REF(formula_magic_spiral_loop), context.caster, part, arms, radius, cycles, FORMULA_FORM_SPIRAL, FALSE)
 	return TRUE
 
 /proc/formula_magic_execute_summon_part(datum/formula_magic_context/context, datum/formula_magic_part/part)
-	var/turf/target = formula_magic_limited_part_target(context, part, part.range)
+	var/turf/source = get_turf(context.caster)
+	var/summon_dir = get_dir(source, context.target_turf) || context.caster.dir
+	var/turf/target = get_step(source, summon_dir)
 	if(!target)
 		return FALSE
 	new /obj/effect/temp_visual/spell_impact(target, part.impact_color, SPELL_IMPACT_MEDIUM)
-	formula_magic_apply_part_area(context.caster, part, target, part.radius, formula_magic_part_power(part, FORMULA_FORM_SUMMON), null)
+	var/summon_words = max(1, formula_magic_part_count_form(part, FORMULA_FORM_SUMMON) || 1)
+	var/summon_lifespan = max(5 MINUTES, part.duration) + (max(0, part.tags["existence"] || 0) * 1 MINUTES)
+	var/list/summon_targets = list(target)
+	var/widen_count = formula_magic_part_modifier_count(part, "widen")
+	if(widen_count > 0)
+		for(var/turf/T in range(min(8, widen_count), target))
+			summon_targets |= T
+	for(var/turf/T as anything in summon_targets)
+		for(var/i in 1 to FLOOR(summon_words / 2, 1))
+			var/obj/item/natural/clay/clay = new(T)
+			QDEL_IN(clay, summon_lifespan)
+		if(summon_words % 2)
+			var/obj/item/formula_magic_mud_clod/clod = new(T)
+			QDEL_IN(clod, summon_lifespan)
+	formula_magic_apply_part_area(context.caster, part, target, part.radius, formula_magic_part_power(part, FORMULA_FORM_SUMMON), null, FORMULA_FORM_SUMMON)
 	return TRUE
 
 /proc/formula_magic_execute_wave_part(datum/formula_magic_context/context, datum/formula_magic_part/part)
@@ -3052,22 +3449,26 @@
 	var/turf/touch_turf = get_step(source, touch_dir)
 	if(!touch_turf)
 		return FALSE
-	return formula_magic_apply_part_area(context.caster, part, touch_turf, part.radius, formula_magic_part_power(part, FORMULA_FORM_TOUCH), null)
+	return formula_magic_apply_part_area(context.caster, part, touch_turf, part.radius, formula_magic_part_power(part, FORMULA_FORM_TOUCH), null, FORMULA_FORM_TOUCH)
 
 /proc/formula_magic_execute_cloak_part(datum/formula_magic_context/context, datum/formula_magic_part/part)
 	var/turf/source = get_turf(context.caster)
 	if(!source)
 		return FALSE
 	new /obj/effect/temp_visual/spell_impact(source, part.impact_color, SPELL_IMPACT_MEDIUM)
-	return formula_magic_apply_part_area(context.caster, part, source, max(1, part.radius || 1), formula_magic_part_power(part, FORMULA_FORM_CLOAK), list(context.caster))
+	var/cloak_repeats = max(1, min(formula_magic_part_count_form(part, FORMULA_FORM_SPIRAL) || 1, formula_magic_part_count_form(part, FORMULA_FORM_AURA) || 1))
+	var/duration = max(10 SECONDS, 10 SECONDS + (max(0, cloak_repeats - 1) * 5 SECONDS) + (part.tags["existence_duration"] || 0))
+	INVOKE_ASYNC(GLOBAL_PROC, GLOBAL_PROC_REF(formula_magic_cloak_loop), context.caster, part, max(1, part.radius || 1), duration)
+	return TRUE
 
 /proc/formula_magic_execute_meteor_part(datum/formula_magic_context/context, datum/formula_magic_part/part, index)
 	var/turf/target = formula_magic_limited_part_target(context, part, part.range)
 	if(!target)
 		return FALSE
-	var/delay = max(1 SECONDS, index SECONDS)
+	var/form_repeats = max(1, min(formula_magic_part_count_form(part, FORMULA_FORM_INSTANT) || 1, formula_magic_part_count_form(part, FORMULA_FORM_BEAM) || 1))
+	var/delay = max(0.5 SECONDS, 2 SECONDS - ((form_repeats - 1) * 0.15 SECONDS) + ((index - 1) * 0.5 SECONDS))
 	new /obj/effect/temp_visual/spell_impact(target, part.impact_color, SPELL_IMPACT_MEDIUM)
-	addtimer(CALLBACK(GLOBAL_PROC, GLOBAL_PROC_REF(formula_magic_apply_part_area), context.caster, part, target, max(0, part.radius || 0), formula_magic_part_power(part, FORMULA_FORM_FALL), null), delay)
+	addtimer(CALLBACK(GLOBAL_PROC, GLOBAL_PROC_REF(formula_magic_apply_fall_payload), context.caster, part, target, round(formula_magic_part_power(part, FORMULA_FORM_FALL) * 1.5)), delay)
 	return TRUE
 
 /proc/formula_magic_execute_guidance_part(datum/formula_magic_context/context, datum/formula_magic_part/part)
@@ -3079,26 +3480,42 @@
 
 /proc/formula_magic_execute_breath_part(datum/formula_magic_context/context, datum/formula_magic_part/part)
 	var/turf/source = get_turf(context.caster)
-	var/turf/target = formula_magic_limited_part_target(context, part, min(part.range, 4))
+	var/breath_length = 2
+	var/turf/target = get_ranged_target_turf(source, context.caster.dir, breath_length)
 	if(!source || !target)
 		return FALSE
 	var/list/line = getline(source, target)
 	line -= source
-	INVOKE_ASYNC(GLOBAL_PROC, GLOBAL_PROC_REF(formula_magic_progressive_part_line), context.caster, part, line, max(1, part.radius || 1), 2, FORMULA_FORM_BREATH)
+	var/breath_duration = max(2 SECONDS, 2 SECONDS + (max(0, min(formula_magic_part_count_form(part, FORMULA_FORM_TOUCH) || 1, formula_magic_part_count_form(part, FORMULA_FORM_NOVA) || 1) - 1) * 1 SECONDS) + (part.tags["existence_duration"] || 0))
+	INVOKE_ASYNC(GLOBAL_PROC, GLOBAL_PROC_REF(formula_magic_breath_loop), context.caster, part, breath_length, max(1, part.radius || 1), breath_duration)
 	return TRUE
 
 /proc/formula_magic_execute_nova_part(datum/formula_magic_context/context, datum/formula_magic_part/part)
 	var/turf/source = get_turf(context.caster)
 	if(!source)
 		return FALSE
-	return formula_magic_apply_part_area(context.caster, part, source, max(1, part.radius || 1), formula_magic_part_power(part, FORMULA_FORM_NOVA), list(context.caster))
+	return formula_magic_apply_part_area(context.caster, part, source, max(1, part.radius || 1), formula_magic_part_power(part, FORMULA_FORM_NOVA), list(context.caster), FORMULA_FORM_NOVA)
 
 /proc/formula_magic_execute_rune_part(datum/formula_magic_context/context, datum/formula_magic_part/part, index)
 	var/turf/target = formula_magic_limited_part_target(context, part, part.range)
 	if(!target)
 		return FALSE
-	new /obj/effect/temp_visual/spell_impact(target, part.impact_color, SPELL_IMPACT_MEDIUM)
-	addtimer(CALLBACK(GLOBAL_PROC, GLOBAL_PROC_REF(formula_magic_apply_part_area), context.caster, part, target, part.radius, formula_magic_part_power(part, FORMULA_FORM_RUNE), null), max(1 SECONDS, index SECONDS))
+	var/rune_words = max(1, min(formula_magic_part_count_form(part, FORMULA_FORM_SUMMON) || 1, formula_magic_part_count_form(part, FORMULA_FORM_GUIDANCE) || 1))
+	var/lifespan = 60 SECONDS + (max(0, rune_words - 1) * 20 SECONDS)
+	var/trigger_count = max(1, 1 + max(0, part.tags["pierce"] || 0))
+	var/list/targets = list(target)
+	var/widen_count = max(0, part.tags["widen"] || 0)
+	if(widen_count > 0)
+		for(var/direction in GLOB.cardinals)
+			var/turf/outer = get_ranged_target_turf(target, direction, widen_count)
+			if(outer)
+				targets |= outer
+	for(var/turf/T as anything in targets)
+		if(!T)
+			continue
+		new /obj/effect/temp_visual/spell_impact(T, part.impact_color, SPELL_IMPACT_MEDIUM)
+		var/obj/structure/formula_magic_part_rune/rune = new(T)
+		rune.setup_formula_rune(context.caster, part, lifespan, trigger_count)
 	return TRUE
 
 /proc/formula_magic_part_power(datum/formula_magic_part/part, form_id)
@@ -3153,36 +3570,114 @@
 		return line[max_distance + 1]
 	return get_ranged_target_turf(source, get_dir(source, target) || context.caster.dir, max_distance) || target
 
-/proc/formula_magic_apply_part_area(mob/living/carbon/human/caster, datum/formula_magic_part/part, turf/center, radius, power, list/excluded)
+/proc/formula_magic_apply_part_area(mob/living/carbon/human/caster, datum/formula_magic_part/part, turf/center, radius, power, list/excluded, form_id = null)
 	if(!center || !part)
-		return FALSE
-	var/effective_radius = max(0, min(radius || 0, 8))
-	for(var/turf/T in range(effective_radius, center))
-		new /obj/effect/temp_visual/spell_impact(T, part.impact_color, SPELL_IMPACT_LOW)
-		for(var/mob/living/L in T)
-			if(L == caster || (excluded && (L in excluded)))
-				continue
-			formula_magic_apply_payload_hit(L, caster, max(1, power || part.power || 1), part.impact_damage_type, part.impact_flag, part.impact_woundclass, part.impact_intdamfactor)
-	return TRUE
+		return null
+	var/list/result = formula_magic_apply_form_payload_area(caster, part, center, radius, power, excluded)
+	var/list/affected_turfs = result["turfs"] || list()
+	var/list/hit_targets = result["targets"] || list()
+	var/datum/formula_magic_context/area_context = new
+	area_context.caster = caster
+	area_context.source_turf = get_turf(caster)
+	area_context.target_turf = center
+	formula_magic_apply_area_modifier_handlers(area_context, part, form_id, center, max(1, power || part.power || 1), radius, affected_turfs, hit_targets)
+	qdel(area_context)
+	return result
 
-/proc/formula_magic_apply_beam_line(mob/living/carbon/human/caster, datum/formula_magic_part/part, turf/source, turf/target, fade_percent, form_id = FORMULA_FORM_BEAM)
+/proc/formula_magic_apply_beam_line(mob/living/carbon/human/caster, datum/formula_magic_part/part, turf/source, turf/target, fade_percent, form_id = FORMULA_FORM_BEAM, allow_followups = TRUE, power_multiplier = 1, apply_modifiers = TRUE)
 	if(!caster || !part || !source || !target)
 		return FALSE
 	var/distance = 0
+	var/turf/beam_end = source
+	var/beam_dir = get_dir(source, target) || caster.dir
+	var/effective_radius = apply_modifiers ? max(0, part.radius || 0) : 0
+	var/beam_width = 0
+	if(form_id == FORMULA_FORM_BEAM)
+		beam_width = FLOOR(effective_radius / 2, 1)
+	else if(form_id == FORMULA_FORM_GUIDANCE)
+		beam_width = effective_radius
+	var/pierce_grace = (apply_modifiers && form_id == FORMULA_FORM_BEAM) ? max(0, part.tags["pierce"] || 0) : 0
 	var/list/hit = list(caster)
+	var/list/affected_turfs = list()
+	var/list/existence_turfs = list()
 	for(var/turf/T in getline(source, target))
 		if(T == source)
 			continue
 		distance++
-		new /obj/effect/temp_visual/spell_impact(T, part.impact_color, SPELL_IMPACT_LOW)
-		var/current_power = max(1, round(formula_magic_part_power(part, form_id) * max(0.1, 1 - ((fade_percent || 0) * distance / 100))))
-		for(var/mob/living/L in T)
-			if(L in hit)
-				continue
-			hit |= L
-			formula_magic_apply_payload_hit(L, caster, current_power, part.impact_damage_type, part.impact_flag, part.impact_woundclass, part.impact_intdamfactor)
+		beam_end = T
+		var/fade_distance = max(0, distance - pierce_grace)
+		var/current_power = max(1, round(formula_magic_part_power(part, form_id) * (power_multiplier || 1) * max(0.1, 1 - ((fade_percent || 0) * fade_distance / 100))))
+		affected_turfs |= T
+		var/hit_count_before = length(hit)
+		formula_magic_apply_beam_turf(caster, part, T, current_power, hit)
+		if(length(hit) > hit_count_before)
+			existence_turfs |= T
+		if(beam_width > 0)
+			var/left_dir = turn(beam_dir, 90)
+			var/right_dir = turn(beam_dir, -90)
+			var/turf/left_turf = T
+			var/turf/right_turf = T
+			for(var/side_step in 1 to beam_width)
+				left_turf = get_step(left_turf, left_dir)
+				right_turf = get_step(right_turf, right_dir)
+				if(left_turf)
+					affected_turfs |= left_turf
+					hit_count_before = length(hit)
+					formula_magic_apply_beam_turf(caster, part, left_turf, current_power, hit)
+					if(length(hit) > hit_count_before)
+						existence_turfs |= left_turf
+				if(right_turf)
+					affected_turfs |= right_turf
+					hit_count_before = length(hit)
+					formula_magic_apply_beam_turf(caster, part, right_turf, current_power, hit)
+					if(length(hit) > hit_count_before)
+						existence_turfs |= right_turf
 		if(T.density)
 			break
+	if(form_id == FORMULA_FORM_BEAM && beam_end != source)
+		generate_tracer_between_points(RETURN_PRECISE_POINT(source), RETURN_PRECISE_POINT(beam_end), /obj/effect/projectile/tracer/stun, part.impact_color, 5)
+	if(apply_modifiers && (part.tags["existence"] || 0) > 0)
+		var/list/existence_targets = (form_id == FORMULA_FORM_GUIDANCE) ? affected_turfs : existence_turfs
+		if(length(existence_targets))
+			formula_magic_apply_matrix_existence(caster, part, existence_targets, max(1, formula_magic_part_power(part, form_id)))
+	if(apply_modifiers && allow_followups && form_id == FORMULA_FORM_BEAM && beam_end != source)
+		if((part.tags["chain"] || 0) > 0)
+			var/list/visited = hit.Copy()
+			for(var/i in 1 to max(0, part.tags["chain"] || 0))
+				var/mob/living/next_target = formula_magic_nearest_chain_target(caster, beam_end, visited)
+				if(!next_target)
+					break
+				visited |= next_target
+				formula_magic_apply_beam_line(caster, part, beam_end, get_turf(next_target), fade_percent, form_id, FALSE, 1)
+		if((part.tags["ricochet"] || 0) > 0)
+			var/current_angle = Get_Angle(source, beam_end)
+			var/turf/approach = beam_end ? get_step(beam_end, angle2dir(SIMPLIFY_DEGREES((current_angle || 0) + 180))) : source
+			var/new_angle = formula_magic_reflected_angle(approach, beam_end, current_angle)
+			var/turf/start = beam_end
+			for(var/i in 1 to max(0, part.tags["ricochet"] || 0))
+				if(!start)
+					break
+				var/turf/reflected_target = get_ranged_target_turf(start, angle2dir(new_angle), max(1, part.range))
+				if(!reflected_target)
+					break
+				formula_magic_apply_beam_line(caster, part, start, reflected_target, fade_percent, form_id, FALSE, 1)
+				start = reflected_target
+		if((part.tags["shrapnel"] || 0) > 0)
+			for(var/i in 1 to max(0, part.tags["shrapnel"] || 0))
+				var/turf/random_target = get_ranged_target_turf(beam_end, pick(GLOB.alldirs), max(1, part.range))
+				if(random_target)
+					formula_magic_apply_beam_line(caster, part, beam_end, random_target, fade_percent, form_id, FALSE, 1, FALSE)
+	return TRUE
+
+/proc/formula_magic_apply_beam_turf(mob/living/carbon/human/caster, datum/formula_magic_part/part, turf/target, power, list/hit)
+	if(!caster || !part || !target)
+		return FALSE
+	new /obj/effect/temp_visual/spell_impact(target, part.impact_color, SPELL_IMPACT_LOW)
+	for(var/mob/living/L in target)
+		if(L in hit)
+			continue
+		hit |= L
+		formula_magic_apply_payload_hit(L, caster, max(1, power), part.impact_damage_type, part.impact_flag, part.impact_woundclass, part.impact_intdamfactor)
 	return TRUE
 
 /proc/formula_magic_progressive_part_line(mob/living/carbon/human/caster, datum/formula_magic_part/part, list/line, width, delay, form_id = FORMULA_FORM_WAVE)
@@ -3192,33 +3687,89 @@
 	for(var/turf/T in line)
 		if(!T)
 			continue
-		formula_magic_apply_part_area(caster, part, T, width, formula_magic_part_power(part, form_id), hit)
+		formula_magic_apply_part_area(caster, part, T, width, formula_magic_part_power(part, form_id), hit, form_id)
 		for(var/mob/living/L in range(max(0, width || 0), T))
 			hit |= L
+		if(form_id == FORMULA_FORM_WAVE && (part.tags["ricochet"] || 0) > 0 && length(hit) > 1)
+			var/turf/random_target = get_ranged_target_turf(T, pick(GLOB.alldirs), max(1, part.range))
+			if(random_target)
+				var/list/new_line = getline(T, random_target)
+				new_line -= T
+				INVOKE_ASYNC(GLOBAL_PROC, GLOBAL_PROC_REF(formula_magic_progressive_part_line), caster, part, new_line, width, delay, form_id)
+				return TRUE
+		if(form_id == FORMULA_FORM_WAVE && (part.tags["chain"] || 0) > 0 && length(hit) > 1)
+			var/mob/living/next_target = formula_magic_nearest_chain_target(caster, T, hit)
+			if(next_target)
+				var/list/chain_line = getline(T, get_turf(next_target))
+				chain_line -= T
+				INVOKE_ASYNC(GLOBAL_PROC, GLOBAL_PROC_REF(formula_magic_progressive_part_line), caster, part, chain_line, width, delay, form_id)
+				return TRUE
 		sleep(max(1, delay || 1))
 	return TRUE
 
-/proc/formula_magic_spiral_loop(mob/living/carbon/human/caster, datum/formula_magic_part/part, arms, radius, cycles, form_id = FORMULA_FORM_SPIRAL)
+/proc/formula_magic_spiral_loop(mob/living/carbon/human/caster, datum/formula_magic_part/part, arms, radius, cycles, form_id = FORMULA_FORM_SPIRAL, reverse = FALSE)
 	if(!caster || !part)
 		return FALSE
 	var/list/path_dirs = list(NORTH, NORTHEAST, EAST, SOUTHEAST, SOUTH, SOUTHWEST, WEST, NORTHWEST)
+	if(reverse)
+		path_dirs = list(NORTH, NORTHWEST, WEST, SOUTHWEST, SOUTH, SOUTHEAST, EAST, NORTHEAST)
 	arms = max(1, min(8, arms || 1))
 	radius = max(1, min(8, radius || 1))
 	cycles = max(1, min(8, cycles || 1))
+	var/ricochet_remaining = max(0, part.tags["ricochet"] || 0)
+	var/list/arm_pierce = list()
+	for(var/arm_index in 1 to arms)
+		arm_pierce["[arm_index]"] = max(0, part.tags["pierce"] || 0)
 	for(var/cycle in 1 to cycles)
 		for(var/step_index in 1 to length(path_dirs))
 			var/turf/source = get_turf(caster)
 			if(!source)
 				return FALSE
 			for(var/arm in 1 to arms)
+				if(isnull(arm_pierce["[arm]"]))
+					continue
 				var/path_index = ((step_index - 1 + round((arm - 1) * length(path_dirs) / arms)) % length(path_dirs)) + 1
 				var/turf/target = get_ranged_target_turf(source, path_dirs[path_index], radius)
 				if(target)
-					formula_magic_apply_part_area(caster, part, target, 0, formula_magic_part_power(part, form_id), list(caster))
+					var/list/result = formula_magic_apply_part_area(caster, part, target, 0, formula_magic_part_power(part, form_id), list(caster), form_id)
+					var/list/hit_targets = islist(result) ? (result["targets"] || list()) : list()
+					if(length(hit_targets) > 1)
+						if(ricochet_remaining > 0)
+							ricochet_remaining--
+							reverse = !reverse
+							path_dirs = reverse ? list(NORTH, NORTHWEST, WEST, SOUTHWEST, SOUTH, SOUTHEAST, EAST, NORTHEAST) : list(NORTH, NORTHEAST, EAST, SOUTHEAST, SOUTH, SOUTHWEST, WEST, NORTHWEST)
+							continue
+						var/pierce_left = max(0, arm_pierce["[arm]"] || 0)
+						if(pierce_left <= 0)
+							arm_pierce["[arm]"] = null
+						else
+							arm_pierce["[arm]"] = pierce_left - 1
 			sleep(2)
 	return TRUE
 
-/proc/formula_magic_fire_orb_followup(mob/living/carbon/human/caster, turf/start, atom/target, power, radius, chain_remaining, ricochet_remaining, pierce_remaining, existence_repeats, shrapnel_remaining, damage_type, damage_flag, woundclass, intdamfactor, impact_color, list/chain_visited, forced_angle = null)
+/proc/formula_magic_cloak_loop(mob/living/carbon/human/caster, datum/formula_magic_part/part, radius, duration)
+	if(!caster || !part)
+		return FALSE
+	var/end_time = world.time + max(1 SECONDS, duration || 10 SECONDS)
+	while(!QDELETED(caster) && world.time <= end_time)
+		formula_magic_apply_part_area(caster, part, get_turf(caster), radius, max(1, round(formula_magic_part_power(part, FORMULA_FORM_CLOAK) * 0.25)), list(caster), FORMULA_FORM_CLOAK)
+		sleep(2 SECONDS)
+	return TRUE
+
+/proc/formula_magic_breath_loop(mob/living/carbon/human/caster, datum/formula_magic_part/part, length, width, duration)
+	if(!caster || !part)
+		return FALSE
+	var/end_time = world.time + max(1 SECONDS, duration || 2 SECONDS)
+	while(!QDELETED(caster) && world.time <= end_time)
+		var/turf/source = get_turf(caster)
+		var/turf/target = get_ranged_target_turf(source, caster.dir, max(1, length || 2))
+		var/list/line = getline(source, target)
+		line -= source
+		formula_magic_progressive_part_line(caster, part, line, width, 1, FORMULA_FORM_BREATH)
+		sleep(5)
+	return TRUE
+
+/proc/formula_magic_fire_orb_followup(mob/living/carbon/human/caster, turf/start, atom/target, power, radius, chain_remaining, ricochet_remaining, pierce_remaining, existence_repeats, shrapnel_remaining, damage_type, damage_flag, woundclass, intdamfactor, impact_color, list/chain_visited, forced_angle = null, speed_multiplier = 1, homing = FALSE)
 	if(!caster || !start)
 		return FALSE
 	var/obj/projectile/magic/formula_magic_orb/bolt = new(start)
@@ -3238,6 +3789,7 @@
 	bolt.existence_repeats = max(0, existence_repeats || 0)
 	bolt.shrapnel_remaining = max(0, shrapnel_remaining || 0)
 	bolt.chain_visited = chain_visited?.Copy() || list()
+	bolt.speed = max(0.2, bolt.speed * (speed_multiplier || 1))
 	bolt.range = 7
 	bolt.max_range = 7
 	if(target)
@@ -3246,6 +3798,8 @@
 		var/turf/angle_target = get_ranged_target_turf(start, angle2dir(forced_angle), bolt.range)
 		bolt.preparePixelProjectile(angle_target || start, start)
 		bolt.setAngle(forced_angle)
+	if(homing && target)
+		bolt.set_homing_target(target)
 	bolt.fire()
 	return TRUE
 
@@ -3262,9 +3816,83 @@
 /proc/formula_magic_apply_payload_hit(mob/living/target, mob/living/carbon/human/caster, amount, damage_type = BRUTE, damage_flag = "blunt", woundclass = BCLASS_BLUNT, intdamfactor = BLUNT_DEFAULT_INT_DAMAGEFACTOR)
 	if(!target || amount <= 0)
 		return FALSE
+	var/datum/status_effect/buff/formula_magic_aura/aura = target.has_status_effect(/datum/status_effect/buff/formula_magic_aura)
+	if(aura)
+		amount = aura.modify_formula_damage(amount, damage_type, damage_flag)
+		if(amount <= 0)
+			new /obj/effect/temp_visual/spell_impact(get_turf(target), "#9FCBFF", SPELL_IMPACT_LOW)
+			return FALSE
 	var/def_zone = caster?.zone_selected || BODY_ZONE_CHEST
 	var/armor = target.run_armor_check(def_zone, damage_flag || "blunt", "", "", armor_penetration = PEN_NONE, damage = amount, blade_dulling = woundclass || BCLASS_BLUNT, intdamfactor = intdamfactor || BLUNT_DEFAULT_INT_DAMAGEFACTOR)
 	return target.apply_damage(amount, damage_type || BRUTE, def_zone, armor)
+
+/datum/status_effect/buff/formula_magic_aura
+	id = "formula_magic_aura"
+	duration = 30 SECONDS
+	status_type = STATUS_EFFECT_REPLACE
+	alert_type = null
+	var/blocks_all_formula = TRUE
+	var/list/damage_resistance = list()
+	var/list/status_resistance = list()
+	var/list/chance_resistance = list()
+
+/datum/status_effect/buff/formula_magic_aura/on_creation(mob/living/new_owner, new_duration, datum/formula_magic_part/part, strength_multiplier = 1)
+	if(new_duration)
+		duration = new_duration
+	compile_from_part(part, strength_multiplier)
+	return ..()
+
+/datum/status_effect/buff/formula_magic_aura/proc/compile_from_part(datum/formula_magic_part/part, strength_multiplier = 1)
+	damage_resistance = list()
+	status_resistance = list()
+	chance_resistance = list()
+	blocks_all_formula = TRUE
+	if(!part)
+		return
+	var/strength = max(0.05, strength_multiplier || 1)
+	for(var/tag in part.tags)
+		switch(tag)
+			if("damage_burn")
+				damage_resistance[BURN] = max(damage_resistance[BURN] || 0, 0.1 * (part.tags[tag] || 1) * strength)
+				blocks_all_formula = FALSE
+			if("ignite")
+				chance_resistance["ignite"] = max(chance_resistance["ignite"] || 0, 0.1 * (part.tags[tag] || 1) * strength)
+				blocks_all_formula = FALSE
+			if("damage_cold")
+				damage_resistance["cold"] = max(damage_resistance["cold"] || 0, 0.1 * (part.tags[tag] || 1) * strength)
+				blocks_all_formula = FALSE
+			if("frost_stack")
+				chance_resistance["frost_stack"] = max(chance_resistance["frost_stack"] || 0, 0.1 * (part.tags[tag] || 1) * strength)
+				blocks_all_formula = FALSE
+			if("damage_shock")
+				damage_resistance["shock"] = max(damage_resistance["shock"] || 0, 0.1 * (part.tags[tag] || 1) * strength)
+				blocks_all_formula = FALSE
+			if("electrocute")
+				chance_resistance["electrocute"] = max(chance_resistance["electrocute"] || 0, 0.1 * (part.tags[tag] || 1) * strength)
+				blocks_all_formula = FALSE
+			if("damage_blunt", "damage_force")
+				damage_resistance[BRUTE] = max(damage_resistance[BRUTE] || 0, 0.1 * (part.tags[tag] || 1) * strength)
+				blocks_all_formula = FALSE
+			if("slow", "dirt", "gravity", "anchor_target", "phase", "teleport", "push", "pull")
+				status_resistance[tag] = max(status_resistance[tag] || 0, 0.1 * (part.tags[tag] || 1) * strength)
+				blocks_all_formula = FALSE
+			if("blind", "silence", "confuse")
+				chance_resistance[tag] = max(chance_resistance[tag] || 0, 0.1 * (part.tags[tag] || 1) * strength)
+				blocks_all_formula = FALSE
+
+/datum/status_effect/buff/formula_magic_aura/proc/blocks_formula_casting()
+	return blocks_all_formula
+
+/datum/status_effect/buff/formula_magic_aura/proc/modify_formula_damage(amount, damage_type, damage_flag)
+	if(blocks_all_formula)
+		return 0
+	var/reduction = 0
+	if(damage_type in damage_resistance)
+		reduction = max(reduction, damage_resistance[damage_type])
+	if(damage_flag in damage_resistance)
+		reduction = max(reduction, damage_resistance[damage_flag])
+	reduction = min(0.95, max(0, reduction))
+	return round(amount * (1 - reduction))
 
 /proc/formula_magic_apply_orb_impact(mob/living/carbon/human/caster, turf/impact, atom/direct_target, power, radius, damage_type = BRUTE, damage_flag = "blunt", woundclass = BCLASS_BLUNT, intdamfactor = BLUNT_DEFAULT_INT_DAMAGEFACTOR, impact_color = "#B96DFF")
 	if(!impact)
@@ -3275,7 +3903,7 @@
 	for(var/turf/T in range(effective_radius, impact))
 		new /obj/effect/temp_visual/spell_impact(T, impact_color || "#B96DFF", SPELL_IMPACT_LOW)
 		for(var/mob/living/L in T)
-			if(L == caster || L == direct_target)
+			if(L == caster)
 				continue
 			formula_magic_apply_payload_hit(L, caster, max(1, power || 1), damage_type, damage_flag, woundclass, intdamfactor)
 	return TRUE
@@ -3288,29 +3916,6 @@
 	for(var/turf/T in range(effective_radius, impact))
 		result += T
 	return result
-
-/proc/formula_magic_repeat_instant_impact(mob/living/carbon/human/caster, turf/impact, power, radius, damage_type = BRUTE, damage_flag = "blunt", woundclass = BCLASS_BLUNT, intdamfactor = BLUNT_DEFAULT_INT_DAMAGEFACTOR, impact_color = "#B96DFF")
-	if(!impact)
-		return FALSE
-	var/effective_radius = max(0, min(radius || 0, 8))
-	for(var/turf/T in range(effective_radius, impact))
-		new /obj/effect/temp_visual/spell_impact(T, impact_color || "#B96DFF", SPELL_IMPACT_LOW)
-		for(var/mob/living/L in T)
-			if(L == caster)
-				continue
-			formula_magic_apply_payload_hit(L, caster, max(1, power || 1), damage_type, damage_flag, woundclass, intdamfactor)
-	return TRUE
-
-/proc/formula_magic_schedule_instant_existence(mob/living/carbon/human/caster, list/affected_turfs, power, repeats, damage_type = BRUTE, damage_flag = "blunt", woundclass = BCLASS_BLUNT, intdamfactor = BLUNT_DEFAULT_INT_DAMAGEFACTOR, impact_color = "#B96DFF")
-	if(!length(affected_turfs) || repeats <= 0)
-		return FALSE
-	var/list/pool = affected_turfs.Copy()
-	var/max_echoes = min(length(pool), max(0, repeats || 0) * 3)
-	for(var/i in 1 to max_echoes)
-		var/turf/selected = pick(pool)
-		pool -= selected
-		addtimer(CALLBACK(GLOBAL_PROC, GLOBAL_PROC_REF(formula_magic_repeat_instant_impact), caster, selected, power, 0, damage_type, damage_flag, woundclass, intdamfactor, impact_color), 2 SECONDS + ((i - 1) * 0.5 SECONDS))
-	return TRUE
 
 /proc/formula_magic_nearest_chain_target(mob/living/carbon/human/caster, turf/source, list/excluded)
 	if(!source)
@@ -3337,14 +3942,18 @@
 	return SIMPLIFY_DEGREES(face_angle + incidence)
 
 /proc/formula_magic_ricochet_start_turf(turf/approach, atom/target, new_angle)
-	if(approach && !approach.density)
-		return approach
 	var/turf/impact = get_turf(target)
 	if(!impact)
 		return approach
+	if(isliving(target))
+		return impact
+	if(!target.density)
+		return impact
 	var/turf/reflected_step = get_step(impact, angle2dir(new_angle))
 	if(reflected_step && !reflected_step.density)
 		return reflected_step
+	if(approach && !approach.density)
+		return approach
 	var/turf/back_step = get_step(impact, angle2dir(SIMPLIFY_DEGREES((new_angle || 0) + 180)))
 	if(back_step && !back_step.density)
 		return back_step
@@ -3361,7 +3970,7 @@
 	woundclass = BCLASS_BLUNT
 	intdamfactor = BLUNT_DEFAULT_INT_DAMAGEFACTOR
 	armor_penetration = PEN_NONE
-	nodamage = FALSE
+	nodamage = TRUE
 	range = 7
 	max_range = 7
 	hitsound = 'sound/combat/hits/blunt/shovel_hit2.ogg'
@@ -3395,10 +4004,23 @@
 	if(istype(firer, /mob/living/carbon/human))
 		caster = firer
 	var/turf/impact = get_turf(target)
+	if(isliving(target) && blocked != 100)
+		var/mob/living/direct_living_target = target
+		formula_magic_apply_payload_hit(direct_living_target, caster, damage, damage_type, flag, woundclass, intdamfactor)
 	formula_magic_apply_orb_impact(caster, impact, target, damage, arcane_radius, damage_type, flag, woundclass, intdamfactor, spell_impact_color)
 	var/list/affected_turfs = formula_magic_impact_turfs(impact, arcane_radius)
 	if(existence_repeats > 0 && length(affected_turfs))
-		formula_magic_schedule_instant_existence(caster, affected_turfs, damage, existence_repeats, damage_type, flag, woundclass, intdamfactor, spell_impact_color)
+		var/existence_lifespan = max(0, 5 SECONDS * existence_repeats)
+		if(existence_lifespan > 0)
+			var/datum/formula_magic_part/lingering_part = new
+			lingering_part.power = damage
+			lingering_part.impact_damage_type = damage_type
+			lingering_part.impact_flag = flag
+			lingering_part.impact_woundclass = woundclass
+			lingering_part.impact_intdamfactor = intdamfactor
+			lingering_part.impact_color = spell_impact_color
+			lingering_part.tags = list()
+			formula_magic_apply_lingering_zones(caster, lingering_part, affected_turfs, damage, existence_lifespan)
 	if(shrapnel_remaining > 0 && impact)
 		formula_magic_fire_orb_shrapnel(caster, impact, damage, damage_type, flag, woundclass, intdamfactor, spell_impact_color, shrapnel_remaining)
 	if(chain_remaining > 0 && impact)
@@ -3408,7 +4030,7 @@
 		if(next_target)
 			var/list/next_visited = chain_visited.Copy()
 			next_visited += next_target
-			formula_magic_fire_orb_followup(caster, impact, next_target, damage, arcane_radius, chain_remaining - 1, ricochet_remaining, pierce_remaining, existence_repeats, shrapnel_remaining, damage_type, flag, woundclass, intdamfactor, spell_impact_color, next_visited)
+			formula_magic_fire_orb_followup(caster, impact, next_target, max(1, round(damage * 0.7)), arcane_radius, chain_remaining - 1, ricochet_remaining, pierce_remaining, existence_repeats, shrapnel_remaining, damage_type, flag, woundclass, intdamfactor, spell_impact_color, next_visited)
 	if(ricochet_remaining > 0 && target)
 		var/new_angle = formula_magic_reflected_angle(approach, target, current_angle)
 		var/turf/start = formula_magic_ricochet_start_turf(approach, target, new_angle)

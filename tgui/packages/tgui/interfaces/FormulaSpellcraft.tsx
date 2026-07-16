@@ -1,4 +1,4 @@
-import { type ChangeEvent, useMemo, useState } from 'react';
+import { type ChangeEvent, useEffect, useMemo, useState } from 'react';
 
 import { useBackend } from '../backend';
 import { Window } from '../layouts';
@@ -76,12 +76,14 @@ type Validation = {
   requirements?: string[];
   arcane_required?: number;
   reading_required?: number;
+  max_mana?: number;
 };
 
 type Data = {
   words?: Word[];
   draft_words?: string[];
   draft_parts?: DraftPart[];
+  draft_name?: string;
   preview?: Preview;
   known_words?: string[];
   known_word_counts?: Record<string, number>;
@@ -93,6 +95,11 @@ type Data = {
   presets?: Preset[];
   draft_export_json?: string;
   draft_validation?: Validation;
+  loaded_preset_index?: number;
+  loaded_preset_name?: string;
+  loaded_preset_changed?: boolean;
+  formula_slot_limit?: number;
+  max_mana?: number;
 };
 
 const roleNames: Record<string, string> = {
@@ -136,6 +143,10 @@ export const FormulaSpellcraft = () => {
   const [selectedSchool, setSelectedSchool] = useState('');
   const [presetName, setPresetName] = useState('');
   const [importJson, setImportJson] = useState('');
+
+  useEffect(() => {
+    setPresetName(data.draft_name || '');
+  }, [data.draft_name]);
 
   const byId = useMemo(() => new Map(words.map((word) => [word.id, word])), [words]);
   const schoolEntries = Object.entries(school_names).filter(([id]) => id !== 'arcane' && school_access[id] !== false);
@@ -192,6 +203,12 @@ export const FormulaSpellcraft = () => {
     if (schoolFilter === 'all') return true;
     return word.school_id === schoolFilter;
   });
+  const formulaSlotLimit = data.formula_slot_limit || 1;
+  const draftValid = Boolean(data.draft_validation?.valid);
+  const effectivePresetName = presetName || data.draft_name || 'Formula';
+  const namedPresetIndex = presets.findIndex((preset) => preset.name.toLowerCase() === effectivePresetName.toLowerCase());
+  const canSaveFormula = draftValid && (namedPresetIndex >= 0 || presets.length < formulaSlotLimit);
+  const saveLabel = namedPresetIndex >= 0 ? 'Overwrite' : 'Save New';
 
   return (
     <Window width={1040} height={680} title="Formula Spellcraft">
@@ -201,7 +218,7 @@ export const FormulaSpellcraft = () => {
           <div style={tabsStyle}>
             <TabButton active={tab === 'forms'} onClick={() => setTab('forms')} label="Forms" />
             <TabButton active={tab === 'schools'} onClick={() => setTab('schools')} label="Schools" />
-            <TabButton active={tab === 'presets'} onClick={() => setTab('presets')} label="Precreation" />
+            <TabButton active={tab === 'presets'} onClick={() => setTab('presets')} label="Formulas" />
             <TabButton active={tab === 'library'} onClick={() => setTab('library')} label="Library" />
             <button
               type="button"
@@ -343,7 +360,23 @@ export const FormulaSpellcraft = () => {
               </div>
 
               <div style={{ flex: 1, paddingLeft: '10px', overflowY: 'auto' }}>
-                <FormulaDetails preview={preview} />
+                <FormulaDetails preview={preview} slotsUsed={presets.length} slotsTotal={formulaSlotLimit} maxMana={data.max_mana || data.draft_validation?.max_mana || 0} />
+                <div style={{ ...panelStyle, marginBottom: '10px' }}>
+                  <div style={rowStyle}>
+                    <div>
+                      <div style={titleStyle}>Current Formulas</div>
+                    </div>
+                    <button
+                      type="button"
+                      disabled={!draftValid}
+                      onClick={() => act('create_formula_scroll', { name: effectivePresetName })}
+                      style={buttonStyle(draftValid ? '#8fa6d8' : '#303744')}
+                    >
+                      Scribe Current
+                    </button>
+                  </div>
+                  <Requirements validation={data.draft_validation} />
+                </div>
                 <div style={titleStyle}>Formula Sequence</div>
                 <div style={sequenceStyle}>
                   {draft_parts.map((part, index) => (
@@ -365,23 +398,58 @@ export const FormulaSpellcraft = () => {
                   {!draft_words.length && <div style={mutedStyle}>Choose words from the left.</div>}
                 </div>
 
-                <div style={{ display: 'flex', gap: '8px', marginTop: '12px' }}>
+                <div style={{ display: 'flex', gap: '8px', marginTop: '12px', alignItems: 'center' }}>
                   <input
                     value={presetName}
                     onChange={(event: ChangeEvent<HTMLInputElement>) => setPresetName(event.currentTarget.value)}
                     placeholder="Preset name"
                     style={inputStyle}
                   />
-                  <button type="button" onClick={() => act('save_preset', { name: presetName })} style={buttonStyle('#426f55')}>
-                    Save
+                  <button
+                    type="button"
+                    disabled={!canSaveFormula}
+                    onClick={() => act('save_preset', { name: effectivePresetName })}
+                    style={buttonStyle(canSaveFormula ? '#426f55' : '#303744')}
+                  >
+                    {saveLabel}
                   </button>
                   <button type="button" onClick={() => act('clear_formula')} style={buttonStyle('#5f6f89')}>
                     Clear
                   </button>
-                  <span style={mutedStyle}>Saved presets become spell buttons on the hotbar.</span>
                 </div>
 
-                <div style={{ marginTop: '12px', ...mutedStyle }}>Saved formulas are managed in Library.</div>
+                <div style={{ ...wordListStyle, marginTop: '12px' }}>
+                  {presets.map((preset, index) => (
+                    <div key={`${preset.name}-${index}`} style={panelStyle}>
+                      <div style={rowStyle}>
+                        <div>
+                          <div style={titleStyle}>{preset.name}</div>
+                          <div style={mutedStyle}>{preset.summary}</div>
+                          <div style={tagLineStyle}>
+                            Mana {preset.mana_cost} | Time {preset.cast_time} | Arcane {preset.arcane_required || 0}
+                          </div>
+                        </div>
+                        <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', justifyContent: 'flex-end' }}>
+                          <button type="button" onClick={() => act('load_preset', { index: index + 1 })} style={buttonStyle('#5f6f89')}>
+                            Load
+                          </button>
+                          <button
+                            type="button"
+                            disabled={!draftValid}
+                            onClick={() => act('update_preset', { index: index + 1 })}
+                            style={buttonStyle(draftValid ? '#756142' : '#303744')}
+                          >
+                            Update
+                          </button>
+                          <button type="button" onClick={() => act('delete_preset', { index: index + 1 })} style={buttonStyle('#76505a')}>
+                            Unlearn
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                  {!presets.length && <div style={mutedStyle}>No current formulas.</div>}
+                </div>
               </div>
             </div>
           )}
@@ -389,7 +457,7 @@ export const FormulaSpellcraft = () => {
           {tab === 'library' && (
             <div style={{ ...bodyStyle, display: 'grid', gridTemplateColumns: '360px minmax(0, 1fr)', gap: '10px', minHeight: 0 }}>
               <div style={{ overflowY: 'auto' }}>
-                <FormulaDetails preview={preview} />
+                <FormulaDetails preview={preview} slotsUsed={presets.length} slotsTotal={formulaSlotLimit} maxMana={data.max_mana || data.draft_validation?.max_mana || 0} />
                 <div style={panelStyle}>
                   <div style={titleStyle}>Current Draft JSON</div>
                   <textarea readOnly value={data.draft_export_json || ''} style={textareaStyle} />
@@ -434,9 +502,6 @@ export const FormulaSpellcraft = () => {
                           </button>
                           <button type="button" onClick={() => act('rename_preset', { index: index + 1 })} style={buttonStyle('#5f6f89')}>
                             Rename
-                          </button>
-                          <button type="button" onClick={() => act('update_preset', { index: index + 1 })} style={buttonStyle('#756142')}>
-                            Update
                           </button>
                           <button type="button" onClick={() => act('delete_preset', { index: index + 1 })} style={buttonStyle('#76505a')}>
                             Delete
@@ -580,7 +645,7 @@ const InfoLine = (props: { label: string; text: string }) => (
 const Requirements = (props: { validation?: Validation }) => (
   <div style={{ marginTop: '8px' }}>
     <div style={{ color: props.validation?.valid ? '#9ee6a0' : '#c58b75', fontSize: '12px', fontWeight: 800 }}>
-      {props.validation?.valid ? 'Validator: ready' : 'Validator: incomplete'}
+      {props.validation?.valid ? 'Status: ready' : 'Status: incomplete'}
     </div>
     {!!props.validation?.requirements?.length && <div style={descStyle}>Requires: {props.validation.requirements.join(', ')}</div>}
     {!!props.validation?.missing?.length && <div style={descStyle}>Missing: {props.validation.missing.join(', ')}</div>}
@@ -605,7 +670,7 @@ const Header = (props: { progression: Progression }) => (
   </div>
 );
 
-const FormulaDetails = (props: { preview?: Preview }) => (
+const FormulaDetails = (props: { preview?: Preview; slotsUsed?: number; slotsTotal?: number; maxMana?: number }) => (
   <div style={{ ...panelStyle, marginBottom: '10px' }}>
     <div style={rowStyle}>
       <div>
@@ -615,8 +680,10 @@ const FormulaDetails = (props: { preview?: Preview }) => (
         </div>
       </div>
     </div>
-    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(8, 1fr)', gap: '6px', marginTop: '8px' }}>
+    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(10, 1fr)', gap: '6px', marginTop: '8px' }}>
       <Stat label="Mana" value={props.preview?.mana_cost || 0} />
+      <Stat label="Max mana" value={props.maxMana || 0} />
+      <Stat label="Slots" value={`${props.slotsUsed || 0}/${props.slotsTotal || 0}`} />
       <Stat label="Time" value={props.preview?.cast_time || 0} />
       <Stat label="Complex" value={props.preview?.complexity || 0} />
       <Stat label="Risk" value={props.preview?.interrupt_chance || props.preview?.instability || 0} />

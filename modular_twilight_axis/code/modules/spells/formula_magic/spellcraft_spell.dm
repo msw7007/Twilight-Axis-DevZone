@@ -309,6 +309,37 @@
 	return H.mind.perform_formula_magic_cast(H, formula_words, cast_on, FALSE, formula_press_turf)
 
 /proc/formula_magic_icon_state_for_words(list/word_ids)
+	for(var/word_id in word_ids)
+		var/datum/formula_magic_word/word = resolve_formula_magic_word(word_id)
+		if(!word || word.role != FORMULA_WORD_FORM)
+			continue
+		switch(word.id)
+			if(FORMULA_FORM_BEAM)
+				return "formula_guidance"
+			if(FORMULA_FORM_ORB)
+				return "formula_orb"
+			if(FORMULA_FORM_INSTANT)
+				return "formula_blink"
+			if(FORMULA_FORM_GUIDANCE)
+				return "formula_guidance"
+			if(FORMULA_FORM_WAVE)
+				return "formula_wave"
+			if(FORMULA_FORM_AURA)
+				return "formula_aura"
+			if(FORMULA_FORM_SUMMON)
+				return "formula_summon"
+			if(FORMULA_FORM_NOVA)
+				return "formula_nova"
+			if(FORMULA_FORM_TOUCH)
+				return "formula_touch"
+			if(FORMULA_FORM_FALL)
+				return "formula_meteor"
+			if(FORMULA_FORM_RUNE)
+				return "formula_rune"
+			if(FORMULA_FORM_BREATH)
+				return "formula_breath"
+			if(FORMULA_FORM_CLOAK)
+				return "formula_aura"
 	return "formula_orb"
 
 /proc/formula_magic_speech_phrases_for_words(list/word_ids)

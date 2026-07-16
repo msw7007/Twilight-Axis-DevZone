@@ -1432,7 +1432,8 @@
 /datum/formula_magic_word/form/summon/apply_to_part(datum/formula_magic_part/part)
 	..()
 	part.power = max(part.power, 30)
-	part.duration += 10 SECONDS
+	part.duration = max(part.duration, 5 MINUTES)
+	part.duration += max(0, (part.tags["summon"] || 1) - 1) * 10 SECONDS
 
 /datum/formula_magic_word/form/wave
 	id = FORMULA_FORM_WAVE
@@ -1449,7 +1450,7 @@
 /datum/formula_magic_word/form/wave/apply_to_part(datum/formula_magic_part/part)
 	..()
 	part.power = max(part.power, 30)
-	part.range = max(part.range, 6)
+	part.range = max(part.range, 6 + max(0, (part.tags["wave"] || 1) - 1))
 
 /datum/formula_magic_word/form/touch
 	id = FORMULA_FORM_TOUCH
@@ -1532,6 +1533,7 @@
 /datum/formula_magic_word/modifier/existence/apply_to_part(datum/formula_magic_part/part)
 	..()
 	part.duration += 5 SECONDS
+	part.tags["existence_duration"] = (part.tags["existence_duration"] || 0) + 5 SECONDS
 
 /datum/formula_magic_word/modifier/efficient
 	id = "efficient"
