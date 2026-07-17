@@ -84,6 +84,7 @@
 /datum/formula_magic_formula
 	var/list/words = list()
 	var/list/parts = list()
+	var/datum/formula_magic_combo_formula/combo_formula
 	var/list/forms = list()
 	var/list/schools = list()
 	var/list/elements = list()
@@ -116,6 +117,7 @@
 
 /datum/formula_magic_formula/proc/rebuild_parts()
 	parts = list()
+	combo_formula = null
 	forms = list()
 	schools = list()
 	elements = list()
@@ -142,6 +144,9 @@
 	else
 		qdel(current_part)
 	compile_from_parts()
+	combo_formula = formula_magic_find_exact_combo_formula(get_word_ids())
+	if(combo_formula)
+		combo_formula.apply_to_formula(src)
 
 /datum/formula_magic_formula/proc/compile_from_parts()
 	for(var/datum/formula_magic_part/part in parts)
@@ -177,7 +182,13 @@
 	schools += school_id
 
 /datum/formula_magic_formula/proc/can_resolve()
-	return length(parts) && length(forms)
+	return combo_formula || (length(parts) && length(forms))
+
+/datum/formula_magic_formula/proc/get_word_ids()
+	var/list/word_ids = list()
+	for(var/datum/formula_magic_word/word in words)
+		word_ids += word.id
+	return word_ids
 
 /datum/formula_magic_formula/proc/get_word_names()
 	var/list/names = list()
@@ -186,6 +197,8 @@
 	return names
 
 /datum/formula_magic_formula/proc/get_formula_text()
+	if(combo_formula)
+		return combo_formula.name
 	var/list/names = get_word_names()
 	if(!length(names))
 		return "Empty formula"
@@ -198,6 +211,7 @@
 	return list(
 		"text" = get_formula_text(),
 		"can_resolve" = can_resolve(),
+		"combo_formula" = combo_formula?.get_entry(),
 		"parts" = part_summaries,
 		"forms" = forms.Copy(),
 		"schools" = schools.Copy(),

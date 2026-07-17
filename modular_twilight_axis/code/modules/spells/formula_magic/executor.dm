@@ -5,11 +5,23 @@
 	if(!formula || !validate_formula_magic_formula(formula, TRUE))
 		qdel(formula)
 		return FALSE
+	var/list/formula_words = formula.get_word_ids()
+	var/datum/formula_magic_combo_formula/contaminated_combo = formula.combo_formula ? null : formula_magic_find_contained_combo_formula(formula_words)
 	var/datum/formula_magic_context/context = new
 	context.caster = caster
 	context.cast_on = cast_on
 	context.source_turf = get_turf(caster)
 	context.target_turf = get_turf(cast_on) || context.source_turf
+	if(contaminated_combo)
+		. = formula_magic_detonate_formula_part(caster, formula.parts[1], "[contaminated_combo.name] contamination")
+		qdel(context)
+		qdel(formula)
+		return
+	if(formula.combo_formula)
+		. = formula.combo_formula.execute(context, formula)
+		qdel(context)
+		qdel(formula)
+		return
 	var/resolved = FALSE
 	for(var/datum/formula_magic_part/part in formula.parts)
 		if(part.execute(context))

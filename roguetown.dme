@@ -3731,6 +3731,7 @@
 #include "modular_twilight_axis\code\modules\spells\formula_magic\word_school_body_mind.dm"
 #include "modular_twilight_axis\code\modules\spells\formula_magic\word_school_matter_origin.dm"
 #include "modular_twilight_axis\code\modules\spells\formula_magic\catalog.dm"
+#include "modular_twilight_axis\code\modules\spells\formula_magic\combo_formula.dm"
 #include "modular_twilight_axis\code\modules\spells\formula_magic\mind.dm"
 #include "modular_twilight_axis\code\modules\spells\formula_magic\schema.dm"
 #include "modular_twilight_axis\code\modules\spells\formula_magic\progression.dm"

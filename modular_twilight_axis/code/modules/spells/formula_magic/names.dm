@@ -1,4 +1,7 @@
 /proc/formula_magic_default_formula_name(list/word_ids)
+	var/datum/formula_magic_combo_formula/combo = formula_magic_find_exact_combo_formula(word_ids)
+	if(combo)
+		return combo.name
 	var/list/modifiers = list()
 	var/list/elements = list()
 	var/list/forms = list()

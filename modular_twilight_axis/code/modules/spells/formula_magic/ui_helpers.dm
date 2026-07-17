@@ -30,6 +30,13 @@
 	return result
 
 /proc/formula_magic_display_parts(list/word_ids)
+	var/list/normalized_word_ids = formula_magic_normalized_word_sequence(word_ids)
+	var/datum/formula_magic_combo_formula/fixed_combo = formula_magic_find_exact_combo_formula(normalized_word_ids)
+	if(fixed_combo)
+		var/list/indexes = list()
+		for(var/i in 1 to length(normalized_word_ids))
+			indexes += i
+		return list(list("name" = fixed_combo.name, "words" = normalized_word_ids, "indexes" = indexes))
 	var/list/combo_names = list(
 		"[FORMULA_FORM_ORB]|[FORMULA_FORM_WAVE]" = "Seeker",
 		"[FORMULA_FORM_TOUCH]|[FORMULA_FORM_NOVA]" = "Breath",
@@ -61,4 +68,3 @@
 		var/reverse_key = "[form_ids[2]]|[form_ids[1]]"
 		display_name = combo_names[combo_key] || combo_names[reverse_key] || display_name
 	return list(list("name" = display_name, "words" = words, "indexes" = indexes))
-

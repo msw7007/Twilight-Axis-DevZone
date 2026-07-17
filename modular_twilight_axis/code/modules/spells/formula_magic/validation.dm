@@ -66,7 +66,7 @@
 	qdel(formula)
 	return list(
 		"valid" = valid,
-		"reason" = valid ? "" : "Needs at least one Orb.",
+		"reason" = valid ? "" : "Needs at least one form or fixed formula.",
 		"arcane_required" = requirements["arcane_required"],
 		"reading_required" = requirements["reading_required"],
 		"requirements" = requirements["requirements"],
@@ -107,4 +107,3 @@
 		"form_counts" = form_counts,
 		"school_counts" = list(),
 	)
-
