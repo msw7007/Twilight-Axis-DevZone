@@ -27,6 +27,7 @@
 	return TRUE
 
 /datum/mind/proc/can_reduce_formula_magic_form(form_id, new_points)
+	return TRUE
 
 /proc/formula_magic_form_ids()
 	var/list/result = list()

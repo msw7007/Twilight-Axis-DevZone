@@ -42,6 +42,7 @@
 	return spent
 
 /datum/mind/proc/get_formula_magic_free_points()
+	return max(0, get_formula_magic_total_points() - get_formula_magic_spent_points())
 
 /datum/mind/proc/get_formula_magic_progression_data()
 	ensure_formula_magic_progression()

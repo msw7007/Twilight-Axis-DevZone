@@ -41,6 +41,7 @@
 	return FALSE
 
 /proc/formula_magic_apply_matrix_existence(mob/living/carbon/human/caster, datum/formula_magic_part/part, list/affected_turfs, power)
+	return formula_magic_apply_instant_existence(caster, part, affected_turfs, power)
 
 /proc/formula_magic_apply_part_area(mob/living/carbon/human/caster, datum/formula_magic_part/part, turf/center, radius, power, list/excluded, form_id = null)
 	if(!center || !part)
