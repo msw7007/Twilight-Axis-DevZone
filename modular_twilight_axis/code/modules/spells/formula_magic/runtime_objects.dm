@@ -111,59 +111,6 @@
 	qdel(src)
 	return TRUE
 
-/obj/effect/formula_magic_part_lingering_zone
-	name = "lingering formula"
-	desc = "A spoken formula hangs here as a temporary payload zone."
-	anchored = TRUE
-	density = FALSE
-	mouse_opacity = MOUSE_OPACITY_TRANSPARENT
-	invisibility = INVISIBILITY_ABSTRACT
-	layer = ABOVE_NORMAL_TURF_LAYER
-	var/mob/living/carbon/human/caster
-	var/datum/formula_magic_part/part
-	var/power = 1
-	var/pulse_interval = 2 SECONDS
-	var/expire_time = 0
-	var/pulse_started = FALSE
-
-/obj/effect/formula_magic_part_lingering_zone/Destroy()
-	caster = null
-	part = null
-	. = ..()
-
-/obj/effect/formula_magic_part_lingering_zone/proc/setup_formula_zone(mob/living/carbon/human/new_caster, datum/formula_magic_part/new_part, new_power, lifespan)
-	caster = new_caster
-	part = new_part
-	power = max(power, new_power || 1)
-	expire_time = max(expire_time, world.time + max(1 SECONDS, lifespan || 5 SECONDS))
-	if(!pulse_started)
-		pulse_started = TRUE
-		addtimer(CALLBACK(src, PROC_REF(pulse_formula_zone)), pulse_interval)
-	return TRUE
-
-/obj/effect/formula_magic_part_lingering_zone/Crossed(atom/movable/AM, oldloc)
-	. = ..()
-	if(isliving(AM))
-		trigger_formula_zone(AM)
-
-/obj/effect/formula_magic_part_lingering_zone/proc/pulse_formula_zone()
-	if(QDELETED(src) || !part)
-		return
-	if(world.time >= expire_time)
-		qdel(src)
-		return
-	for(var/mob/living/L in loc)
-		trigger_formula_zone(L)
-	if(QDELETED(src) || !loc || !part)
-		return
-	addtimer(CALLBACK(src, PROC_REF(pulse_formula_zone)), pulse_interval)
-
-/obj/effect/formula_magic_part_lingering_zone/proc/trigger_formula_zone(mob/living/L)
-	if(!L || !part || L == caster)
-		return FALSE
-	return formula_magic_apply_part_payload_hit(L, caster, part, power, get_turf(src))
-
-
 /obj/effect/formula_magic_blade_field
 	name = "spinning arcyne blade"
 	desc = "A brief formula blade turns in the air."
@@ -302,4 +249,3 @@
 		reduction = max(reduction, damage_resistance[damage_flag])
 	reduction = min(0.95, max(0, reduction))
 	return round(amount * (1 - reduction))
-

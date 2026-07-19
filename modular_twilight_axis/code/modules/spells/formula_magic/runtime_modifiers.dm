@@ -61,7 +61,7 @@
 	var/shrapnel_count = formula_magic_part_modifier_count(part, "shrapnel")
 	if(shrapnel_count <= 0)
 		return FALSE
-	return formula_magic_apply_form_payload_area(caster, part, source, shrapnel_count, max(1, power || part.power || 1), excluded)
+	return formula_magic_apply_part_area(caster, part, source, shrapnel_count, max(1, power || part.power || 1), excluded, FORMULA_FORM_NOVA)
 
 /proc/formula_magic_apply_fall_payload(mob/living/carbon/human/caster, datum/formula_magic_part/part, turf/target, power, allow_followups = TRUE)
 	if(!caster || !part || !target)
@@ -79,7 +79,7 @@
 			addtimer(CALLBACK(GLOBAL_PROC, GLOBAL_PROC_REF(formula_magic_apply_fall_payload), caster, part, random_target, power, FALSE), i * 0.5 SECONDS)
 	var/chain_count = formula_magic_part_modifier_count(part, "chain")
 	var/list/visited = hit_targets?.Copy() || list(caster)
-	if(length(hit_targets) > 1)
+	if(length(hit_targets) > 0)
 		for(var/i in 1 to chain_count)
 			var/mob/living/next_target = formula_magic_nearest_chain_target(caster, target, visited)
 			if(!next_target || get_dist(target, next_target) > 4)

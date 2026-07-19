@@ -58,7 +58,8 @@
 		return FALSE
 	new /obj/effect/temp_visual/spell_impact(source, part.impact_color, SPELL_IMPACT_LOW)
 	var/aura_words = max(1, formula_magic_part_form_repeat_count(part, FORMULA_FORM_AURA) || 1)
-	formula_magic_apply_aura_status(context.caster, part, max(30 SECONDS, part.duration || (aura_words * 30 SECONDS)), 1)
+	var/aura_duration = max(30 SECONDS, part.duration || (aura_words * 30 SECONDS))
+	formula_magic_apply_aura_status(context.caster, part, aura_duration, 1)
 	var/widen_count = formula_magic_part_modifier_count(part, "widen")
 	if(widen_count > 0 && context.caster.current_fellowship)
 		var/list/members = context.caster.current_fellowship.get_members()
@@ -68,7 +69,7 @@
 			members -= member
 			if(member)
 				new /obj/effect/temp_visual/spell_impact(get_turf(member), part.impact_color, SPELL_IMPACT_LOW)
-				formula_magic_apply_aura_status(member, part, max(10 SECONDS, round((part.duration || (aura_words * 30 SECONDS)) * 0.3)), 0.3)
+				formula_magic_apply_aura_status(member, part, max(10 SECONDS, round(aura_duration * 0.3)), 0.3)
 	var/pierce_count = max(0, part.tags["pierce"] || 0)
 	if(pierce_count > 0)
 		var/pierce_fraction = min(1, pierce_count * 0.3)
@@ -76,20 +77,27 @@
 			if(L == context.caster)
 				continue
 			new /obj/effect/temp_visual/spell_impact(get_turf(L), part.impact_color, SPELL_IMPACT_LOW)
-			formula_magic_apply_aura_status(L, part, max(10 SECONDS, round((part.duration || (aura_words * 30 SECONDS)) * pierce_fraction)), pierce_fraction)
+			formula_magic_apply_aura_status(L, part, max(10 SECONDS, round(aura_duration * pierce_fraction)), pierce_fraction)
 	var/ricochet_count = max(0, part.tags["ricochet"] || 0)
 	if(ricochet_count > 0 && context.caster.current_fellowship)
-		var/list/members = context.caster.current_fellowship.get_members()
-		members -= context.caster
-		for(var/i in 1 to ricochet_count)
-			if(!length(members))
-				break
-			var/mob/living/member = pick(members)
-			members -= member
-			if(member)
-				new /obj/effect/temp_visual/spell_impact(get_turf(member), part.impact_color, SPELL_IMPACT_LOW)
-				formula_magic_apply_aura_status(member, part, max(10 SECONDS, round((part.duration || (aura_words * 30 SECONDS)) * 0.3)), 0.3)
+		addtimer(CALLBACK(GLOBAL_PROC, GLOBAL_PROC_REF(formula_magic_apply_aura_ricochet_jumps), context.caster, part, ricochet_count, aura_duration), aura_duration)
 	context.caster.visible_message(span_notice("[context.caster] gathers a formula aura."))
+	return TRUE
+
+/proc/formula_magic_apply_aura_ricochet_jumps(mob/living/carbon/human/caster, datum/formula_magic_part/part, ricochet_count, aura_duration)
+	if(!caster || QDELETED(caster) || !part || ricochet_count <= 0 || !caster.current_fellowship)
+		return FALSE
+	var/list/members = caster.current_fellowship.get_members()
+	members -= caster
+	for(var/i in 1 to ricochet_count)
+		if(!length(members))
+			break
+		var/mob/living/member = pick(members)
+		members -= member
+		if(!member || QDELETED(member))
+			continue
+		new /obj/effect/temp_visual/spell_impact(get_turf(member), part.impact_color, SPELL_IMPACT_LOW)
+		formula_magic_apply_aura_status(member, part, max(10 SECONDS, round((aura_duration || 30 SECONDS) * 0.3)), 0.3)
 	return TRUE
 
 /proc/formula_magic_apply_aura_status(mob/living/target, datum/formula_magic_part/part, duration, strength_multiplier = 1)
@@ -240,11 +248,15 @@
 	if(!caster || !part || !length(line))
 		return FALSE
 	var/list/hit = list(caster)
+	var/turf/previous_turf = get_turf(caster)
 	for(var/turf/T in line)
 		if(!T)
 			continue
-		formula_magic_apply_part_area(caster, part, T, width, formula_magic_part_power(part, form_id), hit, form_id)
-		for(var/mob/living/L in range(max(0, width || 0), T))
+		var/travel_dir = get_dir(previous_turf, T) || caster.dir
+		var/list/step_turfs = formula_magic_perpendicular_turfs(T, travel_dir, max(0, width || 0))
+		var/list/result = formula_magic_apply_form_payload_turfs(caster, part, step_turfs, formula_magic_part_power(part, form_id), hit, form_id, T)
+		var/list/hit_targets = islist(result) ? (result["targets"] || list()) : list()
+		for(var/mob/living/L as anything in hit_targets)
 			hit |= L
 		if(form_id == FORMULA_FORM_WAVE && (part.tags["ricochet"] || 0) > 0 && length(hit) > 1)
 			var/turf/random_target = get_ranged_target_turf(T, pick(GLOB.alldirs), max(1, part.range))
@@ -260,6 +272,7 @@
 				chain_line -= T
 				INVOKE_ASYNC(GLOBAL_PROC, GLOBAL_PROC_REF(formula_magic_progressive_part_line), caster, part, chain_line, width, delay, form_id)
 				return TRUE
+		previous_turf = T
 		sleep(max(1, delay || 1))
 	return TRUE
 

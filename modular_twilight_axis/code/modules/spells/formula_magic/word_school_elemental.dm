@@ -11,6 +11,7 @@
 	part.impact_damage_type = BURN
 	part.impact_flag = "fire"
 	part.impact_color = "#FF5A1F"
+	part.tags["payload_repeat_delay"] = max(part.tags["payload_repeat_delay"] || 0, 2 SECONDS)
 
 /datum/formula_magic_word/element/burning
 	id = "burning"
@@ -22,6 +23,11 @@
 	complexity = 2
 	tags = list("ignite")
 	phrases = list("Arde.", "Favilla haere.", "Carbo vivit.")
+
+/datum/formula_magic_word/element/burning/apply_to_part(datum/formula_magic_part/part)
+	..()
+	part.tags["payload_zone_duration"] = max(part.tags["payload_zone_duration"] || 0, 5 SECONDS)
+	part.tags["payload_repeat_delay"] = max(part.tags["payload_repeat_delay"] || 0, 5 SECONDS)
 
 /datum/formula_magic_word/element/frost
 	id = "frost"
@@ -98,4 +104,3 @@
 	complexity = 2
 	tags = list("dirt", "slow")
 	phrases = list("Lutum.", "Terra lenta.", "Pedem tene.")
-

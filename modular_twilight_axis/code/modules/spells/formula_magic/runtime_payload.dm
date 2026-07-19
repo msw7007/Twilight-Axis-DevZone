@@ -1,17 +1,57 @@
-/proc/formula_magic_apply_lingering_zones(mob/living/carbon/human/caster, datum/formula_magic_part/part, list/affected_turfs, power, lifespan)
-	if(!caster || !part || !length(affected_turfs) || lifespan <= 0)
+/proc/formula_magic_schedule_existence_repeats(mob/living/carbon/human/caster, datum/formula_magic_part/part, list/affected_turfs, power, lifespan)
+	if(!caster || QDELETED(caster) || !part || !length(affected_turfs))
 		return FALSE
-	for(var/turf/T as anything in affected_turfs)
+	var/repeat_count = max(0, part.tags["existence"] || 0)
+	if(repeat_count <= 0)
+		return FALSE
+	var/datum/formula_magic_part/repeat_part = formula_magic_copy_part_payload(part)
+	if(!repeat_part)
+		return FALSE
+	var/repeat_delay = formula_magic_payload_repeat_delay(part)
+	var/payload_zone_duration = max(0, part.tags["payload_zone_duration"] || 0)
+	if(payload_zone_duration > 0)
+		var/total_zone_duration = max(payload_zone_duration, repeat_delay * repeat_count)
+		repeat_count = max(1, CEILING(total_zone_duration / repeat_delay, 1))
+	var/list/repeat_turfs = affected_turfs.Copy()
+	for(var/repeat_index in 1 to repeat_count)
+		addtimer(CALLBACK(GLOBAL_PROC, GLOBAL_PROC_REF(formula_magic_repeat_payload_turfs), caster, repeat_part, repeat_turfs, max(1, power || part.power || 1)), repeat_index * repeat_delay)
+	QDEL_IN(repeat_part, (repeat_count * repeat_delay) + 1 SECONDS)
+	return TRUE
+
+/proc/formula_magic_payload_repeat_delay(datum/formula_magic_part/part)
+	if(!part)
+		return 2 SECONDS
+	return max(1, part.tags["payload_repeat_delay"] || 2 SECONDS)
+
+/proc/formula_magic_copy_part_payload(datum/formula_magic_part/part)
+	if(!part)
+		return null
+	var/datum/formula_magic_part/copy = new
+	copy.tags = part.tags?.Copy() || list()
+	copy.power = part.power
+	copy.range = part.range
+	copy.radius = part.radius
+	copy.duration = part.duration
+	copy.impact_damage_type = part.impact_damage_type
+	copy.impact_flag = part.impact_flag
+	copy.impact_woundclass = part.impact_woundclass
+	copy.impact_intdamfactor = part.impact_intdamfactor
+	copy.impact_color = part.impact_color
+	copy.projectile_count = part.projectile_count
+	return copy
+
+/proc/formula_magic_repeat_payload_turfs(mob/living/carbon/human/caster, datum/formula_magic_part/part, list/target_turfs, power)
+	if(!caster || QDELETED(caster) || !part || QDELETED(part) || !length(target_turfs))
+		return FALSE
+	for(var/turf/T as anything in target_turfs)
 		if(!T)
 			continue
-		var/obj/effect/formula_magic_part_lingering_zone/zone
-		for(var/obj/effect/formula_magic_part_lingering_zone/existing in T)
-			if(existing.caster == caster)
-				zone = existing
-				break
-		if(!zone)
-			zone = new(T)
-		zone.setup_formula_zone(caster, part, max(1, power || part.power || 1), lifespan)
+		new /obj/effect/temp_visual/spell_impact(T, part.impact_color, SPELL_IMPACT_LOW)
+		formula_magic_apply_part_turf_payload(caster, part, T, max(1, power || part.power || 1))
+		for(var/mob/living/L in T)
+			if(L == caster)
+				continue
+			formula_magic_apply_part_payload_hit(L, caster, part, max(1, power || part.power || 1), T)
 	return TRUE
 
 /proc/formula_magic_apply_form_payload_area(mob/living/carbon/human/caster, datum/formula_magic_part/part, turf/center, radius, power, list/excluded)
@@ -31,14 +71,56 @@
 			formula_magic_apply_part_payload_hit(L, caster, part, max(1, power || part.power || 1), center)
 	return list("turfs" = result_turfs, "targets" = hit_targets)
 
+/proc/formula_magic_apply_form_payload_turfs(mob/living/carbon/human/caster, datum/formula_magic_part/part, list/target_turfs, power, list/excluded, form_id = null, turf/center)
+	if(!part || !length(target_turfs))
+		return list("turfs" = list(), "targets" = list())
+	var/list/result_turfs = list()
+	var/list/hit_targets = excluded?.Copy() || list()
+	for(var/turf/T as anything in target_turfs)
+		if(!T || (T in result_turfs))
+			continue
+		result_turfs |= T
+		new /obj/effect/temp_visual/spell_impact(T, part.impact_color, SPELL_IMPACT_LOW)
+		formula_magic_apply_part_turf_payload(caster, part, T, max(1, power || part.power || 1))
+		for(var/mob/living/L in T)
+			if(L == caster || (hit_targets && (L in hit_targets)))
+				continue
+			hit_targets |= L
+			formula_magic_apply_part_payload_hit(L, caster, part, max(1, power || part.power || 1), center || T)
+	var/datum/formula_magic_context/area_context = new
+	area_context.caster = caster
+	area_context.source_turf = get_turf(caster)
+	area_context.target_turf = center || result_turfs[1]
+	formula_magic_apply_area_modifier_handlers(area_context, part, form_id, center || result_turfs[1], max(1, power || part.power || 1), 0, result_turfs, hit_targets)
+	qdel(area_context)
+	return list("turfs" = result_turfs, "targets" = hit_targets)
+
+/proc/formula_magic_perpendicular_turfs(turf/center, travel_dir, width)
+	var/list/result = list()
+	if(!center)
+		return result
+	result |= center
+	width = max(0, min(width || 0, 8))
+	if(width <= 0)
+		return result
+	var/left_dir = turn(travel_dir, 90)
+	var/right_dir = turn(travel_dir, -90)
+	var/turf/left_turf = center
+	var/turf/right_turf = center
+	for(var/side_step in 1 to width)
+		left_turf = get_step(left_turf, left_dir)
+		right_turf = get_step(right_turf, right_dir)
+		if(left_turf)
+			result |= left_turf
+		if(right_turf)
+			result |= right_turf
+	return result
+
 /proc/formula_magic_apply_instant_existence(mob/living/carbon/human/caster, datum/formula_magic_part/part, list/affected_turfs, power)
 	var/existence_count = formula_magic_part_modifier_count(part, "existence")
 	if(existence_count <= 0 || !length(affected_turfs))
 		return FALSE
-	var/existence_lifespan = max(0, part.tags["existence_duration"] || 0)
-	if(existence_lifespan > 0)
-		return formula_magic_apply_lingering_zones(caster, part, affected_turfs, power, existence_lifespan)
-	return FALSE
+	return formula_magic_schedule_existence_repeats(caster, part, affected_turfs, power, 0)
 
 /proc/formula_magic_apply_matrix_existence(mob/living/carbon/human/caster, datum/formula_magic_part/part, list/affected_turfs, power)
 	return formula_magic_apply_instant_existence(caster, part, affected_turfs, power)
@@ -123,24 +205,43 @@
 				visited |= next_target
 				formula_magic_apply_beam_line(caster, part, beam_end, get_turf(next_target), fade_percent, form_id, FALSE, 1)
 		if((part.tags["ricochet"] || 0) > 0)
-			var/current_angle = Get_Angle(source, beam_end)
-			var/turf/approach = beam_end ? get_step(beam_end, angle2dir(SIMPLIFY_DEGREES((current_angle || 0) + 180))) : source
-			var/new_angle = formula_magic_reflected_angle(approach, beam_end, current_angle)
 			var/turf/start = beam_end
+			var/current_angle = Get_Angle(source, beam_end)
 			for(var/i in 1 to max(0, part.tags["ricochet"] || 0))
 				if(!start)
 					break
-				var/turf/reflected_target = get_ranged_target_turf(start, angle2dir(new_angle), max(1, part.range))
+				var/turf/approach = start ? get_step(start, angle2dir(SIMPLIFY_DEGREES((current_angle || 0) + 180))) : source
+				var/new_angle = formula_magic_reflected_angle(approach, start, current_angle)
+				var/turf/reflected_start = formula_magic_ricochet_start_turf(approach, start, new_angle)
+				if(!reflected_start)
+					break
+				var/turf/reflected_target = get_ranged_target_turf(reflected_start, angle2dir(new_angle), max(1, part.range))
 				if(!reflected_target)
 					break
-				formula_magic_apply_beam_line(caster, part, start, reflected_target, fade_percent, form_id, FALSE, 1)
-				start = reflected_target
+				formula_magic_apply_beam_line(caster, part, reflected_start, reflected_target, fade_percent, form_id, FALSE, 1)
+				var/turf/next_end = formula_magic_trace_beam_end(reflected_start, reflected_target)
+				if(!next_end || next_end == reflected_start)
+					break
+				current_angle = Get_Angle(reflected_start, next_end)
+				start = next_end
 		if((part.tags["shrapnel"] || 0) > 0)
 			for(var/i in 1 to max(0, part.tags["shrapnel"] || 0))
 				var/turf/random_target = get_ranged_target_turf(beam_end, pick(GLOB.alldirs), max(1, part.range))
 				if(random_target)
 					formula_magic_apply_beam_line(caster, part, beam_end, random_target, fade_percent, form_id, FALSE, 1, FALSE)
 	return TRUE
+
+/proc/formula_magic_trace_beam_end(turf/source, turf/target)
+	if(!source || !target)
+		return source
+	var/turf/beam_end = source
+	for(var/turf/T in getline(source, target))
+		if(T == source)
+			continue
+		beam_end = T
+		if(T.density)
+			break
+	return beam_end
 
 /proc/formula_magic_apply_beam_turf(mob/living/carbon/human/caster, datum/formula_magic_part/part, turf/target, power, list/hit)
 	if(!caster || !part || !target)

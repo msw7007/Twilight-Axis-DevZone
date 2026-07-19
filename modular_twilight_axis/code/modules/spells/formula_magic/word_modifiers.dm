@@ -17,7 +17,7 @@
 /datum/formula_magic_word/modifier/existence
 	id = "existence"
 	name = "Existence"
-	desc = "Extends lasting formulae. For instant formulae, each word echoes the payload across up to three randomly affected tiles after a short delay."
+	desc = "Repeats instant payloads after short delays. Zone payload words use their own zone timing."
 	role = FORMULA_WORD_MODIFIER
 	learn_cost = 0
 	mana_cost = 3
@@ -94,4 +94,3 @@
 	complexity = 2
 	tags = list("shrapnel")
 	phrases = list("Scindere.", "Frange globum.", "Fragmenta volant.")
-

@@ -106,7 +106,7 @@
 			lingering_part.impact_intdamfactor = intdamfactor
 			lingering_part.impact_color = spell_impact_color
 			lingering_part.tags = payload_tags?.Copy() || list()
-			formula_magic_apply_lingering_zones(caster, lingering_part, affected_turfs, damage, existence_lifespan)
+			formula_magic_schedule_existence_repeats(caster, lingering_part, affected_turfs, damage, existence_lifespan)
 	if(shrapnel_remaining > 0 && impact)
 		formula_magic_fire_orb_shrapnel(caster, impact, damage, damage_type, flag, woundclass, intdamfactor, spell_impact_color, shrapnel_remaining, payload_tags)
 	if(chain_remaining > 0 && impact)

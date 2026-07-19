@@ -196,12 +196,7 @@
 /datum/formula_magic_modifier_behavior/existence/apply_area(datum/formula_magic_context/context, datum/formula_magic_part/part, shape_id, turf/center, power, radius, list/affected_turfs, list/hit_targets)
 	if(count(part) <= 0 || !length(affected_turfs))
 		return FALSE
-	var/existence_lifespan = max(0, part.tags["existence_duration"] || 0)
-	if(shape_id == FORMULA_FORM_SUMMON)
-		existence_lifespan = max(existence_lifespan, (part.tags["existence"] || 0) * 1 MINUTES)
-	if(existence_lifespan > 0)
-		return formula_magic_apply_lingering_zones(context.caster, part, affected_turfs, power, existence_lifespan)
-	return FALSE
+	return formula_magic_schedule_existence_repeats(context.caster, part, affected_turfs, power, 0)
 
 /datum/formula_magic_modifier_behavior/chain
 	id = "chain"
@@ -270,7 +265,7 @@
 				if(FORMULA_FORM_AURA, FORMULA_FORM_RUNE)
 					return FALSE
 				if(FORMULA_FORM_SUMMON)
-					return formula_magic_apply_lingering_zones(context.caster, part, affected_turfs, power, max(part.tags["existence_duration"] || 0, (part.tags["existence"] || 0) * 1 MINUTES))
+					return formula_magic_schedule_existence_repeats(context.caster, part, affected_turfs, power, 0)
 				else
 					return formula_magic_apply_matrix_existence(context.caster, part, affected_turfs, power)
 		if("ricochet")
