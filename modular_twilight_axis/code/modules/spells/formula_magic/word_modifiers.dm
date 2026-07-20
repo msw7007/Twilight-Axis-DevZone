@@ -74,7 +74,7 @@
 /datum/formula_magic_word/modifier/pierce
 	id = "pierce"
 	name = "Pierce"
-	desc = "Lets the orb pass through struck targets. Repeating it adds another pierced target."
+	desc = "Lets directed formulae pass through struck living targets only. Repeating it adds another living target pierced."
 	role = FORMULA_WORD_MODIFIER
 	learn_cost = 0
 	mana_cost = 2

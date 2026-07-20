@@ -69,7 +69,7 @@
 		if(word)
 			H.say(word.get_phrase(), forced = "spell", language = /datum/language/common)
 		word_speak_index++
-		sleep(max(2, formula_word_cast_times?[word_speak_index - 1] || FORMULA_DEFAULT_WORD_DELAY))
+		sleep(max(1, formula_word_cast_times?[word_speak_index - 1] || FORMULA_DEFAULT_WORD_DELAY))
 
 /datum/action/cooldown/spell/formula_preset/cast(atom/cast_on)
 	. = ..()
@@ -123,7 +123,7 @@
 /proc/formula_magic_speech_delays_for_words(list/word_ids, list/word_delays)
 	var/list/result = list()
 	for(var/i in 1 to length(word_ids))
-		result += max(2, word_delays?[i] || FORMULA_DEFAULT_WORD_DELAY)
+		result += max(1, word_delays?[i] || FORMULA_DEFAULT_WORD_DELAY)
 	return result
 
 /obj/item/paper/scroll/formula_magic

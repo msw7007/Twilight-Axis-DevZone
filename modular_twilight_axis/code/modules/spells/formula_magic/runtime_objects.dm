@@ -4,17 +4,44 @@
 	light_color = "#36B36A"
 	duration = 4
 
-/obj/item/formula_magic_mud_clod
-	name = "formula mud clod"
-	desc = "A brief lump of churned formula earth."
+/obj/effect/temp_visual/formula_magic_falling_meteor
 	icon = 'modular_twilight_axis/icons/effects/formula_magic.dmi'
-	icon_state = "formula_summon"
-	w_class = WEIGHT_CLASS_SMALL
+	icon_state = "formula_meteor"
+	name = "falling formula"
+	layer = FLY_LAYER
+	plane = GAME_PLANE_UPPER
+	randomdir = FALSE
+	duration = 12
+	pixel_z = 270
+	var/impact_delay = 9
+	var/datum/callback/on_impact
 
-/obj/item/formula_magic_mud_clod/Initialize(mapload)
+/obj/effect/temp_visual/formula_magic_falling_meteor/Initialize(mapload, datum/callback/impact_cb, impact_color = "#B96DFF", new_impact_delay)
+	if(new_impact_delay)
+		impact_delay = max(1, new_impact_delay)
+	duration = impact_delay + 2
 	. = ..()
-	add_atom_colour("#7A5B35", FIXED_COLOUR_PRIORITY)
-	QDEL_IN(src, 30 SECONDS)
+	on_impact = impact_cb
+	if(impact_color)
+		add_atom_colour(impact_color, FIXED_COLOUR_PRIORITY)
+		set_light(1, 1, 1, l_color = impact_color)
+	animate(src, pixel_z = 0, time = impact_delay, easing = CUBIC_EASING | EASE_IN)
+	addtimer(CALLBACK(GLOBAL_PROC, GLOBAL_PROC_REF(formula_magic_falling_meteor_impact), src), impact_delay)
+
+/obj/effect/temp_visual/formula_magic_falling_meteor/Destroy()
+	on_impact = null
+	return ..()
+
+/obj/effect/temp_visual/formula_magic_falling_meteor/proc/do_impact()
+	on_impact?.Invoke()
+	on_impact = null
+	alpha = 0
+
+/proc/formula_magic_falling_meteor_impact(obj/effect/temp_visual/formula_magic_falling_meteor/meteor)
+	if(!meteor || QDELETED(meteor))
+		return FALSE
+	meteor.do_impact()
+	return TRUE
 
 /obj/effect/formula_magic_dirt
 	name = "formula mud"
@@ -42,7 +69,7 @@
 		var/mob/living/L = AM
 		L.Slowdown(slow_amount)
 
-/obj/structure/formula_magic_part_rune
+/obj/effect/formula_magic_part_rune
 	name = "formula rune"
 	desc = "A dormant formula waits in the ground."
 	icon = 'modular_twilight_axis/icons/effects/formula_magic.dmi'
@@ -56,12 +83,12 @@
 	var/remaining_triggers = 1
 	var/next_trigger_time = 0
 
-/obj/structure/formula_magic_part_rune/Destroy()
+/obj/effect/formula_magic_part_rune/Destroy()
 	caster = null
 	part = null
 	. = ..()
 
-/obj/structure/formula_magic_part_rune/proc/setup_formula_rune(mob/living/carbon/human/new_caster, datum/formula_magic_part/new_part, lifespan, trigger_count)
+/obj/effect/formula_magic_part_rune/proc/setup_formula_rune(mob/living/carbon/human/new_caster, datum/formula_magic_part/new_part, lifespan, trigger_count)
 	caster = new_caster
 	part = new_part
 	remaining_triggers = max(1, trigger_count || 1)
@@ -71,12 +98,12 @@
 	QDEL_IN(src, max(10 SECONDS, lifespan || 60 SECONDS))
 	return TRUE
 
-/obj/structure/formula_magic_part_rune/Crossed(atom/movable/AM, oldloc)
+/obj/effect/formula_magic_part_rune/Crossed(atom/movable/AM, oldloc)
 	. = ..()
 	if(isliving(AM))
 		trigger_formula_rune(AM)
 
-/obj/structure/formula_magic_part_rune/proc/trigger_formula_rune(mob/living/L)
+/obj/effect/formula_magic_part_rune/proc/trigger_formula_rune(mob/living/L)
 	if(!L || !part || world.time < next_trigger_time)
 		return FALSE
 	if(caster?.mind && L.mind == caster.mind)

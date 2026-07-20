@@ -99,7 +99,7 @@
 			count++
 	return count
 
-/proc/formula_magic_detonate_formula_part(mob/living/carbon/human/caster, datum/formula_magic_part/part, reason)
+/proc/formula_magic_detonate_formula_part(mob/living/carbon/human/caster, datum/formula_magic_part/part, reason, blast_radius = 1)
 	if(!caster || !part)
 		return FALSE
 	var/turf/center = get_turf(caster)
@@ -113,7 +113,7 @@
 	var/turf/caster_throw_target = get_ranged_target_turf(caster, turn(caster.dir, 180), knockback)
 	if(caster_throw_target)
 		caster.safe_throw_at(caster_throw_target, knockback, 1, caster, force = MOVE_FORCE_STRONG)
-	for(var/turf/T in range(1, center))
+	for(var/turf/T in range(max(0, blast_radius || 0), center))
 		new /obj/effect/temp_visual/fire/shortduration/formula_magic_toxic(T)
 		for(var/mob/living/L in T)
 			if(L == caster)

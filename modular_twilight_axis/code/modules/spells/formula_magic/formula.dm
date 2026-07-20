@@ -25,6 +25,7 @@
 	var/mana_cost = 0
 	var/cast_time = 0
 	var/complexity = 0
+	var/touch_cast_time = 0
 
 /datum/formula_magic_part/proc/add_word(datum/formula_magic_word/word)
 	if(!word)
@@ -52,6 +53,28 @@
 
 /datum/formula_magic_part/proc/can_execute()
 	return length(forms) > 0
+
+/proc/formula_magic_touch_cast_time(base_time, touch_count)
+	var/time = max(1, base_time || 1)
+	for(var/i in 2 to max(1, touch_count || 1))
+		time *= 0.9
+	return max(max(1, touch_count || 1), round(time))
+
+/proc/formula_magic_part_has_payload_words(datum/formula_magic_part/part)
+	if(!part)
+		return FALSE
+	if(length(part.elements) || length(part.schools))
+		return TRUE
+	for(var/tag in part.tags)
+		switch(tag)
+			if("projectile", "arcane_payload", "self", "aura", "point", "moment", "beam", "spiral", "summon", "wave", "touch", "guidance", "nova")
+				continue
+			if("widen", "existence", "existence_duration", "efficient", "ricochet", "chain", "pierce", "shrapnel")
+				continue
+			if("payload_repeat_delay", "payload_zone_duration")
+				continue
+		return TRUE
+	return FALSE
 
 /datum/formula_magic_part/proc/execute(datum/formula_magic_context/context)
 	if(!can_execute() || !context)
@@ -111,7 +134,6 @@
 	if(!word)
 		return FALSE
 	words += word
-	word_cast_times += max(1, word.cast_time)
 	rebuild_parts()
 	return TRUE
 
@@ -147,6 +169,34 @@
 	combo_formula = formula_magic_find_exact_combo_formula(get_word_ids())
 	if(combo_formula)
 		combo_formula.apply_to_formula(src)
+	rebuild_word_cast_times()
+
+/datum/formula_magic_formula/proc/rebuild_word_cast_times()
+	word_cast_times = list()
+	var/list/touch_indices = list()
+	var/touch_base_time = 0
+	for(var/i in 1 to length(words))
+		var/datum/formula_magic_word/word = words[i]
+		if(word?.id != FORMULA_FORM_TOUCH)
+			continue
+		touch_indices += i
+		if(!touch_base_time)
+			touch_base_time = word.cast_time
+	var/touch_count = length(touch_indices)
+	var/list/touch_delays = list()
+	if(touch_count)
+		var/touch_total = max(touch_count, formula_magic_touch_cast_time(touch_base_time, touch_count))
+		var/touch_base_delay = FLOOR(touch_total / touch_count, 1)
+		var/touch_remainder = touch_total - (touch_base_delay * touch_count)
+		for(var/i in 1 to touch_count)
+			touch_delays += max(1, touch_base_delay + (i <= touch_remainder ? 1 : 0))
+	var/touch_delay_index = 1
+	for(var/datum/formula_magic_word/word in words)
+		if(word?.id == FORMULA_FORM_TOUCH && length(touch_delays))
+			word_cast_times += touch_delays[touch_delay_index]
+			touch_delay_index++
+			continue
+		word_cast_times += max(1, word?.cast_time || FORMULA_DEFAULT_WORD_DELAY)
 
 /datum/formula_magic_formula/proc/compile_from_parts()
 	for(var/datum/formula_magic_part/part in parts)

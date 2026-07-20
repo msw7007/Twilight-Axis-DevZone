@@ -56,7 +56,7 @@
 		"committed_form_points" = formula_magic_form_points.Copy(),
 		"school_access" = get_formula_magic_school_access(),
 		"committed" = formula_magic_committed,
-		"can_reassign" = formula_magic_can_reassign,
+		"can_reassign" = FORMULA_MAGIC_TEST_FREE_REALLOC || formula_magic_can_reassign,
 		"dirty" = formula_magic_has_unsaved_progression(),
 	)
 
@@ -81,11 +81,12 @@
 		return FALSE
 	var/current_points = formula_magic_draft_school_points[school_id] || 0
 	var/new_points = current_points + (delta > 0 ? 1 : -1)
+	var/can_reassign_now = FORMULA_MAGIC_TEST_FREE_REALLOC || formula_magic_can_reassign
 	if(delta > 0 && get_formula_magic_free_points() <= 0)
 		return FALSE
-	if(delta < 0 && !formula_magic_can_reassign && new_points < (formula_magic_school_points[school_id] || 0))
+	if(delta < 0 && !can_reassign_now && new_points < (formula_magic_school_points[school_id] || 0))
 		return FALSE
-	if(new_points < get_formula_magic_school_word_points(school_id))
+	if(!FORMULA_MAGIC_TEST_FREE_REALLOC && new_points < get_formula_magic_school_word_points(school_id))
 		return FALSE
 	if(new_points < 0)
 		return FALSE
@@ -101,9 +102,10 @@
 	var/step = delta > 0 ? cost : -cost
 	var/current_points = formula_magic_draft_form_points[word.id] || 0
 	var/new_points = current_points + step
+	var/can_reassign_now = FORMULA_MAGIC_TEST_FREE_REALLOC || formula_magic_can_reassign
 	if(delta > 0 && get_formula_magic_free_points() < cost)
 		return FALSE
-	if(delta < 0 && !formula_magic_can_reassign && new_points < (formula_magic_form_points[word.id] || 0))
+	if(delta < 0 && !can_reassign_now && new_points < (formula_magic_form_points[word.id] || 0))
 		return FALSE
 	if(new_points < 0)
 		return FALSE
@@ -119,7 +121,7 @@
 	formula_magic_school_points = formula_magic_draft_school_points.Copy()
 	formula_magic_form_points = formula_magic_draft_form_points.Copy()
 	formula_magic_committed = TRUE
-	formula_magic_can_reassign = FALSE
+	formula_magic_can_reassign = FORMULA_MAGIC_TEST_FREE_REALLOC
 	return TRUE
 
 /datum/mind/proc/formula_magic_has_unsaved_progression()

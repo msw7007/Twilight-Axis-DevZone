@@ -121,7 +121,7 @@
 /datum/formula_magic_word/form/touch
 	id = FORMULA_FORM_TOUCH
 	name = "Touch"
-	desc = "A fast close form for the adjacent tile. It hits above baseline because it is melee range."
+	desc = "A fast close form for the adjacent tile. Repeating it shortens the spoken Touch block by 10% per extra word."
 	role = FORMULA_WORD_FORM
 	learn_cost = 1
 	mana_cost = 1
@@ -132,6 +132,12 @@
 
 /datum/formula_magic_word/form/touch/apply_to_part(datum/formula_magic_part/part)
 	..()
+	part.cast_time -= cast_time
+	if(part.touch_cast_time)
+		part.cast_time -= part.touch_cast_time
+	var/touch_count = max(1, part.tags["touch"] || 1)
+	part.touch_cast_time = formula_magic_touch_cast_time(cast_time, touch_count)
+	part.cast_time += part.touch_cast_time
 	part.power = max(part.power, 30)
 
 /datum/formula_magic_word/form/guidance
@@ -154,7 +160,7 @@
 /datum/formula_magic_word/form/nova
 	id = FORMULA_FORM_NOVA
 	name = "Nova"
-	desc = "A circular pulse. Each hit is below baseline because the shape is broad."
+	desc = "A circular pulse. Each hit is below baseline because the shape is broad. Radius grows from Widen, not repeated Nova words."
 	role = FORMULA_WORD_FORM
 	learn_cost = 1
 	mana_cost = 3
@@ -166,5 +172,4 @@
 /datum/formula_magic_word/form/nova/apply_to_part(datum/formula_magic_part/part)
 	..()
 	part.power = max(part.power, 30)
-	part.radius = max(part.radius, 1 + max(0, (part.tags["nova"] || 1) - 1))
-
+	part.radius = max(part.radius, 1 + max(0, part.tags["widen"] || 0))

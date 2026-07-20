@@ -206,10 +206,14 @@
 	if(chain_count <= 0)
 		return FALSE
 	switch(shape_id)
-		if(FORMULA_FORM_TOUCH, FORMULA_FORM_INSTANT, FORMULA_FORM_SPIRAL)
-			return formula_magic_apply_moment_chain(context.caster, part, center, power, hit_targets)
+		if(FORMULA_FORM_TOUCH)
+			return formula_magic_apply_touch_chain(context.caster, part, center, power, hit_targets)
+		if(FORMULA_FORM_INSTANT)
+			return formula_magic_apply_moment_chain(context.caster, part, center, power, hit_targets, max(1, max(0, radius || part.radius || 0) + 1), FORMULA_FORM_INSTANT)
+		if(FORMULA_FORM_SPIRAL)
+			return formula_magic_apply_moment_chain(context.caster, part, center, power, hit_targets, max(1, 1 + (part.radius || 0)) + 1, FORMULA_FORM_SPIRAL)
 		if(FORMULA_FORM_NOVA, FORMULA_FORM_CLOAK)
-			return formula_magic_apply_nova_chain(context.caster, part, center, power, max(1, radius || 1), hit_targets)
+			return formula_magic_apply_nova_chain(context.caster, part, center, power, max(1, radius || 1) + 1, hit_targets, shape_id)
 	return FALSE
 
 /datum/formula_magic_modifier_behavior/ricochet
@@ -262,7 +266,7 @@
 	switch(modifier_id)
 		if("existence")
 			switch(shape_id)
-				if(FORMULA_FORM_AURA, FORMULA_FORM_RUNE)
+				if(FORMULA_FORM_AURA, FORMULA_FORM_RUNE, FORMULA_FORM_SPIRAL)
 					return FALSE
 				if(FORMULA_FORM_SUMMON)
 					return formula_magic_schedule_existence_repeats(context.caster, part, affected_turfs, power, 0)
@@ -279,13 +283,21 @@
 				if(FORMULA_FORM_SPIRAL)
 					return FALSE // Spiral ricochet is handled by reversing the spiral runner.
 		if("chain")
+			if(!length(hit_targets))
+				return FALSE
 			switch(shape_id)
 				if(FORMULA_FORM_SUMMON, FORMULA_FORM_GUIDANCE, FORMULA_FORM_AURA)
 					return FALSE
-				if(FORMULA_FORM_TOUCH, FORMULA_FORM_INSTANT, FORMULA_FORM_SPIRAL, FORMULA_FORM_CLOAK)
-					return formula_magic_apply_moment_chain(context.caster, part, center, power, hit_targets)
+				if(FORMULA_FORM_TOUCH)
+					return formula_magic_apply_touch_chain(context.caster, part, center, power, hit_targets)
+				if(FORMULA_FORM_INSTANT)
+					return formula_magic_apply_moment_chain(context.caster, part, center, power, hit_targets, max(1, max(0, radius || part.radius || 0) + 1), FORMULA_FORM_INSTANT)
+				if(FORMULA_FORM_SPIRAL)
+					return formula_magic_apply_moment_chain(context.caster, part, center, power, hit_targets, max(1, 1 + (part.radius || 0)) + 1, FORMULA_FORM_SPIRAL)
+				if(FORMULA_FORM_CLOAK)
+					return formula_magic_apply_moment_chain(context.caster, part, center, power, hit_targets, max(1, radius || part.radius || 1) + 1, FORMULA_FORM_CLOAK)
 				if(FORMULA_FORM_NOVA, FORMULA_FORM_BREATH)
-					return formula_magic_apply_nova_chain(context.caster, part, center, power, max(1, radius || 1), hit_targets)
+					return formula_magic_apply_nova_chain(context.caster, part, center, power, max(1, radius || 1) + 1, hit_targets, shape_id)
 		if("shrapnel")
 			switch(shape_id)
 				if(FORMULA_FORM_WAVE)

@@ -54,18 +54,21 @@
 			formula_magic_apply_part_payload_hit(L, caster, part, max(1, power || part.power || 1), T)
 	return TRUE
 
-/proc/formula_magic_apply_form_payload_area(mob/living/carbon/human/caster, datum/formula_magic_part/part, turf/center, radius, power, list/excluded)
+/proc/formula_magic_apply_form_payload_area(mob/living/carbon/human/caster, datum/formula_magic_part/part, turf/center, radius, power, list/excluded, form_id = null)
 	if(!center || !part)
 		return list("turfs" = list(), "targets" = list())
 	var/list/result_turfs = list()
-	var/list/hit_targets = excluded?.Copy() || list()
+	var/list/excluded_targets = excluded?.Copy() || list()
+	var/list/hit_targets = list()
 	var/effective_radius = max(0, min(radius || 0, 8))
-	for(var/turf/T in range(effective_radius, center))
+	for(var/turf/T as anything in formula_magic_area_turfs_for_shape(center, effective_radius, form_id))
+		if(!formula_magic_area_turf_reachable(center, T))
+			continue
 		result_turfs |= T
 		new /obj/effect/temp_visual/spell_impact(T, part.impact_color, SPELL_IMPACT_LOW)
 		formula_magic_apply_part_turf_payload(caster, part, T, max(1, power || part.power || 1))
 		for(var/mob/living/L in T)
-			if(L == caster || (hit_targets && (L in hit_targets)))
+			if(L == caster || (excluded_targets && (L in excluded_targets)) || (L in hit_targets))
 				continue
 			hit_targets |= L
 			formula_magic_apply_part_payload_hit(L, caster, part, max(1, power || part.power || 1), center)
@@ -75,7 +78,8 @@
 	if(!part || !length(target_turfs))
 		return list("turfs" = list(), "targets" = list())
 	var/list/result_turfs = list()
-	var/list/hit_targets = excluded?.Copy() || list()
+	var/list/excluded_targets = excluded?.Copy() || list()
+	var/list/hit_targets = list()
 	for(var/turf/T as anything in target_turfs)
 		if(!T || (T in result_turfs))
 			continue
@@ -83,7 +87,7 @@
 		new /obj/effect/temp_visual/spell_impact(T, part.impact_color, SPELL_IMPACT_LOW)
 		formula_magic_apply_part_turf_payload(caster, part, T, max(1, power || part.power || 1))
 		for(var/mob/living/L in T)
-			if(L == caster || (hit_targets && (L in hit_targets)))
+			if(L == caster || (excluded_targets && (L in excluded_targets)) || (L in hit_targets))
 				continue
 			hit_targets |= L
 			formula_magic_apply_part_payload_hit(L, caster, part, max(1, power || part.power || 1), center || T)
@@ -128,7 +132,7 @@
 /proc/formula_magic_apply_part_area(mob/living/carbon/human/caster, datum/formula_magic_part/part, turf/center, radius, power, list/excluded, form_id = null)
 	if(!center || !part)
 		return null
-	var/list/result = formula_magic_apply_form_payload_area(caster, part, center, radius, power, excluded)
+	var/list/result = formula_magic_apply_form_payload_area(caster, part, center, radius, power, excluded, form_id)
 	var/list/affected_turfs = result["turfs"] || list()
 	var/list/hit_targets = result["targets"] || list()
 	var/datum/formula_magic_context/area_context = new
@@ -144,6 +148,7 @@
 		return FALSE
 	var/distance = 0
 	var/turf/beam_end = source
+	var/turf/previous_turf = source
 	var/beam_dir = get_dir(source, target) || caster.dir
 	var/effective_radius = apply_modifiers ? max(0, part.radius || 0) : 0
 	var/beam_width = 0
@@ -151,7 +156,7 @@
 		beam_width = FLOOR(effective_radius / 2, 1)
 	else if(form_id == FORMULA_FORM_GUIDANCE)
 		beam_width = effective_radius
-	var/pierce_grace = (apply_modifiers && form_id == FORMULA_FORM_BEAM) ? max(0, part.tags["pierce"] || 0) : 0
+	var/living_pierce_left = (apply_modifiers && form_id == FORMULA_FORM_BEAM) ? max(0, part.tags["pierce"] || 0) : 0
 	var/list/hit = list(caster)
 	var/list/affected_turfs = list()
 	var/list/existence_turfs = list()
@@ -160,13 +165,15 @@
 			continue
 		distance++
 		beam_end = T
-		var/fade_distance = max(0, distance - pierce_grace)
+		var/fade_distance = distance
 		var/current_power = max(1, round(formula_magic_part_power(part, form_id) * (power_multiplier || 1) * max(0.1, 1 - ((fade_percent || 0) * fade_distance / 100))))
 		affected_turfs |= T
+		var/living_hits_this_step = 0
 		var/hit_count_before = length(hit)
 		formula_magic_apply_beam_turf(caster, part, T, current_power, hit)
 		if(length(hit) > hit_count_before)
 			existence_turfs |= T
+			living_hits_this_step += length(hit) - hit_count_before
 		if(beam_width > 0)
 			var/left_dir = turn(beam_dir, 90)
 			var/right_dir = turn(beam_dir, -90)
@@ -181,14 +188,21 @@
 					formula_magic_apply_beam_turf(caster, part, left_turf, current_power, hit)
 					if(length(hit) > hit_count_before)
 						existence_turfs |= left_turf
+						living_hits_this_step += length(hit) - hit_count_before
 				if(right_turf)
 					affected_turfs |= right_turf
 					hit_count_before = length(hit)
 					formula_magic_apply_beam_turf(caster, part, right_turf, current_power, hit)
 					if(length(hit) > hit_count_before)
 						existence_turfs |= right_turf
-		if(T.density)
+						living_hits_this_step += length(hit) - hit_count_before
+		if(form_id == FORMULA_FORM_BEAM && living_hits_this_step > 0)
+			living_pierce_left -= living_hits_this_step
+			if(living_pierce_left < 0)
+				break
+		if(formula_magic_beam_turf_blocks(previous_turf, T))
 			break
+		previous_turf = T
 	if(form_id == FORMULA_FORM_BEAM && beam_end != source)
 		generate_tracer_between_points(RETURN_PRECISE_POINT(source), RETURN_PRECISE_POINT(beam_end), /obj/effect/projectile/tracer/stun, part.impact_color, 5)
 	if(apply_modifiers && (part.tags["existence"] || 0) > 0)
@@ -196,7 +210,7 @@
 		if(length(existence_targets))
 			formula_magic_apply_matrix_existence(caster, part, existence_targets, max(1, formula_magic_part_power(part, form_id)))
 	if(apply_modifiers && allow_followups && form_id == FORMULA_FORM_BEAM && beam_end != source)
-		if((part.tags["chain"] || 0) > 0)
+		if((part.tags["chain"] || 0) > 0 && length(hit) > 1)
 			var/list/visited = hit.Copy()
 			for(var/i in 1 to max(0, part.tags["chain"] || 0))
 				var/mob/living/next_target = formula_magic_nearest_chain_target(caster, beam_end, visited)
@@ -210,12 +224,16 @@
 			for(var/i in 1 to max(0, part.tags["ricochet"] || 0))
 				if(!start)
 					break
-				var/turf/approach = start ? get_step(start, angle2dir(SIMPLIFY_DEGREES((current_angle || 0) + 180))) : source
-				var/new_angle = formula_magic_reflected_angle(approach, start, current_angle)
+				var/turf/approach = start ? formula_magic_step_from_angle(start, SIMPLIFY_DEGREES((current_angle || 0) + 180)) : source
+				if(!approach)
+					approach = source
+				var/new_angle = formula_magic_reflected_angle_from_projectile(approach, start, current_angle)
+				if(isnull(new_angle))
+					break
 				var/turf/reflected_start = formula_magic_ricochet_start_turf(approach, start, new_angle)
 				if(!reflected_start)
 					break
-				var/turf/reflected_target = get_ranged_target_turf(reflected_start, angle2dir(new_angle), max(1, part.range))
+				var/turf/reflected_target = formula_magic_turf_at_angle(reflected_start, new_angle, max(1, part.range))
 				if(!reflected_target)
 					break
 				formula_magic_apply_beam_line(caster, part, reflected_start, reflected_target, fade_percent, form_id, FALSE, 1)
@@ -235,13 +253,58 @@
 	if(!source || !target)
 		return source
 	var/turf/beam_end = source
+	var/turf/previous_turf = source
 	for(var/turf/T in getline(source, target))
 		if(T == source)
 			continue
 		beam_end = T
-		if(T.density)
+		if(formula_magic_beam_turf_blocks(previous_turf, T))
 			break
+		previous_turf = T
 	return beam_end
+
+/proc/formula_magic_beam_turf_blocks(turf/previous, turf/current)
+	if(!current)
+		return TRUE
+	if(current.density)
+		return TRUE
+	if(previous && previous.LinkBlockedWithAccess(current, null))
+		return TRUE
+	if(current.is_blocked_turf(TRUE))
+		return TRUE
+	for(var/atom/movable/movable_content as anything in current.contents)
+		if(ismob(movable_content) || istype(movable_content, /obj/effect))
+			continue
+		if(movable_content.density)
+			return TRUE
+	return FALSE
+
+/proc/formula_magic_area_turf_blocks(turf/T)
+	if(!T)
+		return TRUE
+	if(T.density)
+		return TRUE
+	if(T.is_blocked_turf(TRUE))
+		return TRUE
+	return FALSE
+
+/proc/formula_magic_area_turf_reachable(turf/center, turf/target)
+	if(!center || !target)
+		return FALSE
+	if(center == target)
+		return TRUE
+	var/turf/previous = center
+	for(var/turf/T in getline(center, target))
+		if(T == center)
+			continue
+		if(T == target)
+			return TRUE
+		if(formula_magic_area_turf_blocks(T))
+			return FALSE
+		if(previous && previous != center && previous.LinkBlockedWithAccess(T, null))
+			return FALSE
+		previous = T
+	return TRUE
 
 /proc/formula_magic_apply_beam_turf(mob/living/carbon/human/caster, datum/formula_magic_part/part, turf/target, power, list/hit)
 	if(!caster || !part || !target)
@@ -473,7 +536,9 @@
 	var/effective_radius = max(0, min(radius || 0, 8))
 	if(!effective_radius)
 		return TRUE
-	for(var/turf/T in range(effective_radius, impact))
+	for(var/turf/T as anything in formula_magic_area_turfs_for_shape(impact, effective_radius, FORMULA_FORM_ORB))
+		if(!formula_magic_area_turf_reachable(impact, T))
+			continue
 		new /obj/effect/temp_visual/spell_impact(T, impact_color || "#B96DFF", SPELL_IMPACT_LOW)
 		formula_magic_apply_payload_turf_tags(caster, payload_tags, T, max(1, power || 1), impact_color)
 		for(var/mob/living/L in T)
@@ -488,6 +553,8 @@
 	if(!impact)
 		return result
 	var/effective_radius = max(0, min(radius || 0, 8))
-	for(var/turf/T in range(effective_radius, impact))
+	for(var/turf/T as anything in formula_magic_area_turfs_for_shape(impact, effective_radius, FORMULA_FORM_ORB))
+		if(!formula_magic_area_turf_reachable(impact, T))
+			continue
 		result += T
 	return result

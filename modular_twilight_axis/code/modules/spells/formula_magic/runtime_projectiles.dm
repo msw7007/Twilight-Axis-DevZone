@@ -1,4 +1,4 @@
-/proc/formula_magic_fire_orb_followup(mob/living/carbon/human/caster, turf/start, atom/target, power, radius, chain_remaining, ricochet_remaining, pierce_remaining, existence_repeats, shrapnel_remaining, damage_type, damage_flag, woundclass, intdamfactor, impact_color, list/chain_visited, forced_angle = null, speed_multiplier = 1, homing = FALSE, list/payload_tags)
+/proc/formula_magic_fire_orb_followup(mob/living/carbon/human/caster, turf/start, atom/target, power, radius, chain_remaining, ricochet_remaining, pierce_remaining, existence_repeats, shrapnel_remaining, damage_type, damage_flag, woundclass, intdamfactor, impact_color, list/chain_visited, forced_angle = null, speed_multiplier = 1, homing = FALSE, list/payload_tags, list/ignored_atoms)
 	if(!caster || !start)
 		return FALSE
 	var/obj/projectile/magic/formula_magic_orb/bolt = new(start)
@@ -19,13 +19,15 @@
 	bolt.shrapnel_remaining = max(0, shrapnel_remaining || 0)
 	bolt.payload_tags = payload_tags?.Copy() || list()
 	bolt.chain_visited = chain_visited?.Copy() || list()
+	if(length(ignored_atoms))
+		bolt.permutated |= ignored_atoms
 	bolt.speed = max(0.2, bolt.speed * (speed_multiplier || 1))
 	bolt.range = 7
 	bolt.max_range = 7
 	if(target)
 		bolt.preparePixelProjectile(target, start)
 	else
-		var/turf/angle_target = get_ranged_target_turf(start, angle2dir(forced_angle), bolt.range)
+		var/turf/angle_target = formula_magic_turf_at_angle(start, forced_angle, bolt.range)
 		bolt.preparePixelProjectile(angle_target || start, start)
 		bolt.setAngle(forced_angle)
 	if(homing && target)
@@ -70,6 +72,7 @@
 
 /obj/projectile/magic/formula_magic_orb/on_hit(atom/target, blocked = FALSE)
 	var/current_angle = Angle
+	var/turf/projectile_turf = get_turf(src)
 	var/turf/impact_before = get_turf(target)
 	var/turf/approach = impact_before ? get_step(impact_before, angle2dir(SIMPLIFY_DEGREES((current_angle || 0) + 180))) : get_turf(src)
 	if(!approach)
@@ -109,7 +112,7 @@
 			formula_magic_schedule_existence_repeats(caster, lingering_part, affected_turfs, damage, existence_lifespan)
 	if(shrapnel_remaining > 0 && impact)
 		formula_magic_fire_orb_shrapnel(caster, impact, damage, damage_type, flag, woundclass, intdamfactor, spell_impact_color, shrapnel_remaining, payload_tags)
-	if(chain_remaining > 0 && impact)
+	if(chain_remaining > 0 && impact && isliving(target) && blocked != 100)
 		if(target && !(target in chain_visited))
 			chain_visited += target
 		var/mob/living/next_target = formula_magic_nearest_chain_target(caster, impact, chain_visited)
@@ -118,11 +121,16 @@
 			next_visited += next_target
 			formula_magic_fire_orb_followup(caster, impact, next_target, max(1, round(damage * 0.7)), arcane_radius, chain_remaining - 1, ricochet_remaining, pierce_remaining, existence_repeats, shrapnel_remaining, damage_type, flag, woundclass, intdamfactor, spell_impact_color, next_visited, null, 1, FALSE, payload_tags)
 	if(ricochet_remaining > 0 && target)
-		var/new_angle = formula_magic_reflected_angle(approach, target, current_angle)
+		var/turf/angle_source = projectile_turf
+		if(!angle_source)
+			angle_source = approach
+		var/new_angle = formula_magic_reflected_angle_from_projectile(angle_source, target, current_angle)
+		if(isnull(new_angle))
+			return BULLET_ACT_HIT
 		var/turf/start = formula_magic_ricochet_start_turf(approach, target, new_angle)
 		if(start)
-			formula_magic_fire_orb_followup(caster, start, null, damage, arcane_radius, chain_remaining, ricochet_remaining - 1, pierce_remaining, existence_repeats, shrapnel_remaining, damage_type, flag, woundclass, intdamfactor, spell_impact_color, chain_visited, new_angle, 1, FALSE, payload_tags)
-	if(pierce_remaining > 0)
+			formula_magic_fire_orb_followup(caster, start, null, damage, arcane_radius, chain_remaining, ricochet_remaining - 1, pierce_remaining, existence_repeats, shrapnel_remaining, damage_type, flag, woundclass, intdamfactor, spell_impact_color, chain_visited, new_angle, 1, FALSE, payload_tags, list(target))
+	if(isliving(target) && blocked != 100 && pierce_remaining > 0)
 		pierce_remaining--
 		return BULLET_ACT_FORCE_PIERCE
 	return BULLET_ACT_HIT
