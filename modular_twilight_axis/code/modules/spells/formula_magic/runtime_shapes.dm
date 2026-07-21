@@ -69,35 +69,48 @@
 			members -= member
 			if(member)
 				new /obj/effect/temp_visual/spell_impact(get_turf(member), part.impact_color, SPELL_IMPACT_LOW)
-				formula_magic_apply_aura_status(member, part, max(10 SECONDS, round(aura_duration * 0.3)), 0.3)
+				formula_magic_apply_aura_status(member, part, aura_duration, 1)
 	var/pierce_count = max(0, part.tags["pierce"] || 0)
 	if(pierce_count > 0)
+		if(pierce_count >= 5)
+			return formula_magic_detonate_formula_part(context.caster, part, "overloaded aura pierce")
 		var/pierce_fraction = min(1, pierce_count * 0.3)
 		for(var/mob/living/L in range(1, source))
 			if(L == context.caster)
 				continue
 			new /obj/effect/temp_visual/spell_impact(get_turf(L), part.impact_color, SPELL_IMPACT_LOW)
-			formula_magic_apply_aura_status(L, part, max(10 SECONDS, round(aura_duration * pierce_fraction)), pierce_fraction)
+			formula_magic_apply_aura_status(L, part, max(1 SECONDS, round(aura_duration * pierce_fraction)), pierce_fraction)
 	var/ricochet_count = max(0, part.tags["ricochet"] || 0)
 	if(ricochet_count > 0 && context.caster.current_fellowship)
-		addtimer(CALLBACK(GLOBAL_PROC, GLOBAL_PROC_REF(formula_magic_apply_aura_ricochet_jumps), context.caster, part, ricochet_count, aura_duration), aura_duration)
+		var/datum/formula_magic_part/ricochet_part = formula_magic_copy_part_payload(part)
+		addtimer(CALLBACK(GLOBAL_PROC, GLOBAL_PROC_REF(formula_magic_apply_aura_ricochet_jumps), context.caster, ricochet_part, ricochet_count, aura_duration, TRUE), aura_duration)
 	context.caster.visible_message(span_notice("[context.caster] gathers a formula aura."))
 	return TRUE
 
-/proc/formula_magic_apply_aura_ricochet_jumps(mob/living/carbon/human/caster, datum/formula_magic_part/part, ricochet_count, aura_duration)
+/proc/formula_magic_apply_aura_ricochet_jumps(mob/living/carbon/human/caster, datum/formula_magic_part/part, ricochet_count, aura_duration, cleanup_part = FALSE)
 	if(!caster || QDELETED(caster) || !part || ricochet_count <= 0 || !caster.current_fellowship)
+		if(cleanup_part && part)
+			qdel(part)
 		return FALSE
-	var/list/members = caster.current_fellowship.get_members()
-	members -= caster
+	var/jump_duration = max(1 SECONDS, aura_duration || 30 SECONDS)
+	var/list/visited = list(caster)
 	for(var/i in 1 to ricochet_count)
+		if(!caster || QDELETED(caster) || !caster.current_fellowship)
+			break
+		var/list/members = caster.current_fellowship.get_members()
+		members -= visited
 		if(!length(members))
 			break
 		var/mob/living/member = pick(members)
-		members -= member
 		if(!member || QDELETED(member))
 			continue
+		visited |= member
 		new /obj/effect/temp_visual/spell_impact(get_turf(member), part.impact_color, SPELL_IMPACT_LOW)
-		formula_magic_apply_aura_status(member, part, max(10 SECONDS, round((aura_duration || 30 SECONDS) * 0.3)), 0.3)
+		formula_magic_apply_aura_status(member, part, jump_duration, 1)
+		if(i < ricochet_count)
+			sleep(jump_duration)
+	if(cleanup_part && part)
+		qdel(part)
 	return TRUE
 
 /proc/formula_magic_apply_aura_status(mob/living/target, datum/formula_magic_part/part, duration, strength_multiplier = 1)
@@ -114,11 +127,15 @@
 
 /proc/formula_magic_execute_beam_part(datum/formula_magic_context/context, datum/formula_magic_part/part)
 	var/turf/source = get_turf(context.caster)
-	var/turf/target = formula_magic_limited_part_target(context, part, max(1, part.range))
-	if(!source || !target)
+	if(!source)
 		return FALSE
-	if(target == source)
+	var/turf/aim_turf = context.target_turf
+	var/beam_angle = (aim_turf && aim_turf != source) ? Get_Angle(source, aim_turf) : dir2angle(context.caster.dir)
+	var/turf/target = formula_magic_turf_at_angle(source, beam_angle, max(1, part.range))
+	if(!target)
 		target = get_ranged_target_turf(source, context.caster.dir, max(1, part.range))
+	if(!target)
+		return FALSE
 	var/beam_words = max(1, part.tags["beam"] || 1)
 	var/fade_percent = max(0, 10 - max(0, beam_words - 1))
 	return formula_magic_apply_beam_line(context.caster, part, source, target, fade_percent, FORMULA_FORM_BEAM)
@@ -159,8 +176,16 @@
 
 /proc/formula_magic_execute_wave_part(datum/formula_magic_context/context, datum/formula_magic_part/part)
 	var/turf/source = get_turf(context.caster)
-	var/turf/target = formula_magic_limited_part_target(context, part, part.range)
-	if(!source || !target)
+	if(!source)
+		return FALSE
+	var/wave_words = max(1, formula_magic_part_count_form(part, FORMULA_FORM_WAVE) || part.tags["wave"] || 1)
+	var/wave_range = 6 + max(0, wave_words - 1)
+	var/turf/aim_turf = context.target_turf
+	var/wave_angle = (aim_turf && aim_turf != source) ? Get_Angle(source, aim_turf) : dir2angle(context.caster.dir)
+	var/turf/target = formula_magic_turf_at_angle(source, wave_angle, wave_range)
+	if(!target)
+		target = get_ranged_target_turf(source, context.caster.dir, wave_range)
+	if(!target)
 		return FALSE
 	var/list/line = getline(source, target)
 	line -= source
@@ -202,8 +227,10 @@
 	return TRUE
 
 /proc/formula_magic_execute_guidance_part(datum/formula_magic_context/context, datum/formula_magic_part/part)
-	var/turf/source = get_turf(context.caster)
-	var/turf/target = formula_magic_limited_part_target(context, part, part.range)
+	var/turf/source = context.guidance_start_turf || get_turf(context.caster)
+	var/guidance_words = max(1, formula_magic_part_count_form(part, FORMULA_FORM_GUIDANCE) || part.tags["guidance"] || 1)
+	var/guidance_range = 4 + max(0, guidance_words - 1)
+	var/turf/target = formula_magic_limited_turf_from_to(source, context.target_turf, max(1, guidance_range - 1), context.caster.dir)
 	if(!source || !target)
 		return FALSE
 	return formula_magic_apply_beam_line(context.caster, part, source, target, 0, FORMULA_FORM_GUIDANCE)
@@ -287,25 +314,28 @@
 	arms = max(1, min(8, arms || 1))
 	radius = max(1, min(8, radius || 1))
 	cycles = max(1, min(8, cycles || 1))
+	var/start_dir = caster.dir || NORTH
 	var/ricochet_remaining = max(0, part.tags["ricochet"] || 0)
 	var/list/active_arms = list()
 	var/list/arm_pierce = list()
 	for(var/arm in 1 to arms)
-		active_arms[arm] = TRUE
-		arm_pierce[arm] = max(0, part.tags["pierce"] || 0)
+		var/arm_key = "[arm]"
+		active_arms[arm_key] = TRUE
+		arm_pierce[arm_key] = max(0, part.tags["pierce"] || 0)
 	for(var/cycle in 1 to cycles)
 		var/turf/source = get_turf(caster)
-		var/list/path_turfs = formula_magic_spiral_ring_turfs(source, radius, caster.dir, reverse)
+		var/list/path_turfs = formula_magic_spiral_ring_turfs(source, radius, start_dir, reverse)
 		if(!length(path_turfs))
 			return FALSE
 		for(var/step_index in 1 to length(path_turfs))
 			var/turf/current_source = get_turf(caster)
 			if(!current_source)
 				return FALSE
-			path_turfs = formula_magic_spiral_ring_turfs(current_source, radius, caster.dir, reverse)
+			path_turfs = formula_magic_spiral_ring_turfs(current_source, radius, start_dir, reverse)
 			var/any_active = FALSE
 			for(var/arm in 1 to arms)
-				if(!active_arms[arm])
+				var/arm_key = "[arm]"
+				if(!active_arms[arm_key])
 					continue
 				any_active = TRUE
 				var/path_index = ((step_index - 1 + round((arm - 1) * length(path_turfs) / arms)) % length(path_turfs)) + 1
@@ -318,10 +348,10 @@
 						reverse = !reverse
 						continue
 					if(length(hit_targets) > 0)
-						if((arm_pierce[arm] || 0) > 0)
-							arm_pierce[arm]--
+						if((arm_pierce[arm_key] || 0) > 0)
+							arm_pierce[arm_key]--
 						else
-							active_arms[arm] = FALSE
+							active_arms[arm_key] = FALSE
 			if(!any_active)
 				return TRUE
 			sleep(2)

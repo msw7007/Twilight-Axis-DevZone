@@ -38,6 +38,19 @@
 		return line[max_distance + 1]
 	return get_ranged_target_turf(source, get_dir(source, target) || context.caster.dir, max_distance) || target
 
+/proc/formula_magic_limited_turf_from_to(turf/source, turf/target, max_distance, fallback_dir = NORTH)
+	if(!source)
+		return target
+	max_distance = max(1, max_distance || 1)
+	if(!target || target == source)
+		return get_ranged_target_turf(source, fallback_dir || NORTH, max_distance) || source
+	if(get_dist(source, target) <= max_distance)
+		return target
+	var/list/line = getline(source, target)
+	if(length(line) > max_distance + 1)
+		return line[max_distance + 1]
+	return formula_magic_turf_at_angle(source, Get_Angle(source, target), max_distance) || get_ranged_target_turf(source, get_dir(source, target) || fallback_dir || NORTH, max_distance) || target
+
 /proc/formula_magic_nearest_chain_target(mob/living/carbon/human/caster, turf/source, list/excluded, max_distance = 7)
 	if(!source)
 		return null

@@ -3,6 +3,7 @@
 	var/atom/cast_on
 	var/turf/target_turf
 	var/turf/source_turf
+	var/turf/guidance_start_turf
 
 /datum/formula_magic_part
 	var/list/words = list()

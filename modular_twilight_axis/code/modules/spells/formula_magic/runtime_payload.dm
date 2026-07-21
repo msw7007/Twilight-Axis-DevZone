@@ -161,19 +161,23 @@
 	var/list/affected_turfs = list()
 	var/list/existence_turfs = list()
 	for(var/turf/T in getline(source, target))
-		if(T == source)
+		var/is_source_turf = (T == source)
+		if(is_source_turf && form_id != FORMULA_FORM_GUIDANCE)
 			continue
-		distance++
+		if(!is_source_turf)
+			distance++
 		beam_end = T
 		var/fade_distance = distance
 		var/current_power = max(1, round(formula_magic_part_power(part, form_id) * (power_multiplier || 1) * max(0.1, 1 - ((fade_percent || 0) * fade_distance / 100))))
 		affected_turfs |= T
-		var/living_hits_this_step = 0
-		var/hit_count_before = length(hit)
-		formula_magic_apply_beam_turf(caster, part, T, current_power, hit)
-		if(length(hit) > hit_count_before)
+		var/beam_stopped_by_living = FALSE
+		var/list/new_hits = formula_magic_apply_beam_turf(caster, part, T, current_power, hit)
+		if(length(new_hits))
 			existence_turfs |= T
-			living_hits_this_step += length(hit) - hit_count_before
+			if(form_id == FORMULA_FORM_BEAM)
+				if(length(new_hits) > living_pierce_left)
+					beam_stopped_by_living = TRUE
+				living_pierce_left = max(0, living_pierce_left - length(new_hits))
 		if(beam_width > 0)
 			var/left_dir = turn(beam_dir, 90)
 			var/right_dir = turn(beam_dir, -90)
@@ -184,23 +188,25 @@
 				right_turf = get_step(right_turf, right_dir)
 				if(left_turf)
 					affected_turfs |= left_turf
-					hit_count_before = length(hit)
-					formula_magic_apply_beam_turf(caster, part, left_turf, current_power, hit)
-					if(length(hit) > hit_count_before)
+					new_hits = formula_magic_apply_beam_turf(caster, part, left_turf, current_power, hit)
+					if(length(new_hits))
 						existence_turfs |= left_turf
-						living_hits_this_step += length(hit) - hit_count_before
+						if(form_id == FORMULA_FORM_BEAM)
+							if(length(new_hits) > living_pierce_left)
+								beam_stopped_by_living = TRUE
+							living_pierce_left = max(0, living_pierce_left - length(new_hits))
 				if(right_turf)
 					affected_turfs |= right_turf
-					hit_count_before = length(hit)
-					formula_magic_apply_beam_turf(caster, part, right_turf, current_power, hit)
-					if(length(hit) > hit_count_before)
+					new_hits = formula_magic_apply_beam_turf(caster, part, right_turf, current_power, hit)
+					if(length(new_hits))
 						existence_turfs |= right_turf
-						living_hits_this_step += length(hit) - hit_count_before
-		if(form_id == FORMULA_FORM_BEAM && living_hits_this_step > 0)
-			living_pierce_left -= living_hits_this_step
-			if(living_pierce_left < 0)
-				break
-		if(formula_magic_beam_turf_blocks(previous_turf, T))
+						if(form_id == FORMULA_FORM_BEAM)
+							if(length(new_hits) > living_pierce_left)
+								beam_stopped_by_living = TRUE
+							living_pierce_left = max(0, living_pierce_left - length(new_hits))
+		if(beam_stopped_by_living)
+			break
+		if(!is_source_turf && formula_magic_beam_turf_blocks(previous_turf, T))
 			break
 		previous_turf = T
 	if(form_id == FORMULA_FORM_BEAM && beam_end != source)
@@ -307,18 +313,23 @@
 	return TRUE
 
 /proc/formula_magic_apply_beam_turf(mob/living/carbon/human/caster, datum/formula_magic_part/part, turf/target, power, list/hit)
+	var/list/new_hits = list()
 	if(!caster || !part || !target)
-		return FALSE
+		return new_hits
 	new /obj/effect/temp_visual/spell_impact(target, part.impact_color, SPELL_IMPACT_LOW)
 	for(var/mob/living/L in target)
 		if(L in hit)
 			continue
 		hit |= L
+		new_hits += L
 		formula_magic_apply_part_payload_hit(L, caster, part, max(1, power), target)
-	return TRUE
+	return new_hits
 
 /proc/formula_magic_apply_part_payload_hit(mob/living/target, mob/living/carbon/human/caster, datum/formula_magic_part/part, amount, turf/center)
 	if(!target || !part)
+		return FALSE
+	if(target.anti_magic_check(chargecost = 0))
+		new /obj/effect/temp_visual/spell_impact(get_turf(target), "#9FCBFF", SPELL_IMPACT_LOW)
 		return FALSE
 	var/applied = formula_magic_apply_payload_hit(target, caster, amount, part.impact_damage_type, part.impact_flag, part.impact_woundclass, part.impact_intdamfactor)
 	formula_magic_apply_payload_tags(target, caster, part.tags, amount, center || get_turf(target), part.duration)

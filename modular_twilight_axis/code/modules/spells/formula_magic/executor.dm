@@ -12,6 +12,7 @@
 	context.cast_on = cast_on
 	context.source_turf = get_turf(caster)
 	context.target_turf = get_turf(cast_on) || context.source_turf
+	context.guidance_start_turf = get_turf(guidance_start) || context.source_turf
 	if(contaminated_combo)
 		. = formula_magic_detonate_formula_part(caster, formula.parts[1], "[contaminated_combo.name] contamination")
 		qdel(context)

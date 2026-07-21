@@ -215,6 +215,7 @@
 	status_type = STATUS_EFFECT_REPLACE
 	alert_type = null
 	var/blocks_all_formula = TRUE
+	var/applied_antimagic_trait = FALSE
 	var/list/damage_resistance = list()
 	var/list/status_resistance = list()
 	var/list/chance_resistance = list()
@@ -262,6 +263,21 @@
 			if("blind", "silence", "confuse")
 				chance_resistance[tag] = max(chance_resistance[tag] || 0, 0.1 * (part.tags[tag] || 1) * strength)
 				blocks_all_formula = FALSE
+
+/datum/status_effect/buff/formula_magic_aura/on_apply()
+	. = ..()
+	if(!.)
+		return FALSE
+	if(blocks_all_formula && owner)
+		ADD_TRAIT(owner, TRAIT_ANTIMAGIC, src)
+		applied_antimagic_trait = TRUE
+	return TRUE
+
+/datum/status_effect/buff/formula_magic_aura/on_remove()
+	if(applied_antimagic_trait && owner)
+		REMOVE_TRAIT(owner, TRAIT_ANTIMAGIC, src)
+		applied_antimagic_trait = FALSE
+	return ..()
 
 /datum/status_effect/buff/formula_magic_aura/proc/blocks_formula_casting()
 	return blocks_all_formula
