@@ -15,7 +15,10 @@
 /proc/formula_magic_random_turf_from(turf/source, radius = 5)
 	if(!source)
 		return null
-	var/list/candidates = orange(max(1, radius || 1), source)
+	var/list/candidates = list()
+	for(var/turf/T in orange(max(1, radius || 1), source))
+		if(T)
+			candidates += T
 	if(!length(candidates))
 		return source
 	return pick(candidates)
