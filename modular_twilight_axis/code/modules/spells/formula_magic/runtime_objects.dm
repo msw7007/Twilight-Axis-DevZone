@@ -118,7 +118,7 @@
 	var/pierce_count = max(0, part.tags["pierce"] || 0)
 	var/shrapnel_count = max(0, part.tags["shrapnel"] || 0)
 	if(ricochet_count > 0)
-		formula_magic_apply_part_area(caster, part, source, max(0, pierce_count), power, list(caster), FORMULA_FORM_NOVA)
+		formula_magic_apply_form_payload_area(caster, part, source, max(0, pierce_count), power, list(caster), FORMULA_FORM_NOVA)
 	else
 		formula_magic_apply_part_area(caster, part, source, max(0, part.radius || 0), power, list(caster), FORMULA_FORM_RUNE)
 	if(chain_count > 0)
@@ -128,7 +128,7 @@
 			if(!next_target)
 				break
 			seen += next_target
-			formula_magic_apply_beam_line(caster, part, source, get_turf(next_target), 0, FORMULA_FORM_GUIDANCE, FALSE, 0.5)
+			formula_magic_apply_beam_line(caster, part, source, get_turf(next_target), 0, FORMULA_FORM_BEAM, FALSE, 0.5)
 	if(shrapnel_count > 0)
 		formula_magic_fire_orb_shrapnel(caster, source, power, part.impact_damage_type, part.impact_flag, part.impact_woundclass, part.impact_intdamfactor, part.impact_color, shrapnel_count)
 	if(pierce_count > 0)

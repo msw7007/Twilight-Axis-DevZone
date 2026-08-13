@@ -66,6 +66,26 @@
 		return FALSE
 	return formula_magic_apply_part_area(caster, part, source, shrapnel_count, max(1, power || part.power || 1), excluded, FORMULA_FORM_NOVA)
 
+/proc/formula_magic_fall_delay(datum/formula_magic_part/part, index = 1)
+	var/form_repeats = max(1, min(part?.tags["moment"] || 1, part?.tags["beam"] || 1))
+	return max(0.5 SECONDS, 2 SECONDS - ((form_repeats - 1) * 0.15 SECONDS) + ((max(1, index || 1) - 1) * 0.5 SECONDS))
+
+/proc/formula_magic_spawn_fall_payload(mob/living/carbon/human/caster, datum/formula_magic_part/part, turf/target, power, allow_followups = FALSE, impact_delay = null)
+	if(!caster || QDELETED(caster) || !part || QDELETED(part) || !target)
+		return FALSE
+	var/fall_delay = isnull(impact_delay) ? formula_magic_fall_delay(part) : impact_delay
+	var/datum/callback/impact_callback = CALLBACK(GLOBAL_PROC, GLOBAL_PROC_REF(formula_magic_apply_fall_payload), caster, part, target, power, allow_followups)
+	new /obj/effect/temp_visual/formula_magic_falling_meteor(target, impact_callback, part.impact_color, fall_delay)
+	return TRUE
+
+/proc/formula_magic_schedule_fall_payload(mob/living/carbon/human/caster, datum/formula_magic_part/part, turf/target, power, start_delay, allow_followups = FALSE)
+	if(!caster || QDELETED(caster) || !part || QDELETED(part) || !target)
+		return FALSE
+	if(start_delay > 0)
+		addtimer(CALLBACK(GLOBAL_PROC, GLOBAL_PROC_REF(formula_magic_spawn_fall_payload), caster, part, target, power, allow_followups), start_delay)
+		return TRUE
+	return formula_magic_spawn_fall_payload(caster, part, target, power, allow_followups)
+
 /proc/formula_magic_apply_fall_payload(mob/living/carbon/human/caster, datum/formula_magic_part/part, turf/target, power, allow_followups = TRUE)
 	if(!caster || QDELETED(caster) || !part || QDELETED(part) || !target)
 		return FALSE
@@ -79,7 +99,7 @@
 	for(var/i in 1 to ricochet_count)
 		var/turf/random_target = formula_magic_random_turf_from(target, 5)
 		if(random_target)
-			addtimer(CALLBACK(GLOBAL_PROC, GLOBAL_PROC_REF(formula_magic_apply_fall_payload), caster, part, random_target, power, FALSE), i * 0.5 SECONDS)
+			formula_magic_schedule_fall_payload(caster, part, random_target, power, i * 0.5 SECONDS, FALSE)
 	var/chain_count = formula_magic_part_modifier_count(part, "chain")
 	var/list/visited = hit_targets?.Copy() || list(caster)
 	if(length(hit_targets) > 0)
@@ -88,7 +108,7 @@
 			if(!next_target || get_dist(target, next_target) > 4)
 				break
 			visited |= next_target
-			addtimer(CALLBACK(GLOBAL_PROC, GLOBAL_PROC_REF(formula_magic_apply_fall_payload), caster, part, get_turf(next_target), power, FALSE), i * 0.5 SECONDS)
+			formula_magic_schedule_fall_payload(caster, part, get_turf(next_target), power, i * 0.5 SECONDS, FALSE)
 	var/shrapnel_count = formula_magic_part_modifier_count(part, "shrapnel")
 	if(shrapnel_count > 0)
 		formula_magic_fire_orb_shrapnel(caster, target, max(1, power || part.power || 1), part.impact_damage_type, part.impact_flag, part.impact_woundclass, part.impact_intdamfactor, part.impact_color, shrapnel_count)

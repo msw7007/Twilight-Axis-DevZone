@@ -51,6 +51,8 @@
 	var/rune_count = formula_magic_consume_part_form_pair(form_counts, FORMULA_FORM_SUMMON, FORMULA_FORM_GUIDANCE)
 	if(rune_count > 0 && formula_magic_cast_shape(context, part, FORMULA_FORM_RUNE, 1))
 		resolved = TRUE
+	if(resolved && formula_magic_remaining_part_form_type_count(form_counts) > 0)
+		return formula_magic_detonate_formula_part(context.caster, part, "unjoined forms")
 	if(formula_magic_remaining_part_form_type_count(form_counts) > 1)
 		return formula_magic_detonate_formula_part(context.caster, part, "unjoined forms")
 	for(var/form_id in form_counts)
@@ -71,8 +73,8 @@
 	var/count = min(form_counts[first_form] || 0, form_counts[second_form] || 0)
 	if(count <= 0)
 		return 0
-	form_counts[first_form] -= count
-	form_counts[second_form] -= count
+	form_counts[first_form] = 0
+	form_counts[second_form] = 0
 	return count
 
 /proc/formula_magic_part_count_form(datum/formula_magic_part/part, form_id)
@@ -167,7 +169,7 @@
 		if(FORMULA_FORM_BREATH)
 			multiplier = 0.4
 		if(FORMULA_FORM_CLOAK)
-			multiplier = 0.1
+			multiplier = 1
 		if(FORMULA_FORM_FALL)
 			multiplier = 1
 		if(FORMULA_FORM_RUNE)

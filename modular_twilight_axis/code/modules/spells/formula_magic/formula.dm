@@ -47,10 +47,12 @@
 	return names
 
 /datum/formula_magic_part/proc/get_text()
-	var/list/names = get_word_names()
-	if(!length(names))
+	var/list/word_ids = list()
+	for(var/datum/formula_magic_word/word in words)
+		word_ids += word.id
+	if(!length(word_ids))
 		return "Empty part"
-	return jointext(names, " + ")
+	return formula_magic_display_text_for_word_ids(word_ids)
 
 /datum/formula_magic_part/proc/can_execute()
 	return length(forms) > 0
@@ -250,10 +252,12 @@
 /datum/formula_magic_formula/proc/get_formula_text()
 	if(combo_formula)
 		return combo_formula.name
-	var/list/names = get_word_names()
-	if(!length(names))
+	if(!length(parts))
 		return "Empty formula"
-	return jointext(names, " + ")
+	var/list/part_names = list()
+	for(var/datum/formula_magic_part/part in parts)
+		part_names += part.get_text()
+	return jointext(part_names, " | ")
 
 /datum/formula_magic_formula/proc/get_summary()
 	var/list/part_summaries = list()

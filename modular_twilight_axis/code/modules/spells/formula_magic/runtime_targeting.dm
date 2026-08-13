@@ -135,11 +135,27 @@
 			result += T
 	return result
 
+/proc/formula_magic_square_turfs(turf/center, radius)
+	var/list/result = list()
+	if(!center)
+		return result
+	for(var/turf/T in range(max(0, min(radius || 0, 8)), center))
+		result += T
+	return result
+
 /proc/formula_magic_area_turfs_for_shape(turf/center, radius, form_id)
 	if(!center)
 		return list()
 	radius = max(0, min(radius || 0, 8))
 	switch(form_id)
-		if(FORMULA_FORM_ORB, FORMULA_FORM_INSTANT, FORMULA_FORM_SUMMON, FORMULA_FORM_NOVA, FORMULA_FORM_CLOAK, FORMULA_FORM_FALL)
+		if(FORMULA_FORM_NOVA, FORMULA_FORM_CLOAK)
+			if(radius <= 0)
+				return formula_magic_circle_turfs(center, 1)
+			if(radius == 1)
+				return formula_magic_square_turfs(center, 1)
+			return formula_magic_circle_turfs(center, radius)
+		if(FORMULA_FORM_ORB, FORMULA_FORM_INSTANT, FORMULA_FORM_SUMMON, FORMULA_FORM_FALL, FORMULA_FORM_TOUCH)
+			if(radius == 1)
+				return formula_magic_square_turfs(center, 1)
 			return formula_magic_circle_turfs(center, radius)
 	return range(radius, center)

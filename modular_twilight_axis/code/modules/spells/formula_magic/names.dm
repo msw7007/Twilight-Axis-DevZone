@@ -29,7 +29,10 @@
 		parts += formula_magic_modifier_name_phrase(modifiers[1])
 	if(length(elements))
 		parts += formula_magic_element_name_phrase(elements[1])
-	if(length(forms))
+	var/list/combo_names = formula_magic_combo_names_for_form_ids(forms)
+	if(length(combo_names))
+		parts += combo_names[length(combo_names)]
+	else if(length(forms))
 		parts += formula_magic_form_name_phrase(forms[length(forms)])
 	return jointext(parts, " ")
 

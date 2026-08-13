@@ -48,7 +48,7 @@
 		target = search_center
 	var/projectiles_to_fire = max(1, min(formula_magic_part_count_form(part, FORMULA_FORM_ORB) || part.projectile_count || 1, formula_magic_part_count_form(part, FORMULA_FORM_WAVE) || 1))
 	for(var/i in 1 to projectiles_to_fire)
-		formula_magic_fire_orb_followup(context.caster, source, target, formula_magic_part_power(part, FORMULA_FORM_ORB), max(0, part.radius || 0), max(0, part.tags["chain"] || 0), max(0, part.tags["ricochet"] || 0), max(0, part.tags["pierce"] || 0), max(0, part.tags["existence"] || 0), max(0, part.tags["shrapnel"] || 0), part.impact_damage_type, part.impact_flag, part.impact_woundclass, part.impact_intdamfactor, part.impact_color, list(), null, 0.2, TRUE, part.tags.Copy())
+		formula_magic_fire_orb_followup(context.caster, source, target, formula_magic_part_power(part, FORMULA_FORM_ORB), max(0, part.radius || 0), max(0, part.tags["chain"] || 0), max(0, part.tags["ricochet"] || 0), max(0, part.tags["pierce"] || 0), max(0, part.tags["existence"] || 0), max(0, part.tags["shrapnel"] || 0), part.impact_damage_type, part.impact_flag, part.impact_woundclass, part.impact_intdamfactor, part.impact_color, list(), null, 5, TRUE, part.tags.Copy())
 	context.caster.visible_message(span_notice("[context.caster] releases a seeking formula orb."))
 	return TRUE
 
@@ -208,7 +208,7 @@
 	new /obj/effect/temp_visual/spell_impact(source, part.impact_color, SPELL_IMPACT_MEDIUM)
 	var/cloak_repeats = max(1, min(formula_magic_part_count_form(part, FORMULA_FORM_SPIRAL) || 1, formula_magic_part_count_form(part, FORMULA_FORM_AURA) || 1))
 	var/duration = max(10 SECONDS, 10 SECONDS + (max(0, cloak_repeats - 1) * 5 SECONDS) + (part.tags["existence_duration"] || 0))
-	INVOKE_ASYNC(GLOBAL_PROC, GLOBAL_PROC_REF(formula_magic_cloak_loop), context.caster, part, max(1, part.radius || 1), duration)
+	INVOKE_ASYNC(GLOBAL_PROC, GLOBAL_PROC_REF(formula_magic_cloak_loop), context.caster, part, max(0, part.tags["widen"] || 0), duration)
 	return TRUE
 
 /proc/formula_magic_execute_meteor_part(datum/formula_magic_context/context, datum/formula_magic_part/part, index)
@@ -221,8 +221,7 @@
 	if(!fall_part)
 		return FALSE
 	var/fall_power = round(formula_magic_part_power(part, FORMULA_FORM_FALL) * 1.5)
-	var/datum/callback/impact_callback = CALLBACK(GLOBAL_PROC, GLOBAL_PROC_REF(formula_magic_apply_fall_payload), context.caster, fall_part, target, fall_power)
-	new /obj/effect/temp_visual/formula_magic_falling_meteor(target, impact_callback, part.impact_color, delay)
+	formula_magic_spawn_fall_payload(context.caster, fall_part, target, fall_power, TRUE, delay)
 	QDEL_IN(fall_part, delay + 1 MINUTES)
 	return TRUE
 
@@ -237,21 +236,23 @@
 
 /proc/formula_magic_execute_breath_part(datum/formula_magic_context/context, datum/formula_magic_part/part)
 	var/turf/source = get_turf(context.caster)
-	var/breath_length = 2
+	var/widen_count = max(0, part.tags["widen"] || 0)
+	var/breath_width = CEILING(widen_count / 2, 1)
+	var/breath_length = 2 + FLOOR(widen_count / 2, 1)
 	var/turf/target = get_ranged_target_turf(source, context.caster.dir, breath_length)
 	if(!source || !target)
 		return FALSE
 	var/list/line = getline(source, target)
 	line -= source
 	var/breath_duration = max(2 SECONDS, 2 SECONDS + (max(0, min(formula_magic_part_count_form(part, FORMULA_FORM_TOUCH) || 1, formula_magic_part_count_form(part, FORMULA_FORM_NOVA) || 1) - 1) * 1 SECONDS) + (part.tags["existence_duration"] || 0))
-	INVOKE_ASYNC(GLOBAL_PROC, GLOBAL_PROC_REF(formula_magic_breath_loop), context.caster, part, breath_length, max(1, part.radius || 1), breath_duration)
+	INVOKE_ASYNC(GLOBAL_PROC, GLOBAL_PROC_REF(formula_magic_breath_loop), context.caster, part, breath_length, breath_width, breath_duration)
 	return TRUE
 
 /proc/formula_magic_execute_nova_part(datum/formula_magic_context/context, datum/formula_magic_part/part)
 	var/turf/source = get_turf(context.caster)
 	if(!source)
 		return FALSE
-	return formula_magic_apply_part_area(context.caster, part, source, max(1, part.radius || 1), formula_magic_part_power(part, FORMULA_FORM_NOVA), list(context.caster), FORMULA_FORM_NOVA)
+	return formula_magic_apply_part_area(context.caster, part, source, max(0, part.tags["widen"] || 0), formula_magic_part_power(part, FORMULA_FORM_NOVA), list(context.caster), FORMULA_FORM_NOVA)
 
 /proc/formula_magic_execute_rune_part(datum/formula_magic_context/context, datum/formula_magic_part/part, index)
 	var/turf/target = formula_magic_limited_part_target(context, part, part.range)
@@ -263,7 +264,8 @@
 	var/list/targets = list(target)
 	var/widen_count = max(0, part.tags["widen"] || 0)
 	if(widen_count > 0)
-		for(var/direction in GLOB.cardinals)
+		var/list/rune_dirs = (widen_count % 2) ? GLOB.cardinals : GLOB.diagonals
+		for(var/direction in rune_dirs)
 			var/turf/outer = get_ranged_target_turf(target, direction, widen_count)
 			if(outer)
 				targets |= outer

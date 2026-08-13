@@ -68,6 +68,7 @@ type DraftPart = {
   name: string;
   words: string[];
   indexes: number[];
+  combo?: boolean;
 };
 
 type Validation = {
@@ -381,6 +382,7 @@ export const FormulaSpellcraft = () => {
                 <div style={sequenceStyle}>
                   {draft_parts.map((part, index) => (
                     <div key={`${part.name}-${index}-${part.indexes.join('-')}`} style={partGroupStyle}>
+                      {part.combo && <div style={comboPartTitleStyle}>{part.name}</div>}
                       <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
                         {part.words.map((wordId, wordIndex) => (
                           <button
@@ -543,7 +545,7 @@ const formRepeatEffects: Record<string, string> = {
   summon: 'Repeats add more created payloads or strengthen supported summoned effects; direct impact uses reduced payload force.',
   beam: 'Each repeat adds one tile of range and reduces per-tile damage fade by 1%; beam impact starts below baseline.',
   wave: 'Repeats increase moving line reach. Each wave contact uses reduced payload force to preserve DPS over travel.',
-  nova: 'Repeats increase circular pulse radius. Each hit uses reduced payload force because the shape is broad.',
+  nova: 'Repeats strengthen the circular pulse timing, but radius comes from Widen. Each hit uses reduced payload force because the shape is broad.',
   guidance: 'Repeats increase maximum line distance and improve guided placement; line hits are slightly below baseline.',
   aura: 'Repeats extend the duration of the self-centered working; Aura itself is defensive and does not add direct impact.',
 };
@@ -553,40 +555,40 @@ const formCombos = [
     id: 'combo_seeker',
     name: 'Seeker',
     forms: ['orb', 'wave'],
-    does: 'Turns an orb delivery into a seeking moving projectile behavior.',
-    repeat: 'Uses the lower rank of Orb and Wave. Extra ranks add more seeking projectiles and keep the wave-carried orb behavior.',
+    does: 'Uses the lower repeat count of Orb and Wave. At the cursor point it finds the nearest target, then releases a slow homing projectile at 20% Orb speed.',
+    repeat: 'Like Orb: extra matched Orb/Wave repeats add more seeking projectiles.',
     recipe: 'Assembled by placing Orb and Wave in the same formula part.',
   },
   {
     id: 'combo_breath',
     name: 'Breath',
     forms: ['touch', 'nova'],
-    does: 'Projects a short aggressive area from the caster instead of a simple adjacent touch.',
-    repeat: 'Uses the lower rank of Touch and Nova. Extra ranks widen the breathing pattern and add more pulses.',
+    does: 'Uses the lower repeat count of Touch and Nova. A short carried breath starts at two tiles from the caster and follows their facing while active.',
+    repeat: 'Base duration is 2 seconds; each matched repeat adds 1 second. Odd Widen words add width; even Widen words add length. Existence adds duration and lingering payload time.',
     recipe: 'Assembled by placing Touch and Nova in the same formula part.',
   },
   {
     id: 'combo_fall',
     name: 'Fall',
     forms: ['instant', 'beam'],
-    does: 'Turns a point designation and a direct line into a delayed falling strike.',
-    repeat: 'Uses the lower rank of Moment and Beam. Extra ranks add more falling strikes with staged delays.',
+    does: 'Uses the lower repeat count of Moment and Beam. A delayed strike falls onto the chosen point with 150% base payload force.',
+    repeat: 'Base fall time is 2 seconds; each matched repeat speeds it by 0.15 seconds. Ricochet repeats random nearby falls; Chain repeats falls on nearby hit targets.',
     recipe: 'Assembled by placing Moment and Beam in the same formula part.',
   },
   {
     id: 'combo_cloak',
     name: 'Cloak',
     forms: ['spiral', 'aura'],
-    does: 'Carries an aggressive rotating effect around the caster.',
-    repeat: 'Uses the lower rank of Spiral and Aura. Extra ranks add more rotating arms and extend the carried effect.',
+    does: 'Uses the lower repeat count of Spiral and Aura. An aggressive cloak follows the caster and applies 25% payload force every 2 seconds.',
+    repeat: 'Base duration is 10 seconds; each matched repeat adds 5 seconds. Radius comes from Widen, not from Cloak repeats.',
     recipe: 'Assembled by placing Spiral and Aura in the same formula part.',
   },
   {
     id: 'combo_rune',
     name: 'Rune',
     forms: ['summon', 'guidance'],
-    does: 'Creates a guided placed trigger instead of a simple summoned payload.',
-    repeat: 'Uses the lower rank of Summon and Guidance. Extra ranks create more guided rune placements.',
+    does: 'Uses the lower repeat count of Summon and Guidance. Creates a floor trap that triggers when crossed.',
+    repeat: 'Base lifetime is 60 seconds; each matched repeat adds 20 seconds. Odd Widen places a plus; even Widen places an X, with distance equal to Widen count.',
     recipe: 'Assembled by placing Summon and Guidance in the same formula part.',
   },
 ];
@@ -783,6 +785,7 @@ const tagLineStyle = { color: '#7f8ca3', fontSize: '11px', marginTop: '4px' } as
 const wordListStyle = { marginTop: '10px', display: 'flex', flexDirection: 'column', gap: '6px' } as const;
 const sequenceStyle = { display: 'flex', flexWrap: 'wrap', gap: '8px', alignItems: 'center', marginTop: '8px' } as const;
 const partGroupStyle = { minWidth: '110px', background: '#111722', color: '#f1f3f7', border: '1px solid #4f6f9f', borderRadius: '4px', padding: '6px' } as const;
+const comboPartTitleStyle = { color: '#9ee6a0', fontSize: '12px', fontWeight: 900, marginBottom: '6px' } as const;
 const wordTokenStyle = { minWidth: '64px', minHeight: '30px', background: '#171d27', color: '#f1f3f7', border: '1px solid #34445e', borderRadius: '4px', fontWeight: 800, cursor: 'pointer' } as const;
 const selectStyle = { width: '100%', marginTop: '8px', background: '#171d27', color: '#dce6f5', border: '1px solid #394455', padding: '6px' } as const;
 const inputStyle = { flex: 1, background: '#171d27', color: '#dce6f5', border: '1px solid #394455', padding: '6px' } as const;
