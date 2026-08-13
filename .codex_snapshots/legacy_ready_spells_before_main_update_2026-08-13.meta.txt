@@ -1,0 +1,15 @@
+Legacy ready spell snapshot before main update
+Date: 2026-08-13
+Branch: spell_craft
+Commit: 55a0f09f8d588d2fb21c33898a903e955e9ca1be
+Raw rows: 181
+Grantable rows: 120
+Scan roots:
+code/modules/spells/spell_types/wizard
+code/modules/spells/roguetown/necromancer
+code/modules/spells/spell_types/classunique/vizier
+code/modules/spells/spell_types/classunique/spellblade
+code/modules/spells/spell_types/classunique/spellfist
+
+Dirty status at snapshot time:
+?? .codex_snapshots/
