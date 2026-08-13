@@ -79,6 +79,12 @@
 		var/mob/dead/observer/observer = mob
 		if(world.time < observer.next_gmove)
 			return FALSE
+		// TA EDIT START
+		if(n && direct)
+			var/turf/target_turf = get_step(get_turf(observer), direct)
+			if(!observer.can_move_near_body(target_turf))
+				return FALSE
+		// TA EDIT END
 	else if(world.time < move_delay) //do not move anything ahead of this check please
 		return FALSE
 	next_move_dir_add = 0
@@ -88,8 +94,10 @@
 		var/mob/dead/observer/observer = mob
 		var/observer_delay_multiplier = GLOB.observer_move_delay_multiplier
 
-		if(istype(observer, /mob/dead/observer/rogue))
+		// TA EDIT START
+		if(!istype(observer, /mob/dead/observer/admin) && !istype(observer, /mob/dead/observer/eye))
 			observer_delay_multiplier = 6
+		// TA EDIT END
 
 		observer.next_gmove = world.time + (world.tick_lag * observer_delay_multiplier)
 		move_delay = world.time
@@ -119,6 +127,12 @@
 				to_chat(src, span_warning("My spirit hasn't manifested yet."))
 		return FALSE
 	if(mob.force_moving)
+		return FALSE
+
+	var/mob/living/sliding_mob = mob
+	var/datum/status_effect/ice_slide/ice_sliding = sliding_mob.has_status_effect(/datum/status_effect/ice_slide)
+	if(ice_sliding)
+		ice_sliding.steer(direct)
 		return FALSE
 
 	if(mob.shifting)
@@ -270,15 +284,8 @@
 		to_chat(src, span_warning("I am clinging to [L]! I need a stronger grip to stop them!"))
 		return TRUE
 
-	if(isanimal(mob.pulling))
-		var/mob/living/simple_animal/bound = mob.pulling
-		if(bound.binded)
-			move_delay = world.time + 10
-			to_chat(src, span_warning("[bound] is bound in a summoning circle. I can't move them!"))
-			return TRUE
-
-	if(isanimal(mob.pulling))
-		var/mob/living/simple_animal/bound = mob.pulling
+	if(istype(mob.pulling, /mob/living/carbon/human/species/familiar))
+		var/mob/living/carbon/human/species/familiar/bound = mob.pulling
 		if(bound.binded)
 			move_delay = world.time + 10
 			to_chat(src, span_warning("[bound] is bound in a summoning circle. I can't move them!"))
@@ -625,7 +632,7 @@
 			animate(src, alpha = 255, time = 10)
 
 		rogue_sneaking = FALSE
-		return		
+		return
 
 	if(rogue_sneaking || reset) //If sneaking, check if they should be revealed
 		var/should_reveal = FALSE
@@ -750,42 +757,13 @@
 	return TRUE
 
 /mob/living/carbon/human/check_armor_skill()
-	if(istype(src.wear_armor, /obj/item/clothing))
-		var/obj/item/clothing/CL = src.wear_armor
-		if(CL.armor_class == ARMOR_CLASS_HEAVY)
-			if(!HAS_TRAIT(src, TRAIT_HEAVYARMOR))
-				return FALSE
-		if(CL.armor_class == ARMOR_CLASS_MEDIUM)
-			if(!HAS_TRAIT(src, TRAIT_HEAVYARMOR))
-				if(!HAS_TRAIT(src, TRAIT_MEDIUMARMOR))
-					return FALSE
-	if(istype(src.wear_shirt, /obj/item/clothing))
-		var/obj/item/clothing/CL = src.wear_shirt
-		if(CL.armor_class == ARMOR_CLASS_HEAVY)
-			if(!HAS_TRAIT(src, TRAIT_HEAVYARMOR))
-				return FALSE
-		if(CL.armor_class == ARMOR_CLASS_MEDIUM)
-			if(!HAS_TRAIT(src, TRAIT_HEAVYARMOR))
-				if(!HAS_TRAIT(src, TRAIT_MEDIUMARMOR))
-					return FALSE
-	if(istype(src.wear_pants, /obj/item/clothing))
-		var/obj/item/clothing/CL = src.wear_pants
-		if(CL.armor_class == ARMOR_CLASS_HEAVY)
-			if(!HAS_TRAIT(src, TRAIT_HEAVYARMOR))
-				return FALSE
-		if(CL.armor_class == ARMOR_CLASS_MEDIUM)
-			if(!HAS_TRAIT(src, TRAIT_HEAVYARMOR))
-				if(!HAS_TRAIT(src, TRAIT_MEDIUMARMOR))
-					return FALSE
-	if(istype(src.head, /obj/item/clothing))
-		var/obj/item/clothing/CL = src.head
-		if(CL.armor_class == ARMOR_CLASS_HEAVY)
-			if(!HAS_TRAIT(src, TRAIT_HEAVYARMOR))
-				return FALSE
-		if(CL.armor_class == ARMOR_CLASS_MEDIUM)
-			if(!HAS_TRAIT(src, TRAIT_HEAVYARMOR))
-				if(!HAS_TRAIT(src, TRAIT_MEDIUMARMOR))
-					return FALSE
+	if(worn_ac_dirty)
+		update_worn_ac_cache()
+	var/ac = max(cached_body_ac, cached_head_ac)
+	if(ac == ARMOR_CLASS_HEAVY && !HAS_TRAIT(src, TRAIT_HEAVYARMOR))
+		return FALSE
+	if(ac == ARMOR_CLASS_MEDIUM && !HAS_TRAIT(src, TRAIT_HEAVYARMOR) && !HAS_TRAIT(src, TRAIT_MEDIUMARMOR))
+		return FALSE
 	return TRUE
 
 /mob/living/proc/check_dodge_skill(check_trait = TRUE)

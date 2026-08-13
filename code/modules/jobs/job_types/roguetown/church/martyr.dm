@@ -434,7 +434,7 @@
 
 				I.max_blade_int = 9999
 				I.blade_int = I.max_blade_int
-				
+
 				current_holder.adjust_skillrank(/datum/skill/misc/athletics, 6, FALSE)
 
 				current_holder.STASTR = 20
@@ -513,11 +513,13 @@
 	//They get those traits during sword activation, anyway.
 	//Dual wielder is there to stand-in for ambidextrous in case they activate their sword in their off-hand.
 	virtue_restrictions = list(/datum/virtue/utility/noble, /datum/virtue/combat/second_chance, /datum/virtue/utility/hollow, /datum/virtue/combat/dualwielder, /datum/virtue/heretic/zchurch_keyholder)
+	vice_restrictions = list(/datum/charflaw/silverweakness)
 
 	advclass_cat_rolls = list(CTAG_MARTYR = 2)
 	job_subclasses = list(
 		/datum/advclass/martyr
 	)
+	has_subprefs = FALSE // only one subclass
 
 /datum/advclass/martyr
 	name = "Martyr"

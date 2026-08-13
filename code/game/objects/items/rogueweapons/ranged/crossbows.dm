@@ -1,14 +1,13 @@
 
 /obj/item/gun/ballistic/revolver/grenadelauncher/crossbow/get_npc_chargetime(mob/living/user)
-	var/newtime = max(20, reloadtime - user.STASTR - (user.get_skill_level(/datum/skill/combat/crossbows) * 2))
+	var/newtime = max(20, reloadtime - user.STASTR - (user.get_skill_level(ranged_skill) * 2))
 	if(chambered)
 		newtime *= chambered.charge_time_mult
-	return max(ARCHER_NPC_MIN_CROSSBOW_CHARGETIME, newtime) * ARCHER_NPC_ROF_PENALTY
+	return max(0, newtime) + ARCHER_NPC_MIN_AIM_TIME + ARCHER_NPC_NOCK_TIME
 
 /obj/item/gun/ballistic/revolver/grenadelauncher/crossbow
 	has_item_quality = TRUE
 	name = "crossbow"
-	flags_ai_inventory = AI_ITEM_GUN
 	desc = "A deadly weapon that shoots a bolt with terrific power. Unlike the common bow, \
 	it uses a sophisticated mechanism to renock - and retain - its half-length bolts; a \
 	matter that relies more on raw strength than dexterity to master. </br>A favorite \
@@ -27,6 +26,7 @@
 	spread = 0
 	can_parry = TRUE
 	associated_skill = /datum/skill/combat/crossbows
+	var/ranged_skill = /datum/skill/combat/crossbows
 	wdefense = 3
 	max_integrity = 100
 	var/chargingspeed = 40
@@ -95,7 +95,7 @@
 		var/newtime = chargetime
 		//skill block
 		newtime += basetime
-		newtime -= (mastermob.get_skill_level(/datum/skill/combat/crossbows) * 4.25) // minus 4.25 per skill point
+		newtime -= (mastermob.get_skill_level(c_bow.ranged_skill) * 4.25) // minus 4.25 per skill point
 		newtime -= ((mastermob.STAPER)) // minus 1 per perception
 
 		if(c_bow.onehanded)
@@ -136,7 +136,7 @@
 		var/newtime = chargetime
 		//skill block
 		newtime += basetime
-		newtime -= (mastermob.get_skill_level(/datum/skill/combat/crossbows) * 20)
+		newtime -= (mastermob.get_skill_level(c_bow.ranged_skill) * 20)
 		//per block
 		newtime += 20
 		newtime -= ((mastermob.STAPER)*1.5)
@@ -166,7 +166,7 @@
 		if(!cocked)
 			to_chat(user, span_info("I step on the stirrup and use all my might..."))
 			if(!movingreload)
-				if(do_after(user, reloadtime - user.STASTR - user.get_skill_level(/datum/skill/combat/crossbows), target = user ))
+				if(do_after(user, reloadtime - user.STASTR - user.get_skill_level(ranged_skill), target = user ))
 					playsound(user, 'sound/combat/Ranged/crossbow_medium_reload-01.ogg', 100, FALSE) //11 STR + MASTER Crossbow = 2.5~ second reload not including TIDI
 					cocked = TRUE //13 STR + NO Crossbow still amounts to around 3 seconds reload, so as it is each level of skill is +1 STR equivalent.
 			else
@@ -219,7 +219,7 @@
 
 		BB.accuracy += accfactor * (user.STAPER - 8) * 3 // 8+ PER gives +3 per level. Exponential.
 		BB.bonus_accuracy += (user.STAPER - 8) // 8+ PER gives +1 per level. Does not decrease over range.
-		BB.bonus_accuracy += (user.get_skill_level(/datum/skill/combat/crossbows) * 5) // +5 per XBow level.'
+		BB.bonus_accuracy += (user.get_skill_level(ranged_skill) * 5) // +5 per skill level.
 		BB.armor_penetration = max(PEN_NONE, BB.armor_penetration + penfactor)
 		BB.damage *= damfactor
 
@@ -316,7 +316,6 @@
 	movingreload = TRUE
 	onehanded = TRUE
 	slot_flags = ITEM_SLOT_BACK | ITEM_SLOT_HIP
-	penfactor = -1	//Reduces bolt penetration by one tier. A PEN_MEDIUM bolt becomes PEN_LIGHT.
 	w_class = WEIGHT_CLASS_SMALL
 	wdefense = 2
 	max_integrity = 80
@@ -396,7 +395,7 @@
 	item_state = "ancientheavybow"
 
 /obj/item/gun/ballistic/revolver/grenadelauncher/crossbow/heavy/relic
-	name = "Providence"
+	name = "\"Providence\""
 	desc = "In the hands of Saint Augustere, this specially-hewn siegebow felled the traitorous Archbishop of Rockhill; \
 	mere moments before the completion of a terrible ritual. Decades later, it has been called into action once more \
 	to destroy those who'd seek to sacrifice His greatest works. May thy aim be true, childe o' God - and thy judgement, unfettered."
@@ -408,7 +407,7 @@
 	item_state = "relicpsyheavybow"
 
 /obj/item/gun/ballistic/revolver/grenadelauncher/crossbow/heavy/relic/marque
-	name = "Epistle"
+	name = "\"Epistle\""
 	desc = "'I cannot explain what happened in those halls, your eminence..' </br>'..I can only have faith that I did the right thing.'"
 
 //

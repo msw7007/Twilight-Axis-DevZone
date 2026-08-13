@@ -331,6 +331,7 @@
 	name = "sending stone"
 	desc = "One of a pair of sending stones."
 	var/obj/item/natural/stone/sending/paired_with
+	obj_flags = UNIQUE_RENAME
 	var/mob/listening_to
 	var/receive_sound = 'sound/items/gem.ogg'
 

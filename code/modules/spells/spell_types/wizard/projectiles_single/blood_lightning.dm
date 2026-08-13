@@ -1,6 +1,7 @@
 /datum/action/cooldown/spell/projectile/blood_bolt
 	name = "Blood Bolt"
 	desc = "Emit a bolt of lightning that burns a target harshly, preventing them from attacking and slowing them down for 8 seconds. Applies lightning adaptation - the non-burn effects cannot be reapplied within 15 seconds."
+	background_icon = 'icons/mob/actions/zizomiracles.dmi' //left-handed magicks
 	button_icon_state = "bloodlightning"
 	sound = 'sound/magic/vlightning.ogg'
 	spell_color = GLOW_COLOR_VAMPIRIC
@@ -18,6 +19,7 @@
 	charge_required = TRUE
 	weapon_cast_penalized = TRUE
 	charge_time = 2.5 SECONDS
+	charge_swingdelay_type = SWINGDELAY_CANCEL
 	hold_drain = 1
 	charge_slowdown = CHARGING_SLOWDOWN_HEAVY
 	charge_sound = 'sound/magic/charging.ogg'
@@ -33,6 +35,7 @@
 
 /obj/projectile/magic/bloodlightning
 	name = "blood bolt"
+	expose_caster_on_deflect = TRUE
 	tracer_type = /obj/effect/projectile/tracer/blood
 	muzzle_type = null
 	impact_type = null
@@ -46,7 +49,7 @@
 	light_color = "#802121"
 	light_outer_range = 7
 
-/obj/projectile/magic/bloodlightning/on_hit(target)
+/obj/projectile/magic/bloodlightning/on_hit(target, blocked = FALSE)
 	. = ..()
 	if(ismob(target))
 		var/mob/M = target
@@ -59,5 +62,6 @@
 			var/mob/living/L = target
 			if(out_of_effective_range())
 				return
-			L.lightning_shock(src)
+			if(blocked < 100)
+				L.lightning_shock(src)
 	qdel(src)

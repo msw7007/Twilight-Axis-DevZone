@@ -24,6 +24,7 @@
 	charge_required = TRUE
 	weapon_cast_penalized = TRUE
 	charge_time = CHARGETIME_MAJOR
+	charge_swingdelay_type = SWINGDELAY_CANCEL
 	hold_drain = 1
 	charge_slowdown = CHARGING_SLOWDOWN_MEDIUM
 	charge_sound = 'sound/magic/charging.ogg'
@@ -37,6 +38,7 @@
 	// Less damage than single target
 	var/crush_damage = 40
 	var/resisted_damage = 10
+	displayed_damage = 40
 	var/knockdown_time = 5
 	var/offbalance_time = 10
 	var/str_threshold = 15
@@ -76,8 +78,6 @@
 	for(var/turf/T in range(aoe_range, centerpoint))
 		new /obj/effect/temp_visual/gravity(T)
 		for(var/mob/living/L in T.contents)
-			if(L == owner)
-				continue
 			if(L.anti_magic_check())
 				L.visible_message(span_warning("The gravity fades away around [L]!"))
 				playsound(get_turf(L), 'sound/magic/magic_nulled.ogg', 100)

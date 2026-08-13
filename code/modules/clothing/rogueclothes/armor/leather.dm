@@ -5,6 +5,8 @@
 	body_parts_covered = COVERAGE_TORSO
 	armor = ARMOR_LEATHER_NPC
 	blocksound = SOFTHIT
+	pickup_sound = 'sound/foley/equip/equip_armor.ogg'
+	equip_sound = 'sound/foley/equip/equip_armor.ogg'
 	break_sound = 'sound/foley/cloth_rip.ogg'
 	drop_sound = 'sound/foley/dropsound/cloth_drop.ogg'
 	sewrepair = TRUE
@@ -127,8 +129,8 @@
 	name = "hardened leather armor"
 	desc = "A heavy steerhide jerkin with enough body to stand on its own. It forms a stiff, protective mantle \
 	for its wearer, shielding from blows and weather alike."
-	icon_state = "leather_armor"
-	item_state = "leather_armor"
+	icon_state = "roguearmor_belt"
+	item_state = "roguearmor_belt"
 	armor = ARMOR_LEATHER
 	max_integrity = ARMOR_INT_CHEST_LIGHT_MASTER
 	color = "#7D6653"
@@ -156,17 +158,37 @@
 
 /obj/item/clothing/suit/roguetown/armor/leather/heavy/coat/raneshen
 	name = "megarmach scale coat"
-	desc = "A set of lightweight armor fashioned from the scales of the Ranesheni \'megarmach\', an armored reptilian creacher that ambushes prey by the riverside, and drags them deep into Abyssor's domain."
+	desc = "A set of lightweight armor fashioned from the scales of the Ranesheni \"megarmach\", an armored reptilian creacher that ambushes prey by the riverside, and drags them deep into Abyssor's domain."
 	icon_state = "pangolin"
 	item_state = "pangolin"
 	color = null
 
 /obj/item/clothing/suit/roguetown/armor/leather/heavy/coat/steppe
-	name = "fur-woven hatanga coat"
-	desc = "A finely woven hatagna coat, replacing much of its scaled armor with fine furs and reinforced padding for lighter rides."
+	name = "fur-woven chargah coat"
+	desc = "A finely woven chargah coat, replacing much of its scaled armor with fine furs and reinforced padding for lighter rides."
+	icon_state = "chargahfur"
+	item_state = "chargahfur"
+	color = null
+
+/obj/item/clothing/suit/roguetown/armor/leather/heavy/coat/elven
+	name = "fur-lined trophy robes"
+	desc = "A heavy set of hardened robes, lined with fur. The leather is composed of several creatures that were notably difficult to fell by arrow. A proof or rangership among many."
 	icon_state = "hatangafur"
 	item_state = "hatangafur"
 	color = null
+
+/obj/item/clothing/suit/roguetown/armor/leather/heavy/coat/elven/loadout
+	name = "aesthetic fur-lined trophy robes"
+
+/obj/item/clothing/suit/roguetown/armor/leather/heavy/coat/elven/loadout/Initialize()
+	. = ..()
+
+/obj/item/clothing/suit/roguetown/armor/leather/heavy/coat/steppe/loadout
+	name = "aesthetic fur-woven hatanga coat"
+
+/obj/item/clothing/suit/roguetown/armor/leather/heavy/coat/steppe/loadout/Initialize()
+	. = ..()
+	loadoutize()
 
 /obj/item/clothing/suit/roguetown/armor/leather/heavy/coat/gravecoat
 	name = "gravetender's coat"
@@ -175,14 +197,6 @@
 	item_state = "gravecoat"
 	max_integrity = ARMOR_INT_CHEST_LIGHT_BASE
 	body_parts_covered = COVERAGE_ALL_BUT_HANDFEET
-	color = null
-
-/obj/item/clothing/suit/roguetown/armor/leather/heavy/coat/trophyfur
-	name = "treated trophy fur robes"
-	desc = "A heavy set of hardened robes, lined with fur. The leather is composed of several creatures that were notably difficult to fell by arrow. A proof or rangership among many."
-	icon_state = "hatanga"
-	item_state = "hatanga"
-	sellprice = 100
 	color = null
 
 /obj/item/clothing/suit/roguetown/armor/leather/heavy/jacket
@@ -228,6 +242,13 @@
 /obj/item/clothing/suit/roguetown/armor/leather/heavy/freifechter/Initialize()
 	..()
 	update_icon()
+
+/obj/item/clothing/suit/roguetown/armor/leather/heavy/freifechter/loadout
+	name = "aesthetic fencing jacket"
+
+/obj/item/clothing/suit/roguetown/armor/leather/heavy/freifechter/loadout/Initialize()
+	. = ..()
+	loadoutize()
 
 /obj/item/clothing/suit/roguetown/armor/leather/heavy/shepherd
 	name = "shepherd's vest"
@@ -292,6 +313,8 @@
 	sleevetype = null
 	sleeved = null
 	armor_class = ARMOR_CLASS_NONE
+	grid_height = 64
+	grid_height = 64
 
 /obj/item/clothing/suit/roguetown/armor/leather/vest/sailor
 	name = "sea jacket"

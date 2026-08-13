@@ -2,12 +2,14 @@ GLOBAL_LIST_EMPTY(preferences_datums)
 
 GLOBAL_LIST_EMPTY(chosen_names)
 
+#define MAX_SONG_TITLE_LENGTH 60
+
 /datum/preferences
 	var/client/parent
 	//doohickeys for savefiles
 	var/path
 	var/default_slot = 1				//Holder so it doesn't default to slot 1, rather the last one used
-  
+
 	var/loaded_slot = 1
 
 	var/max_save_slots = 20
@@ -132,6 +134,11 @@ GLOBAL_LIST_EMPTY(chosen_names)
 
 	//Job preferences 2.0 - indexed by job title , no key or value implies never
 	var/list/job_preferences = list()
+	/// Preferences specific to a job. Alist, job title = (some object, usually a list)
+	var/list/job_subprefs = list()
+
+	var/list/job_subclass_preferences = list() // TA EDIT START
+	var/list/job_subclass_strict = list() // TA EDIT END
 		// Want randomjob if preferences already filled - Donkie
 	var/joblessrole = RETURNTOLOBBY  //defaults to 1 for fewer assistants
 
@@ -155,15 +162,15 @@ GLOBAL_LIST_EMPTY(chosen_names)
 	var/stopdroning = FALSE
 
 	var/anonymize = TRUE
-	var/donor_ooc_color = TRUE // TA EDIT 
-	var/donor_ooc_icon = TRUE // TA EDIT 
+	var/donor_ooc_color = TRUE // TA EDIT
+	var/donor_ooc_icon = TRUE // TA EDIT
 	var/donor_examine_icon = TRUE // TA EDIT
 	var/masked_examine = FALSE
 	var/nsfw_examine_always = FALSE // TA EDIT
-	var/full_examine = FALSE
+	var/full_examine = TRUE
 	var/mute_animal_emotes = FALSE
 	var/autoconsume = FALSE
-	var/no_examine_blocks = TRUE
+	var/no_examine_blocks = FALSE
 	var/no_autopunctuate = FALSE
 	var/no_language_fonts = FALSE
 	var/no_language_icon = FALSE
@@ -183,8 +190,6 @@ GLOBAL_LIST_EMPTY(chosen_names)
 
 	var/datum/migrant_pref/migrant
 	var/next_special_trait = null
-
-	var/action_buttons_screen_locs = list()
 
 	var/domhand = 2
 	var/nickname = "Please Change Me"
@@ -218,7 +223,7 @@ GLOBAL_LIST_EMPTY(chosen_names)
 	var/chatheadshot = TRUE
 	var/list/violated = list() // ТА
 	var/ooc_extra
-	var/ooc_extra_img // ТА 
+	var/ooc_extra_img // ТА
 	var/ooc_extra_img_link // ТА
 	var/song_artist
 	var/song_title
@@ -258,11 +263,9 @@ GLOBAL_LIST_EMPTY(chosen_names)
 	var/taur_type = null
 	var/taur_color = "ffffff"
 
-	/// Assoc list of culinary preferences, where the key is the type of the culinary preference, and value is food/drink typepath
-	var/list/culinary_preferences = list()
-
-
-	var/tgui_pref = TRUE
+	var/favorite_cuisine = NONE
+	var/favorite_dish = NONE
+	var/favorite_drink = NONE
 
 	var/race_bonus
 
@@ -528,16 +531,16 @@ GLOBAL_LIST_EMPTY(chosen_names)
 
 /datum/preferences/proc/get_job_prefs(job_title, forced_slot = null) //TA EDIT start
 	var/slot = forced_slot ? forced_slot : job_characters[job_title]
-	
-	
+
+
 	if(!slot || slot == loaded_slot)
 		return src
 
-	
+
 	if(loaded_job_slots["[slot]"])
 		return loaded_job_slots["[slot]"]
 
-	
+
 	var/datum/preferences/temp = new(parent)
 	temp.load_character(slot)
 	loaded_job_slots["[slot]"] = temp
@@ -715,7 +718,7 @@ GLOBAL_LIST_EMPTY(chosen_names)
 				dat += "<b>Race Bonus:</b> <a href='?_src_=prefs;preference=race_bonus_select;task=input'>[race_bonus_display ? "[race_bonus_display]" : "None"]</a><BR>"
 			else
 				race_bonus = null
-			
+
 			var/datum/language/selected_lang
 			var/lang_output = "None"
 			if(ispath(extra_language, /datum/language))
@@ -845,7 +848,7 @@ GLOBAL_LIST_EMPTY(chosen_names)
 				if(istype(cf, /datum/charflaw/averse))
 					has_averse = TRUE
 					break
-			
+
 			if(has_averse)
 				if(!averse_chosen_faction)
 					averse_chosen_faction = "Inquisition"
@@ -956,6 +959,7 @@ GLOBAL_LIST_EMPTY(chosen_names)
 
 			dat += "<br><b>Family Preferences:</b> <a href='?_src_=prefs;preference=family_options;task=input'>Change</a>" // TA EDIT
 			dat += "<br><b>Loadout Items:</b> <a href='?_src_=prefs;preference=loadout_item;task=input'>Change</a>"
+			dat += "<br><b>Cards Game:</b> <a href='?_src_=prefs;preference=ccg_settings'>Settings</a><br>"
 
 			dat += "<BR><BR><b>Has an Estate:</b> <a href='?_src_=prefs;preference=have_manor;task=input'>[have_manor ? "Yes" : "No"]</a><BR>" // TA EDIT
 			dat += "<b>Estate Name:</b> <a href='?_src_=prefs;preference=manor_name;task=input'>[manor_name ? manor_name : "Unknown Manor"]</a><BR>" // TA EDIT
@@ -976,7 +980,6 @@ GLOBAL_LIST_EMPTY(chosen_names)
 			dat += "<b>TGUI Theme:</b> <a href='?_src_=prefs;preference=tgui_theme'>[get_tgui_theme_display_name()]</a><br>"
 			dat += "<b>Parchment Theme:</b> <a href='?_src_=prefs;preference=parchment_skin'>[get_parchment_skin_display_name()]</a><br>"
 			dat += "<b>Panel Theme:</b> <a href='?_src_=prefs;preference=statbrowser_theme'>[get_statbrowser_theme_display_name()]</a><br>"
-			dat += "<b>UI Mode:</b> <a href='?_src_=prefs;preference=tgui_ui_prefs;task=menu'>[tgui_pref ? "TGUI" : "Legacy"]</a><br>"
 			dat += "<b>tgui Monitors:</b> <a href='?_src_=prefs;preference=tgui_lock'>[(tgui_lock) ? "Primary" : "All"]</a><br>"
 			dat += "<b>Ambient Occlusion:</b> <a href='?_src_=prefs;preference=ambientocclusion'>[ambientocclusion ? "Enabled" : "Disabled"]</a><br>"
 			dat += "<b>Window Flashing:</b> <a href='?_src_=prefs;preference=winflash'>[(windowflashing) ? "Enabled":"Disabled"]</a><br>"
@@ -1263,7 +1266,7 @@ GLOBAL_LIST_EMPTY(chosen_names)
 		for(var/datum/job/job in sortList(SSjob.occupations, GLOBAL_PROC_REF(cmp_job_display_asc)))
 			if(!job.spawn_positions && !job.always_show_on_latechoices)
 				continue
-			
+
 			index += 1
 			if(index >= limit)
 				width += widthPerColumn
@@ -1277,7 +1280,7 @@ GLOBAL_LIST_EMPTY(chosen_names)
 				HTML += "<tr bgcolor='#000000'><td colspan='2'><hr></td></tr>"
 
 			HTML += "<tr bgcolor='#000000'>"
-			
+
 			var/rank = job.title
 			var/used_name = job.display_title || job.title
 			if((titles_pref == TITLES_F) && job.f_title)
@@ -1291,10 +1294,31 @@ GLOBAL_LIST_EMPTY(chosen_names)
 					slot_text = "Slot [job_characters[job.title]]"
 				slot_button_html = " | <a href='?_src_=prefs;preference=job;task=set_job_slot;text=[rank]'><font color='gray'>\[[slot_text]\]</font></a>"
 
+			var/subclass_button_html = "" // TA EDIT START
+			if(length(job.job_subclasses))
+				var/selected_subclass = job_subclass_preferences[job.title]
+				var/subclass_star = "☆"
+				var/subclass_color = "gray"
+				var/subclass_tooltip = "Subclass: Any"
+				if(selected_subclass)
+					var/failure_text = job_subclass_strict[job.title] ? "Try Another Role, Otherwise Return to Lobby" : "Choose Another Subclass"
+					subclass_star = "★"
+					subclass_color = "#e3c06f"
+					subclass_tooltip = "Subclass: [selected_subclass] / [failure_text]"
+				subclass_button_html = " | <a href='?_src_=prefs;preference=job;task=set_job_subclass;text=[rank]' title='[subclass_tooltip]'><font color='[subclass_color]'>[subclass_star]</font></a>" // TA EDIT END
+
+			var/show_role_subprefs = FALSE
+			if(job.has_subprefs && islist(job.default_subprefs))
+				for(var/subpref_key in job.default_subprefs)
+					if(subpref_key == "favorite_advclass")
+						continue
+					show_role_subprefs = TRUE
+					break
+
 			var/start_font = ""
 			var/end_font = ""
 			var/job_unavailable_status = JOB_AVAILABLE
-			
+
 			if(isnewplayer(parent?.mob))
 				var/mob/dead/new_player/new_player = parent.mob
 				job_unavailable_status = new_player.IsJobUnavailable(job.title, latejoin = FALSE)
@@ -1303,7 +1327,7 @@ GLOBAL_LIST_EMPTY(chosen_names)
 			if(!(job_unavailable_status in acceptable_unavailables))
 				start_font = "<font color='#a36c63'>"
 				end_font = "</font>"
-			
+
 			HTML += "<td width='60%' align='right'>"
 			HTML += {"
 <style>
@@ -1311,6 +1335,7 @@ GLOBAL_LIST_EMPTY(chosen_names)
 .tutorialhover .tutorial { visibility: hidden; width: 280px; background-color: black; color: #e3c06f; text-align: center; border-radius: 6px; padding: 5px 0; position: absolute; z-index: 1; top: 100%; left: 50%; margin-left: -140px; }
 .tutorialhover:hover .tutorial{ visibility: visible; }
 </style>
+[show_role_subprefs ? "<div class='tutorialhover'><a href='?src=[REF(job)];subprefs=1'>\[+\]</a><span class='tutorial'>Class Preferences</span></div>" : ""]
 <div class="tutorialhover"> [start_font][job.class_setup_examine ? "<a href='?src=[REF(job)];explainjob=1'>[used_name]</a>" : "[used_name]"][end_font]</span>
 <span class="tutorial">[job.tutorial]<br>Slots: [job.spawn_positions] [job.round_contrib_points ? "RCP: +[job.round_contrib_points]" : ""]</span>
 </div>
@@ -1346,16 +1371,18 @@ GLOBAL_LIST_EMPTY(chosen_names)
 			if(is_ineligible)
 				HTML += "<font color='#a56161'> (Ineligible) </font>"
 				HTML += slot_button_html
+				HTML += subclass_button_html // TA EDIT
 				HTML += "</td></tr>"
-				continue 
+				continue
 
 
 			if(!(job_unavailable_status in acceptable_unavailables))
-				HTML += slot_button_html 
-				HTML += "</td></tr>" 
+				HTML += slot_button_html
+				HTML += subclass_button_html // TA EDIT
+				HTML += "</td></tr>"
 				continue
 
-		
+
 			var/list/pref_ui = job_pref_display_data(job, user) // TA EDIT START
 			var/prefLevelLabel = pref_ui["label"] // TA EDIT
 			var/prefLevelColor = pref_ui["color"] // TA EDIT
@@ -1364,12 +1391,13 @@ GLOBAL_LIST_EMPTY(chosen_names)
 
 			HTML += "<a class='white' href='?_src_=prefs;preference=job;task=setJobLevel;level=[prefUpperLevel];text=[rank]' oncontextmenu='javascript:return setJobPrefRedirect([prefLowerLevel], \"[rank]\");'>"
 			HTML += "<font color=[prefLevelColor]>[prefLevelLabel]</font></a>"
-			
-			HTML += slot_button_html 
-			
+
+			HTML += slot_button_html
+			HTML += subclass_button_html // TA EDIT
+
 			HTML += "</td></tr>"
 
-		for(var/i = 1, i < (limit - index), i += 1) 
+		for(var/i = 1, i < (limit - index), i += 1)
 			HTML += "<tr bgcolor='000000'><td width='60%' align='right'>&nbsp</td><td width='40%'>&nbsp</td></tr>"
 
 		HTML += "</td'></tr></table>"
@@ -1436,10 +1464,18 @@ GLOBAL_LIST_EMPTY(chosen_names)
 	return 1
 
 
-/datum/preferences/proc/ResetJobs() 
+/datum/preferences/proc/ResetJobs()
 	job_preferences = list()
 	job_characters = list() //TA EDIT
+	if(islist(job_subprefs))
+		for(var/job_title in job_subprefs)
+			var/list/roleprefs = job_subprefs[job_title]
+			if(islist(roleprefs))
+				roleprefs["favorite_advclass"] = null
+	job_subclass_preferences = list() // TA EDIT START
+	job_subclass_strict = list() // TA EDIT END
 	save_preferences()   //TA EDIT
+	save_character() // TA EDIT
 
 /datum/preferences/proc/ResetLastClass(mob/user)
 	if(user.client?.prefs)
@@ -1584,7 +1620,7 @@ GLOBAL_LIST_EMPTY(chosen_names)
 
 		dat += "<br><b>Crime:</b> "
 		dat += "<a href='?_src_=prefs;preference=preset_bounty_crime;task=input'>\
-			[preset_bounty_crime || "None"]\
+			[html_encode(preset_bounty_crime) || "None"]\
 		</a>"
 	if(preset_bounty_severity_key && !GLOB.wretch_severities[preset_bounty_severity_key])
 		preset_bounty_severity_key = null
@@ -1614,6 +1650,10 @@ GLOBAL_LIST_EMPTY(chosen_names)
 			C.clear_character_previews()
 
 /datum/preferences/proc/process_link(mob/user, list/href_list)
+	if(href_list["preference"] == "ccg_settings")
+		ccg_open_preferences_deckbuilder(user)
+		return
+
 	if(href_list["boosty"])
 		var/url = CONFIG_GET(string/boostyurl)
 		if (url)
@@ -1674,35 +1714,85 @@ GLOBAL_LIST_EMPTY(chosen_names)
 				if(SSticker.job_change_locked)
 					return 1
 				UpdateJobPreference(user, href_list["text"], text2num(href_list["level"]))
-			
+
+			if("set_job_subclass") // TA EDIT START
+				if(SSticker.job_change_locked)
+					return 1
+				var/job_title = href_list["text"]
+				var/datum/job/J = SSjob.GetJob(job_title)
+				if(!J || !length(J.job_subclasses))
+					return 1
+
+				var/list/valid_subclasses = list("No subclass preference")
+				var/datum/preferences/character_prefs = get_job_prefs(job_title)
+				for(var/subclass_path in J.job_subclasses)
+					var/datum/advclass/subclass_type = subclass_path
+					var/datum/advclass/subclass = SSrole_class_handler.get_advclass_by_name(initial(subclass_type.name))
+					if(!subclass)
+						continue
+					if(!subclass.check_preferences_requirements(character_prefs, user.client, FALSE, FALSE))
+						continue
+					valid_subclasses += subclass.name
+
+				var/current_subclass = job_subclass_preferences[job_title]
+				var/default_subclass = "No subclass preference"
+				if(current_subclass && (current_subclass in valid_subclasses))
+					default_subclass = current_subclass
+				var/selected_subclass = tgui_input_list(user, "Choose a preferred subclass for [job_title]:", "Subclass Preference", valid_subclasses, default_subclass)
+				if(!selected_subclass)
+					SetChoices(user)
+					return 1
+
+				if(selected_subclass == "No subclass preference")
+					job_subclass_preferences -= job_title
+					job_subclass_strict -= job_title
+				else
+					var/list/failure_modes = list(
+						"Try another role, otherwise return to lobby",
+						"Let me choose another subclass"
+					)
+					var/default_failure_mode = job_subclass_strict[job_title] ? failure_modes[1] : failure_modes[2]
+					var/failure_choice = tgui_input_list(user, "What should happen if [selected_subclass] is unavailable?", "Subclass Preference", failure_modes, default_failure_mode)
+					if(!failure_choice)
+						SetChoices(user)
+						return 1
+					job_subclass_preferences[job_title] = selected_subclass
+					if(failure_choice == failure_modes[1])
+						job_subclass_strict[job_title] = TRUE
+					else
+						job_subclass_strict -= job_title
+
+				J.get_roleprefs(user.client)
+				save_character()
+				SetChoices(user) // TA EDIT END
 			if("set_job_slot") //TA EDIT START
 				if(SSticker.job_change_locked)
 					return 1
 				var/job_title = href_list["text"]
 				var/datum/job/J = SSjob.GetJob(job_title)
 				if(!J) return 1
-				
+
 				if(!path || !fexists(path))
 					return 1
 
 				var/list/valid_slots = list("Active Slot (Default)" = "default")
-				
-				
+
+
 				var/savefile/S = new /savefile(path)
-				
-				
+
+
 				var/datum/preferences/dummy_pref = new(parent)
-				
-				
+
+
 				for(var/i = 1 to max_save_slots)
-					
-					if(i % 5 == 0) 
+
+					if(i % 5 == 0)
 						CHECK_TICK
-					
-					
+
+
 					dummy_pref.fast_scan_for_job(S, i)
-					
-					
+
+
 					if(J.validate_prefs_for_job(dummy_pref))
 						valid_slots["Slot [i] - [dummy_pref.real_name] ([dummy_pref.pref_species.name])"] = i
 
@@ -1728,9 +1818,6 @@ GLOBAL_LIST_EMPTY(chosen_names)
 					be_special += be_special_type
 		ShowChoices(user, 1)
 		return 1
-	else if(href_list["preference"] == "tgui_ui_prefs")
-		tgui_pref = !tgui_pref
-
 	else if(href_list["preference"] == "subvirtue")
 		var/task = href_list["task"]
 		if(task == "input")
@@ -1942,7 +2029,6 @@ GLOBAL_LIST_EMPTY(chosen_names)
 			return
 		if("change_culinary_preferences")
 			handle_culinary_topic(user, href_list)
-			show_culinary_ui(user)
 			return
 		if("random")
 			switch(href_list["preference"])
@@ -2010,7 +2096,7 @@ GLOBAL_LIST_EMPTY(chosen_names)
 						else
 							to_chat(user, "<font color='red'>Invalid name. Your name should be at least 2 and at most [MAX_NAME_LEN] characters long. It may only contain the characters A-Z, a-z, -, ', . and ,.</font>")
 
-	
+
 				if("nickname")
 					var/new_name = tgui_input_text(user, "Choose your character's nickname (For Highlighting):", "NICKNAME",  encode = FALSE)
 					if(new_name)
@@ -2178,9 +2264,10 @@ GLOBAL_LIST_EMPTY(chosen_names)
 					var/faith_input = tgui_input_list(user, "The world rots. Which truth you bear?", "FAITH", faiths_named)
 					if(faith_input)
 						var/datum/faith/faith = faiths_named[faith_input]
-						to_chat(user, "<font color='yellow'>Вера: [faith.translated_name]</font>") //	TA EDIT
-						to_chat(user, "Описание: [faith.desc]") //										TA EDIT
-						to_chat(user, "<font color='red'>Последователи: [faith.worshippers]</font>") //	TA EDIT
+						var/pantheon_info = "[faith.desc]<br><br>"
+						pantheon_info += span_redtext("Последователи: " + faith.worshippers)
+						var/pantheon_fieldsetblock = fieldset_block(span_big("<b>[span_bignotice(faith.translated_name)]</b>"), pantheon_info, "faithdesc_block")
+						to_chat(user, pantheon_fieldsetblock)
 						selected_patron = GLOB.patronlist[faith.godhead] || GLOB.patronlist[pick(GLOB.patrons_by_faith[faith_input])]
 
 				if("patron")
@@ -2193,10 +2280,12 @@ GLOBAL_LIST_EMPTY(chosen_names)
 					var/god_input = tgui_input_list(user, "The first amongst many.", "PATRON", patrons_named)
 					if(god_input)
 						selected_patron = patrons_named[god_input]
-						to_chat(user, "<font color='yellow'>Покровитель: [selected_patron.translated_name]</font>") //	TA EDIT
-						to_chat(user, "<font color='#FFA500'>Домены: [selected_patron.domain]</font>") //				TA EDIT
-						to_chat(user, "Описание: [selected_patron.desc]") //											TA EDIT
-						to_chat(user, "<font color='red'>Последователи: [selected_patron.worshippers]</font>") //		TA EDIT
+						var/patron_info = ""
+						patron_info += span_honeyyellow("Домены: [selected_patron.domain]<br><br>")
+						patron_info += "[selected_patron.desc]<br><br>"
+						patron_info += span_redtext("Последователи: [selected_patron.worshippers]")
+						var/patron_fieldsetblock = fieldset_block(span_big("<b>[span_bignotice(selected_patron.translated_name)]</b>"), patron_info, "patrondesc_block")
+						to_chat(user, patron_fieldsetblock)
 
 				if("combat_music") // if u change shit here look at /client/verb/combat_music() too
 					select_combat_music(user) // TA EDIT
@@ -2264,9 +2353,10 @@ GLOBAL_LIST_EMPTY(chosen_names)
 					to_chat(user, "<span class='notice'>Please use a relatively SFW image of the head and shoulder area to maintain immersion level. Lastly, ["<span class='bold'>do not use a real life photo or use any image that is less than serious.</span>"]</span>")
 					to_chat(user, "<span class='notice'>If the photo doesn't show up properly in-game, ensure that it's a direct image link that opens properly in a browser.</span>")
 					to_chat(user, "<span class='notice'>Keep in mind that the photo will be downsized to 325x325 pixels, so the more square the photo, the better it will look.</span>")
-					var/new_headshot_link = tgui_input_text(user, "Input the headshot link (https, hosts: gyazo, discord, lensdump, imgbox, catbox):", "Headshot", headshot_link,  encode = FALSE)
-					if(new_headshot_link == null)
+					var/new_headshot_link = tgui_input_text(user, "Input the headshot link (https, hosts: gyazo, discord, lensdump, imgbox, catbox):", "Headshot", headshot_link, max_length = MAX_MESSAGE_LEN, encode = FALSE)
+					if(isnull(new_headshot_link))
 						return
+					new_headshot_link = trim(new_headshot_link, MAX_MESSAGE_LEN)
 					if(new_headshot_link == "")
 						headshot_link = null
 						ShowChoices(user)
@@ -2282,9 +2372,10 @@ GLOBAL_LIST_EMPTY(chosen_names)
 					to_chat(user, "<span class='notice'>Please use a relatively SFW image of the head and shoulder area to maintain immersion level. Lastly, ["<span class='bold'>do not use a real life photo or use any image that is less than serious.</span>"]</span>")
 					to_chat(user, "<span class='notice'>If the photo doesn't show up properly in-game, ensure that it's a direct image link that opens properly in a browser.</span>")
 					to_chat(user, "<span class='notice'>Keep in mind that the photo will be downsized to 325x325 pixels, so the more square the photo, the better it will look.</span>")
-					var/new_lich_headshot_link = tgui_input_text(user, "Input the Lich headshot link (https, hosts: gyazo, discord, lensdump, imgbox, catbox):", "Lich Headshot", lich_headshot_link,  encode = FALSE)
-					if(new_lich_headshot_link == null)
+					var/new_lich_headshot_link = tgui_input_text(user, "Input the Lich headshot link (https, hosts: gyazo, discord, lensdump, imgbox, catbox):", "Lich Headshot", lich_headshot_link, max_length = MAX_MESSAGE_LEN, encode = FALSE)
+					if(isnull(new_lich_headshot_link))
 						return
+					new_lich_headshot_link = trim(new_lich_headshot_link, MAX_MESSAGE_LEN)
 					if(new_lich_headshot_link == "")
 						lich_headshot_link = null
 						ShowChoices(user)
@@ -2300,9 +2391,10 @@ GLOBAL_LIST_EMPTY(chosen_names)
 					to_chat(user, "<span class='notice'>Please use a relatively SFW image of the head and shoulder area to maintain immersion level. Lastly, ["<span class='bold'>do not use a real life photo or use any image that is less than serious.</span>"]</span>")
 					to_chat(user, "<span class='notice'>If the photo doesn't show up properly in-game, ensure that it's a direct image link that opens properly in a browser.</span>")
 					to_chat(user, "<span class='notice'>Keep in mind that the photo will be downsized to 325x325 pixels, so the more square the photo, the better it will look.</span>")
-					var/new_vampire_headshot_link = tgui_input_text(user, "Input the vampire headshot link (https, hosts: gyazo, discord, lensdump, imgbox, catbox):", "Vampire Headshot", vampire_headshot_link,  encode = FALSE)
-					if(new_vampire_headshot_link == null)
+					var/new_vampire_headshot_link = tgui_input_text(user, "Input the vampire headshot link (https, hosts: gyazo, discord, lensdump, imgbox, catbox):", "Vampire Headshot", vampire_headshot_link, max_length = MAX_MESSAGE_LEN, encode = FALSE)
+					if(isnull(new_vampire_headshot_link))
 						return
+					new_vampire_headshot_link = trim(new_vampire_headshot_link, MAX_MESSAGE_LEN)
 					if(new_vampire_headshot_link == "")
 						vampire_headshot_link = null
 						ShowChoices(user)
@@ -2352,9 +2444,10 @@ GLOBAL_LIST_EMPTY(chosen_names)
 					popup.open(FALSE)
 				if("flavortext")
 					to_chat(user, "<span class='notice'>["<span class='bold'>Flavortext should not include nonphysical nonsensory attributes such as backstory or the character's internal thoughts.</span>"]</span>")
-					var/new_flavortext = tgui_input_text(user, "Input your character description:", "Flavortext", flavortext, multiline = TRUE,  encode = FALSE, bigmodal = TRUE)
-					if(new_flavortext == null)
+					var/new_flavortext = tgui_input_text(user, "Input your character description:", "Flavortext", flavortext, max_length = MAX_NOTE_SIZE, multiline = TRUE,  encode = FALSE, bigmodal = TRUE)
+					if(isnull(new_flavortext))
 						return
+					new_flavortext = trim(new_flavortext, MAX_NOTE_SIZE)
 					if(new_flavortext == "")
 						flavortext = null
 						ShowChoices(user)
@@ -2365,9 +2458,10 @@ GLOBAL_LIST_EMPTY(chosen_names)
 					log_game("[user] has set their flavortext'.")
 				if("ooc_notes")
 					to_chat(user, "<span class='notice'>["<span class='bold'>OOC notes should be used for roleplay hooks and general information about your character.</span>"]</span>")
-					var/new_ooc_notes = tgui_input_text(user, "Input your OOC preferences:", "OOC notes", ooc_notes, multiline = TRUE,  encode = FALSE, bigmodal = TRUE)
-					if(new_ooc_notes == null)
+					var/new_ooc_notes = tgui_input_text(user, "Input your OOC preferences:", "OOC notes", ooc_notes, max_length = MAX_NOTE_SIZE, multiline = TRUE, encode = FALSE, bigmodal = TRUE)
+					if(isnull(new_ooc_notes))
 						return
+					new_ooc_notes = trim(new_ooc_notes, MAX_NOTE_SIZE)
 					if(new_ooc_notes == "")
 						ooc_notes = null
 						ShowChoices(user)
@@ -2379,9 +2473,10 @@ GLOBAL_LIST_EMPTY(chosen_names)
 
 				if("rumour")
 					to_chat(user, span_notice("Rumours are things others might know, or think they know about you, they don't necessarily have to be precise, or even true. But remember that they can provide a hint to another player on how to interact with, or even think about your character.\n<b>Avoid explicit bodily descriptions, though rumors like \"sleeps around a lot\" are fine.</b>"))
-					var/new_rumour = tgui_input_text(user, "Input rumours about your character: (400 Character Limit)", "Rumours", rumour, multiline = TRUE, encode = FALSE, bigmodal = TRUE)
-					if(new_rumour == null)
+					var/new_rumour = tgui_input_text(user, "Input rumours about your character: (400 Character Limit)", "Rumours", rumour, max_length = 400, multiline = TRUE, encode = FALSE, bigmodal = TRUE)
+					if(isnull(new_rumour))
 						return
+					new_rumour = trim(new_rumour, 400)
 					if(new_rumour == "")
 						rumour = null
 						ShowChoices(user)
@@ -2396,9 +2491,10 @@ GLOBAL_LIST_EMPTY(chosen_names)
 
 				if("gossip")
 					to_chat(user, span_notice("Gossip is rumours spread around, and known only in Noble circles, only other well-born individuals are aware of it. Gossip, similarly to standard rumours does not need to be precise or true, but remember that it can provide hints and avenues for other Nobles to interact with, and judge your Character.\n<b>Avoid explicit bodily descriptions, though rumors like \"sleeps around a lot\" are fine.</b>"))
-					var/new_gossip = tgui_input_text(user, "Input noble gossip about your character: (400 Character Limit)", "Noble Gossip", noble_gossip, multiline = TRUE, encode = FALSE, bigmodal = TRUE)
-					if(new_gossip == null)
+					var/new_gossip = tgui_input_text(user, "Input noble gossip about your character: (400 Character Limit)", "Noble Gossip", noble_gossip, max_length = 400, multiline = TRUE, encode = FALSE, bigmodal = TRUE)
+					if(isnull(new_gossip))
 						return
+					new_gossip = trim(new_gossip, 400)
 					if(new_gossip == "")
 						noble_gossip = null
 						ShowChoices(user)
@@ -2414,9 +2510,10 @@ GLOBAL_LIST_EMPTY(chosen_names)
 				if("nsfwflavortext")
 					to_chat(user, "<span class='notice'>["<span class='bold'>NSFW Flavortext can be used for setting things like body descriptions and other physical details that may be conisdered explicit.</span>"]</span>")
 					to_chat(user, "<font color = '#d6d6d6'>Leave blank to clear.</font>")
-					var/new_nsfwflavortext = tgui_input_text(user, "Input your character description:", "NSFW Flavortext", nsfwflavortext, multiline = TRUE,  encode = FALSE, bigmodal = TRUE)
-					if(new_nsfwflavortext == null)
+					var/new_nsfwflavortext = tgui_input_text(user, "Input your character description:", "NSFW Flavortext", nsfwflavortext, max_length = MAX_NOTE_SIZE, multiline = TRUE,  encode = FALSE, bigmodal = TRUE)
+					if(isnull(new_nsfwflavortext))
 						return
+					new_nsfwflavortext = trim(new_nsfwflavortext, MAX_NOTE_SIZE)
 					if(new_nsfwflavortext == "")
 						new_nsfwflavortext = null
 						nsfwflavortext = null
@@ -2430,9 +2527,10 @@ GLOBAL_LIST_EMPTY(chosen_names)
 				if("erpprefs")
 					to_chat(user, "<span class='notice'>["<span class='bold'>Erotic Roleplay preferences. If you put 'anything goes' or 'no limits' here, do not be surprised if people take you up on it.</span>"]</span>")
 					to_chat(user, "<font color = '#d6d6d6'>Leave blank to clear.</font>")
-					var/new_erpprefs = tgui_input_text(user, "Input your preferences:", "ERP Preferences", erpprefs, multiline = TRUE,  encode = FALSE, bigmodal = TRUE)
-					if(new_erpprefs == null)
+					var/new_erpprefs = tgui_input_text(user, "Input your preferences:", "ERP Preferences", erpprefs, max_length = MAX_NOTE_SIZE, multiline = TRUE, encode = FALSE, bigmodal = TRUE)
+					if(isnull(new_erpprefs))
 						return
+					new_erpprefs = trim(new_erpprefs, MAX_NOTE_SIZE)
 					if(new_erpprefs == "")
 						new_erpprefs = null
 						erpprefs = null
@@ -2445,7 +2543,6 @@ GLOBAL_LIST_EMPTY(chosen_names)
 					log_game("[user] has set their ERP preferences'.")
 
 				if("img_gallery")
-
 					if(img_gallery.len >= 3)
 						to_chat(user, "You already have three images in your gallery!")
 						return
@@ -2455,10 +2552,11 @@ GLOBAL_LIST_EMPTY(chosen_names)
 					to_chat(user, "<span class='notice'>Keep in mind that all three images are displayed next to eachother and justified to fill a horizontal rectangle. As such, vertical images work best.</span>")
 					to_chat(user, "<span class='notice'>You can only have a maximum of ["<span class='bold'>THREE IMAGES</span>"] in your gallery at a time.</span>")
 
-					var/new_galleryimg = tgui_input_text(user, "Input the image link (https, hosts: gyazo, discord, lensdump, imgbox, catbox):", "Gallery Image",  encode = FALSE)
+					var/new_galleryimg = tgui_input_text(user, "Input the image link (https, hosts: gyazo, discord, lensdump, imgbox, catbox):", "Gallery Image", max_length = MAX_MESSAGE_LEN, encode = FALSE)
 
-					if(new_galleryimg == null)
+					if(isnull(new_galleryimg))
 						return
+					new_galleryimg = trim(new_galleryimg, MAX_MESSAGE_LEN)
 					if(new_galleryimg == "")
 						new_galleryimg = null
 						ShowChoices(user)
@@ -2483,22 +2581,23 @@ GLOBAL_LIST_EMPTY(chosen_names)
 					to_chat(user, "<span class='notice'>Keep in mind that all three images are displayed next to eachother and justified to fill a horizontal rectangle. As such, vertical images work best.</span>")
 					to_chat(user, "<span class='notice'>You can only have a maximum of ["<span class='bold'>THREE IMAGES</span>"] in your gallery at a time.</span>")
 
-					var/new_galleryimg = tgui_input_text(user, "Input the image link (https, hosts: gyazo, discord, lensdump, imgbox, catbox):", "Gallery Image",  encode = FALSE)
+					var/new_galleryimg_nsfw = tgui_input_text(user, "Input the image link (https, hosts: gyazo, discord, lensdump, imgbox, catbox):", "NSFW Gallery Image", max_length = MAX_MESSAGE_LEN, encode = FALSE)
 
-					if(new_galleryimg == null)
+					if(isnull(new_galleryimg_nsfw))
 						return
-					if(new_galleryimg == "")
-						new_galleryimg = null
+					new_galleryimg_nsfw = trim(new_galleryimg_nsfw, MAX_MESSAGE_LEN)
+					if(new_galleryimg_nsfw == "")
+						new_galleryimg_nsfw = null
 						ShowChoices(user)
 						return
-					if(!valid_headshot_link(user, new_galleryimg))
+					if(!valid_headshot_link(user, new_galleryimg_nsfw))
 						to_chat(user, "<span class='notice'>Invalid image link. Make sure it's a direct link from a valid host (gyazo, discord, lensdump, imgbox, catbox).</span>")
-						new_galleryimg = null
+						new_galleryimg_nsfw = null
 						ShowChoices(user)
 						return
-					nsfw_img_gallery += new_galleryimg
+					nsfw_img_gallery += new_galleryimg_nsfw
 					to_chat(user, "<span class='notice'>Successfully added image to nsfw gallery.</span>")
-					log_game("[user] has added an image to their nsfw gallery: '[new_galleryimg]'.")
+					log_game("[user] has added an image to their nsfw gallery: '[new_galleryimg_nsfw]'.")
 
 				if("clear_gallery")
 					if(!img_gallery.len)
@@ -2575,9 +2674,10 @@ GLOBAL_LIST_EMPTY(chosen_names)
 					to_chat(user, "<span class='notice'>If the song doesn't  play properly, ensure that it's a direct link that opens properly in a browser.</span>")
 					to_chat(user, "<font color = '#d6d6d6'>Leave blank to clear your current song.</font>")
 					to_chat(user, "<font color ='red'>Abuse of this will get you banned.</font>")
-					var/new_extra_link = tgui_input_text(user, "Input the accessory link (https, hosts: discord, catbox):", "Song URL", ooc_extra, encode = FALSE)
-					if(new_extra_link == null)
+					var/new_extra_link = tgui_input_text(user, "Input the accessory link (https, hosts: discord, catbox):", "Song URL", ooc_extra, max_length = MAX_MESSAGE_LEN, encode = FALSE)
+					if(isnull(new_extra_link))
 						return
+					new_extra_link = trim(new_extra_link, MAX_MESSAGE_LEN)
 					if(new_extra_link == "")
 						new_extra_link = null
 						ooc_extra = null
@@ -2600,9 +2700,10 @@ GLOBAL_LIST_EMPTY(chosen_names)
 						log_game("[user] has set their Song URL to '[ooc_extra]'.")
 
 				if("change_artist")
-					var/new_artist = tgui_input_text(user, "Input your song's artist:", "Song Artist", song_artist,  encode = FALSE)
-					if(new_artist == null)
+					var/new_artist = tgui_input_text(user, "Input your song's artist:", "Song Artist", song_artist, max_length = MAX_MESSAGE_LEN, encode = FALSE)
+					if(isnull(new_artist))
 						return
+					new_artist = trim(new_artist, MAX_MESSAGE_LEN)
 					if(new_artist == "")
 						ShowChoices(user)
 						return
@@ -2611,7 +2712,7 @@ GLOBAL_LIST_EMPTY(chosen_names)
 					log_game("[user] has set their song artist.")
 
 				if("change_title")
-					var/new_title = tgui_input_text(user, "Input your song's title:", "Song title", song_title,  encode = FALSE)
+					var/new_title = tgui_input_text(user, "Input your song's title (Character limit is [MAX_SONG_TITLE_LENGTH]):", "Song title", song_title,  encode = FALSE, max_length = MAX_SONG_TITLE_LENGTH)
 					if(new_title== null)
 						return
 					if(new_title == "")
@@ -3270,7 +3371,7 @@ GLOBAL_LIST_EMPTY(chosen_names)
 						to_chat(user, span_notice("You will now have resistance from people violating you, but be punished for trying to violate others." + " " + span_boldwarning("(COMBAT Mode will disable ERP interactions. Bypassing this is a bannable offense, AHELP if necessary.)")))
 					else
 						to_chat(user, span_boldwarning("You fully immerse yourself in the grim experience, waiving your resistance from people violating you, but letting you do the same unto other non-defiants"))
-		
+
 				if("schizo_voice")
 					toggles ^= SCHIZO_VOICE
 					if(toggles & SCHIZO_VOICE)
@@ -3455,10 +3556,10 @@ GLOBAL_LIST_EMPTY(chosen_names)
 
 	character.nsfw_ooc_extra_img = nsfw_ooc_extra_img
 
-	character.nsfw_ooc_extra_img_link = nsfw_ooc_extra_img_link	
+	character.nsfw_ooc_extra_img_link = nsfw_ooc_extra_img_link
 
 	character.erpprefs = erpprefs
-	
+
 	// Copy the cached version
 	character.flavortext_cached = flavortext_cached
 	character.ooc_notes_cached = ooc_notes_cached
@@ -3515,8 +3616,7 @@ GLOBAL_LIST_EMPTY(chosen_names)
 	// Customizers are already applied inside set_species() (both the species-change path via
 	// on_species_gain, and the same-species short-circuit). Re-applying here doubled the work.
 
-	if(culinary_preferences)
-		apply_culinary_preferences(character)
+	apply_culinary_preferences(character)
 
 /datum/preferences/proc/get_default_name(name_id)
 	switch(name_id)
@@ -3572,8 +3672,9 @@ GLOBAL_LIST_EMPTY(chosen_names)
 	parent?.ensure_keys_set(src)
 
 /datum/preferences/proc/try_update_mutant_colors()
-	reset_body_marking_colors()
-	reset_all_customizer_accessory_colors()
+	if(update_mutant_colors)
+		reset_body_marking_colors()
+		reset_all_customizer_accessory_colors()
 
 /proc/valid_headshot_link(mob/user, value, silent = FALSE, list/valid_extensions = list("jpg", "png", "jpeg"))
 	var/static/link_regex = regex(@"i\.gyazo.com|.\.l3n\.co|images2\.imgbox\.com|thumbs2\.imgbox\.com|files\.catbox\.moe") //gyazo, discord, lensdump, imgbox, catbox
@@ -3662,7 +3763,7 @@ GLOBAL_LIST_EMPTY(chosen_names)
 		dat += "[V.custom_text]"
 		dat += "</font>"
 	if(V.stackable)
-		dat += "<font color = '#ffeea3'>This virtue can be picked twice using Virtuous.</font><br>"
+		dat += "<font color = '#ffeea3'><br>This virtue can be picked twice using Virtuous.</font><br>"
 	return dat
 
 /datum/preferences/proc/LorePopup(mob/user)
@@ -3671,3 +3772,5 @@ GLOBAL_LIST_EMPTY(chosen_names)
 	var/datum/browser/noclose/popup  = new(user, "lore_primer", "<div align='center'>Lore Primer</div>", 650, 900)
 	popup.set_content(build_lore_primer_content())
 	popup.open(FALSE)
+
+#undef MAX_SONG_TITLE_LENGTH

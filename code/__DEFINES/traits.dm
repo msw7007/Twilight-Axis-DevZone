@@ -39,6 +39,7 @@
 #define TRAIT_MAGEARMOR "Magic Barrier"
 #define TRAIT_DECEIVING_MEEKNESS "Deceiving Meekness"
 #define TRAIT_CRITICAL_RESISTANCE "Critical Resistance"
+#define TRAIT_TOUGH_COOKIE "Tough Cookie"
 #define TRAIT_BLOOD_RESISTANCE "Thick Blooded"
 #define TRAIT_JOURNEYS_END "Journey's End"
 #define TRAIT_RAGE "Rage"
@@ -105,6 +106,8 @@
 #define TRAIT_INFINITE_ENERGY "Boundless Energy" //infinite fatigue (blue bar) but not infinite stamina
 #define TRAIT_PERMAMUTE "Permanent Mute"
 #define TRAIT_EXCOMMUNICATED "Excommunicated"
+#define TRAIT_RECENT_CONVERT "Recent Convert"
+#define TRAIT_UNCONVERTIBLE "Unconvertible"
 #define TRAIT_HERESIARCH "Forbidden Knowledge"
 #define TRAIT_DREAMWALKER "Dreamwalker"
 #define TRAIT_JACKOFALLTRADES "Jack of All Trades"	//Reduces skill up cost
@@ -129,6 +132,9 @@
 #define TRAIT_CURSE_SCAR "Curse Scar"
 #define TRAIT_SLAVE "Slave" // TA EDIT, shows SLAVE tag on examine
 #define TRAIT_ARMOR_BREAK "Loose Straps"
+#define TRAIT_NOHEAL "Laden Soul" // Only affects magic healing, such as miracle or supernatural heals.
+#define TRAIT_NOREGEN "Laden Body" // Only affects natural healing, such as resting, campfires, potions, etc.
+#define TRAIT_HALFHEAL "Laden Lux" // -50% Magic Heal.
 
 //Hearthstone port (Tracking)
 #define TRAIT_PERFECT_TRACKER "Huntmaster" //Will always find any tracks and analyzes them perfectly.
@@ -169,6 +175,7 @@
 #define TRAIT_PSYDONITE "Psydonic Devotion" // Passively heals wounds at a slow rate, but doesn't restore lost blood. Negates the effects of all non-Psydonian miracles, save for Anastasis and Cure Rot.
 #define TRAIT_BLACKBAGGER "Skilled Apprehender" // Allows the effective usage of garrotes and blackbags.
 #define TRAIT_LYCANRESILENCE "Werewolf Resilence"
+#define TRAIT_UNFORGIVABLE "Unforgivable" //Handles Vheslynite gibbing, miracle backfires, confession/conversion killing, etc.
 
 // PATRON GOD CURSES
 
@@ -185,7 +192,7 @@
 #define TRAIT_CURSE_EORA "Curse of Eora" //world is ugly
 #define TRAIT_CURSE_RESIST "Curse Resistance" //Some folk with a tendency to get cursed are resistant
 
-// ASCENDANT CULTIST TRAITS (all of them recognize each other)
+// ASCENDANT CULTIST TRAITS (cursed-gear related) -> Matthiosians recognise eachother.
 #define TRAIT_FREEMAN "Blessing of Matthios" //recognized by bandits as an ally
 #define TRAIT_CABAL "Of the Cabal" //Zizo cultists recognize each other too
 #define TRAIT_HORDE "Anointed" //Graggarites also recognize each other
@@ -231,6 +238,7 @@
 #define TRAIT_NUDE_SLEEPER "Nude Sleeper"
 #define TRAIT_SILVER_BLESSED "Silverblessed"
 #define TRAIT_UNLYCKERABLE "Lycker Immunity"
+#define TRAIT_NOWW "Werevolf Immunity"
 #define TRAIT_OUTLAW "Outlaw"
 #define TRAIT_ALDERMAN "Alderman of the Assembly"
 #define TRAIT_ALDERMAN_CENSURED "Assembly Censure"
@@ -260,7 +268,6 @@
 #define TRAIT_HARDDISMEMBER	"Hard Dismemberment"
 #define TRAIT_EASYDECAPITATION "Easy Decapitation"
 #define TRAIT_NOPAIN	"Painless"
-#define TRAIT_NOBURN_RESIST	"No Burn Resistance" // Negates NOPAIN's +50% burn threshold bonus
 #define TRAIT_NOPAINSTUN	"Enduring"
 #define TRAIT_NOBREATH	"Breathless"
 #define TRAIT_DEATHLESS "Deathless"
@@ -319,6 +326,7 @@
 #define TRAIT_VAMPIRE_SPAWN_PROTECTION "Vampire Spawn Protection"
 #define TRAIT_WHITE_STAG "Stag Protection"
 #define TRAIT_EDIT_DESCRIPTORS "Edit Descriptors"
+#define TRAIT_INK_AFFINITY "Paint Affinity"
 
 #define TRAIT_ARTILLERY_EXPERT "Artillery Expert"
 
@@ -346,7 +354,7 @@
 //role related traits
 #define TRAIT_MASTER_CARPENTER "Master Carpenter"
 #define TRAIT_MASTER_MASON "Master Masonry"
-#define TRAIT_FOOD_STIPEND "Vomitorium-known"
+#define TRAIT_ROYAL_SUBSIDY "Royal Subsidy"
 
 //TA TRAITS
 #define TRAIT_PSYDONITE_2 "Psydonic Respite"
@@ -430,11 +438,12 @@ GLOBAL_LIST_INIT(roguetraits, list(
 	TRAIT_MAGEARMOR = span_info("My magics can protect me from a blow every so often."),
 	TRAIT_DECEIVING_MEEKNESS = span_info("People look at me and think I am a weakling. They are mistaken. I've learned how to hide my vices and true beliefs from others."),
 	TRAIT_CRITICAL_RESISTANCE = span_info("My constitution is iron-clad. My lifeblood flows slowly, I can resist the first few critical wounds that would fell others, but repeated punishment will overwhelm my defenses."),
+	TRAIT_TOUGH_COOKIE = span_info("Maneaters struggle to bite through my natural armor."),
 	TRAIT_BLOOD_RESISTANCE = span_info("My body is taut, and my blood runs slower. I bleed far less than others."),
 	TRAIT_JOURNEYS_END = span_info ("As the lyfe ebbs from my veins, my resolve hardens to push through. Do not go quietly into that good nite."),
 	TRAIT_RAGE = span_info ("PAIN AND INJURY FUELS MY BATTLERAGE!"),
 	TRAIT_CRITICAL_WEAKNESS = span_danger("I am weak to wounds that others could survive."),
-	TRAIT_SHATTER_KILL = span_danger("My form is vulnerable to chest fractures and paralysis, I will die instantly if my ribs shatter or I am paralyised."),
+	TRAIT_SHATTER_KILL = span_danger("My form is vulnerable to chest fractures and paralysis, I will be crippled if my ribs shatter or die if I am paralyised."),
 	TRAIT_DNR = span_danger("My lux' vigor is weak. There is no hope for me. This lyfe is all I have."),
 	TRAIT_PHILOSOPHER_BOUND = span_danger("I bound my soul."),
 	TRAIT_MANIAC_AWOKEN = span_danger("I am <b>WAKING UP</b> and the sheeple know this. They will resist."),
@@ -501,6 +510,7 @@ GLOBAL_LIST_INIT(roguetraits, list(
 	TRAIT_DEPRAVED = span_info("The languid scent of Her debauchery is known to me."),
 	TRAIT_SILVER_BLESSED = span_info("I have been baptized in fire. Blessed silverdust flows through my blood, protecting me from both vampyrism and lycanthropy."),
 	TRAIT_UNLYCKERABLE = span_info("My kind cannot bear the Sun curse for it already has another."),
+	TRAIT_NOWW = span_info("Dendor's madness shall find no hold in me."),
 	TRAIT_GOODTRAINER = span_info("I am a good teacher, and when it comes to weaponry I can train others to be just as skilled as I am."),
 	TRAIT_BADTRAINER = span_info("I've spent yils studying the art of a single weapon, but unfortunately I've no patience to train anyone else. Everyone learning from me will only learn up to two skill levels below mine."),
 	TRAIT_SEA_DRINKER = span_info("As a denizen of the deep, I can drink salty ocean water safely."),
@@ -539,6 +549,7 @@ GLOBAL_LIST_INIT(roguetraits, list(
 	TRAIT_NOHUNGER = span_info("I do not hunger, or thirst."),
 	TRAIT_DARKVISION = span_info("I can see better in the dark."),
 	TRAIT_NITEVISION = span_info("I can see perfectly in the dark."),
+	TRAIT_UNFORGIVABLE = span_smallred("THE NEEDLE IN MY EYE OPENS MY MYND TO THE TRUTH! HELL IS REAL, REALITY SUFFERS, THE GARDEN BURNS AND I AM HOLDING THE TORCH, ALL WHOM ATTEMPT TO DIVERGE ME FROM THIS PATH TO BE UNMADE SHALL JOIN ME."),
 	TRAIT_NOCSHADES = span_info("The lens I look through allows me to see in the dark clear as dae, at the cost of greater vision."),
 	TRAIT_DEBTOR = span_danger("I have defaulted on a loan. My name is writ red in the ledger until the debt is cleared."),
 	TRAIT_DEBTOR_CROWN = span_danger("My defaulted debt is owed to the Crown. The Steward keeps the tally."),
@@ -585,6 +596,8 @@ GLOBAL_LIST_INIT(roguetraits, list(
 	TRAIT_CURSE_MALUM = span_warning("I am forsaken by the Maker. My hands tremble and fog overwhelms my mind."),
 	TRAIT_CURSE_EORA = span_warning("I am forsaken by the Lover. There is no beauty to be found for me in this world."),
 	TRAIT_EXCOMMUNICATED = span_warning("I have been excommunicated."),
+	TRAIT_RECENT_CONVERT = span_info("I have recently converted to a new patron; I shall not forsake them so soon."),
+	TRAIT_UNCONVERTIBLE = span_info("My nature is inextricably tied to my patron. Any attempts at conversion will fail."),
 	TRAIT_SLAVE = span_warning("Я был угнан в рабство! О, боги, помилуйте мою душу - это невыносимая судьба! Со мною обращаются как с вещью!"), // TA EDIT
 	TRAIT_CURSE_ZIZO = span_warning("I am forsaken by the Architect. Her grasp reaches for my heart."),
 	TRAIT_CURSE_GRAGGAR = span_warning("I am forsaken by the Warlord. Bloodlust is only thing I know for real."),
@@ -607,7 +620,7 @@ GLOBAL_LIST_INIT(roguetraits, list(
 	TRAIT_SELF_RELIANCE = span_greentext("I've spent enough time standing on my own that I've learned to either adapt or die young. All crafting and labor skills can progress to Journeyman levels."),
 	TRAIT_SILVER_WEAK = span_warning("Silver is the greatest threat to my lyfe. Blows from silver weapons will set me alight, inhibit my ability to regenerate, and - if blessed - can outright destroy my vessel."),
 	TRAIT_PALLID = span_artery("I was once a creature of the night, but cured by divine intervention. The open sky fills me with unease, but my eyes pierce the darkness and my lungs need no air."),
-	TRAIT_BLACKBLOOD = span_artery("I was once a creature of the night, but cured by the Otavan Inquisition at a heavy cost. My blood, tainted with tinctures, rites and concoctions, endures infection and holds an odd regenerative factor to it. Unfortunately, most healing miracles do not affect me at all, and I am sensitive to sunlight, aswell."),	
+	TRAIT_BLACKBLOOD = span_artery("I was once a creature of the night, but cured by the Otavan Inquisition at a heavy cost. My blood, tainted with tinctures, rites and concoctions, endures infection and holds an odd regenerative factor to it. Unfortunately, most healing miracles do not affect me at all, and I am sensitive to sunlight, aswell."),
 	TRAIT_COMBAT_AWARE = span_notice("My honed senses and intuition allow me to spot notable things in the midst of battle with ease."),
 	TRAIT_TEMPO	= span_greentext("I can keep up with multiple opponents at once."),
 	TRAIT_BLACKOAK = span_warning("The Black Oaks can spot <b>any</b> foreigners and outsiders, no matter how long they've lived in Azuria. I can spot an invader at a glance."),
@@ -632,7 +645,7 @@ GLOBAL_LIST_INIT(roguetraits, list(
 	TRAIT_GARRISON_ITEM = span_notice("I'm wearing an item that marks me as part of, or in command of, the garrison. I am able to interact with certain garrison-only equipment."),
 	TRAIT_WEATHER_PROTECTED = span_notice("I am holding or wearing an item that will keep me dry when there's rainy weather."),
 	TRAIT_VAMPIRE_SPAWN_PROTECTION = span_notice("The sun's wrath cannot touch me... for now."),
-	TRAIT_FOOD_STIPEND = span_notice("The creachers of the vomitorium know my touch, and will pull costs for their products directly from the treasury for me."),
+	TRAIT_ROYAL_SUBSIDY = span_notice("I am recognized under a Crown subsidy. I hold privileged access to the Stockpile without cost, and any goods returned to it are considered service rendered to the realm. My taxes are waived where applicable."),
 	TRAIT_STANDARD_BEARER = span_info("The banner is my lifeline. Just as I am to it. The retinue know to rally around me, so long as I keep it safe."),
 	TRAIT_FOG_WARDED = span_info("I am protected from Necra's deadly fog. The revenants won't find me... for now."),
 	TRAIT_ANCIENT_HAG = span_info("I know of secrets in alchemy and magyck no one else is aware of, for none are more ancient, more engrossed with the finer details of this land."),
@@ -644,10 +657,14 @@ GLOBAL_LIST_INIT(roguetraits, list(
 	TRAIT_WHITE_STAG = span_info("The power of the white stag lives on inside of me!"),
 	TRAIT_EDIT_DESCRIPTORS = span_info("I can change my appearance at a magic mirror in a thorough manner."),
 	TRAIT_DUSTRUNNER = span_info("I run dust for the Thieves' Guild. Those in the trade know how to spot one of their own."),
+	TRAIT_INK_AFFINITY = span_info("I can thread sacred abyssorite paint splotches safely, and benefit from them."),
 	TRAIT_REGROW_LIMBS = span_info("I can regrow my limbs in my sleep, but doing so will make me hungry."),
 	TRAIT_MUSES_GRACE = span_info("I feel a sudden and powerful urge to break out into song."),
+	TRAIT_NOHEAL = span_artery("I cannot be healed by supernatural means. Healing magic has no effect."),
+	TRAIT_NOREGEN = span_artery("I cannot be healed by natural means. Rest and potions have no effect."),
+	TRAIT_HALFHEAL = span_artery("I have some spiritual oddity to my Lux. Healing magic effectiveness is halved."),
 	TRAIT_SUNLIGHT_SENSITIVE = span_danger("Put on those shades and wave to yesterday, 'cause the sunlight hurts my eyes!"),
- 
+
 	TRAIT_CLERGY_TA = span_notice("My oath empowers me when I am within the Temple's walls, or near my spiritual guide, the Bishop."), //TA TRAITS FROM HERE
 	TRAIT_PSYDONITE_2 = span_info("My body is a temple of iron will; the stronger my willpower, the faster my flesh knits back together."),
 	TRAIT_PSYDONITE_3 = span_info("My body is a temple of iron will; the stronger my willpower, the faster my flesh knits back together."),
@@ -923,6 +940,7 @@ Remember to update _globalvars/traits.dm if you're adding/removing/renaming trai
 #define VEHICLE_TRAIT "vehicle" // inherited from riding vehicles
 #define INNATE_TRAIT "innate"
 #define POULTICE_TRAIT "poultice"
+#define TRAIT_INFUSION "infusion"
 #define XYLIX_LUCK_TRAIT "xylixluck"
 #define NOCTITE_SPELLBLADE_TRAIT "noctitespellblade"
 

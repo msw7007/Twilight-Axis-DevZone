@@ -4,17 +4,18 @@ import { Button, Stack } from 'tgui-core/components';
 import { useBackend } from '../backend';
 import { PageButton } from '../components/PageButton';
 import { Window } from '../layouts';
-import { ExaminePanelData } from './ExaminePanelData';
-import { FlavorTextPage } from './ExaminePanelPages';
-import { ImageGalleryPage } from './ExaminePanelPages';
+import type { ExaminePanelData } from './ExaminePanelData';
+import { FlavorTextPage, ImageGalleryPage } from './ExaminePanelPages';
 
 enum Page {
   FlavorText,
   ImageGallery,
 }
 
+// TA EDIT START
 const isValidAssetValue = (value?: string | null) =>
   !!value && value !== '0' && value !== '00';
+// TA EDIT END
 
 export const ExaminePanel = (props) => {
   const { act, data } = useBackend<ExaminePanelData>();
@@ -23,6 +24,7 @@ export const ExaminePanel = (props) => {
     is_donator,
     character_name,
     is_playing,
+    song_title,
     has_song,
     img_gallery,
     nsfw_img_gallery,
@@ -31,6 +33,7 @@ export const ExaminePanel = (props) => {
 
   const [currentPage, setCurrentPage] = useState(Page.FlavorText);
 
+  // TA EDIT START
   const safeSfwGallery = useMemo(
     () => (img_gallery || []).filter(isValidAssetValue),
     [img_gallery],
@@ -51,6 +54,7 @@ export const ExaminePanel = (props) => {
       setCurrentPage(Page.FlavorText);
     }
   }, [currentPage, hasAnyGallery]);
+  // TA EDIT END
 
   let pageContents;
 
@@ -99,8 +103,10 @@ export const ExaminePanel = (props) => {
             tooltipPosition="bottom-start"
             onClick={() => act('toggle')}
             disabled={!has_song}
-            selected={!is_playing}
-          />
+            selected={is_playing}
+          >
+            {song_title ?? null}
+          </Button>
         </>
       }
     >
@@ -136,7 +142,12 @@ export const ExaminePanel = (props) => {
             </>
           )}
 
-          <Stack.Item grow position="relative" overflowX="hidden" overflowY="auto">
+          <Stack.Item
+            grow
+            position="relative"
+            overflowX="hidden"
+            overflowY="auto"
+          >
             {pageContents}
           </Stack.Item>
         </Stack>
