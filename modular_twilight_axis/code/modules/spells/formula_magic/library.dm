@@ -33,7 +33,7 @@
 	return 0
 
 /datum/mind/proc/get_formula_magic_formula_slot_limit()
-	return 1 + ((current?.get_skill_level(/datum/skill/magic/arcane) || 0) * 2)
+	return formula_magic_formula_slot_limit_from_intelligence(formula_magic_user_intelligence(current))
 
 /datum/mind/proc/save_formula_magic_preset(preset_name, list/word_ids)
 	if(!formula_magic_saved_formulas)
@@ -50,9 +50,20 @@
 	refresh_formula_magic_preset_spells()
 	return length(formula_magic_saved_formulas)
 
+/datum/mind/proc/rebuild_formula_magic_saved_formulas()
+	if(!formula_magic_saved_formulas)
+		formula_magic_saved_formulas = list()
+	for(var/i in 1 to length(formula_magic_saved_formulas))
+		var/list/preset = formula_magic_saved_formulas[i]
+		var/list/words = preset["words"]
+		if(!islist(words))
+			continue
+		formula_magic_saved_formulas[i] = formula_magic_make_library_entry(preset["name"], words)
+
 /datum/mind/proc/get_formula_magic_presets()
 	if(!formula_magic_saved_formulas)
 		formula_magic_saved_formulas = list()
+	rebuild_formula_magic_saved_formulas()
 	return formula_magic_saved_formulas.Copy()
 
 /datum/mind/proc/delete_formula_magic_preset(index)
@@ -96,6 +107,7 @@
 		RemoveSpell(existing)
 	if(!formula_magic_saved_formulas)
 		return
+	rebuild_formula_magic_saved_formulas()
 	var/count = 0
 	var/slot_limit = get_formula_magic_formula_slot_limit()
 	for(var/list/preset in formula_magic_saved_formulas)

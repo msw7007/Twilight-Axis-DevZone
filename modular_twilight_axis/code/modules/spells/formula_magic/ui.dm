@@ -56,7 +56,8 @@
 	data["form_names"] = formula_magic_form_names()
 	data["form_unlocks"] = formula_magic_form_unlocks()
 	data["presets"] = H?.mind?.get_formula_magic_presets() || list()
-	data["formula_slot_limit"] = H?.mind?.get_formula_magic_formula_slot_limit() || 1
+	var/formula_slot_limit = H?.mind?.get_formula_magic_formula_slot_limit()
+	data["formula_slot_limit"] = isnum(formula_slot_limit) ? formula_slot_limit : 1
 	data["max_mana"] = H?.max_stamina || 0
 	var/list/draft_validation = H?.mind?.validate_formula_magic_word_list(draft_words) || list()
 	data["draft_validation"] = draft_validation
@@ -201,6 +202,10 @@
 			if(!validation["valid"])
 				to_chat(H, span_warning("The formula is not valid enough to scribe."))
 				return TRUE
+			var/reading_required = validation["reading_required"] || 0
+			if(H.get_skill_level(/datum/skill/misc/reading) < reading_required)
+				to_chat(H, span_warning("I need Reading [reading_required] to scribe this formula."))
+				return TRUE
 			var/obj/item/paper/scroll/formula_magic/scroll = new(get_turf(H))
 			scroll.set_formula_magic_scroll(params["name"], draft_words, H.mind)
 			H.put_in_hands(scroll, TRUE)
@@ -211,6 +216,9 @@
 				scroll = held
 				break
 			if(scroll)
+				if(H.get_skill_level(/datum/skill/misc/reading) < scroll.reading_required)
+					to_chat(H, span_warning("I need Reading [scroll.reading_required] to read this formula."))
+					return TRUE
 				draft_words = scroll.formula_words.Copy()
 				draft_name = scroll.formula_name || formula_magic_default_formula_name(draft_words)
 				loaded_preset_index = 0

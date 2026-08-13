@@ -26,6 +26,7 @@
 	var/mana_cost = 0
 	var/cast_time = 0
 	var/complexity = 0
+	var/instability = 0
 	var/touch_cast_time = 0
 
 /datum/formula_magic_part/proc/add_word(datum/formula_magic_word/word)
@@ -105,6 +106,7 @@
 		"mana_cost" = mana_cost,
 		"cast_time" = cast_time,
 		"complexity" = complexity,
+		"instability" = instability,
 	)
 
 /datum/formula_magic_formula
@@ -206,6 +208,7 @@
 		mana_cost += part.mana_cost
 		cast_time += part.cast_time
 		complexity += part.complexity
+		instability += part.instability
 		power = max(power, part.power)
 		range = max(range, part.range)
 		radius = max(radius, part.radius)

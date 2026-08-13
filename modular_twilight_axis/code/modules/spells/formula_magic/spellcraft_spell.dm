@@ -29,9 +29,10 @@
 		formula_words = preset_words?.Copy() || list()
 		var/list/preset_word_cast_times = preset["word_cast_times"]
 		formula_word_cast_times = preset_word_cast_times?.Copy() || list()
-		primary_resource_cost = max(1, round((preset["mana_cost"] || 1) * 2))
+		primary_resource_cost = max(1, round(preset["mana_cost"] || 1))
 		charge_time = max(3, preset["cast_time"] || 10)
-		cooldown_time = max(3 SECONDS, (preset["complexity"] || 1) * 2 SECONDS)
+		cooldown_time = formula_magic_formula_cooldown_time(formula_words)
+		interrupt_chance = CLAMP(preset["interrupt_chance"] || 0, 0, FORMULA_INTERRUPT_MAX)
 	. = ..()
 
 /datum/action/cooldown/spell/formula_preset/on_start_charge()

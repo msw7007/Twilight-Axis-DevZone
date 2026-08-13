@@ -24,6 +24,7 @@
 	part.mana_cost += mana_cost
 	part.cast_time += cast_time
 	part.complexity += complexity
+	part.instability += instability
 	for(var/tag in tags)
 		part.add_tag(tag)
 	if(school_id && !(school_id in part.schools))

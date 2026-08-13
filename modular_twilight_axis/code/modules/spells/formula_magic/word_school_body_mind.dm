@@ -100,6 +100,17 @@
 	tags = list("mind")
 	phrases = list("Mens aperi.", "Cogitatio iunge.", "Vox intus.")
 
+/datum/formula_magic_word/element/arcane_deepening
+	id = "arcane_deepening"
+	name = "Arcane Deepening"
+	desc = "Deepens a pure arcyne payload by 10 force per spoken word. It does not replace elemental payloads."
+	school_id = FORMULA_SCHOOL_GENERAL
+	mana_cost = 2
+	cast_time = 8
+	complexity = 2
+	tags = list("arcane_deepening")
+	phrases = list("Profundum.", "Arcanum alte.", "Vis intra vim.")
+
 /datum/formula_magic_word/element/silence
 	id = "silence"
 	name = "Silence"
@@ -192,4 +203,3 @@
 	unlock_level = 2
 	tags = list("reveal")
 	phrases = list("Latebra pereat.", "Signum appare.", "Occultum nudetur.")
-
