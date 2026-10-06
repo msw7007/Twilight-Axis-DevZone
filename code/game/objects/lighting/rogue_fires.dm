@@ -504,6 +504,11 @@
 /obj/machinery/light/rogue/hearth/attackby(obj/item/W, mob/living/user, params)
 	if(!attachment)
 		if(istype(W, /obj/item/cooking/pan) || istype(W, /obj/item/reagent_containers/glass/bucket/pot))
+			// TA eddit start - check crafting for turnin (important for pig-spit)
+			if(locate(/obj/structure/pig_spit) in loc)
+				to_chat(user, span_warning("The roasting spit is in the way."))
+				return TRUE
+			// TA eddit start - check crafting for turnin (important for pig-spit)
 			playsound(get_turf(user), 'sound/foley/dropsound/shovel_drop.ogg', 40, TRUE, -1)
 			attachment = W
 			user.doUnEquip(W)
@@ -792,6 +797,11 @@
 /obj/machinery/light/rogue/campfire/attackby(obj/item/W, mob/living/user, params)
 	if(!attachment)
 		if(istype(W, /obj/item/reagent_containers/glass/bucket/pot/kettle))
+			// TA eddit start - check crafting for turnin (important for pig-spit)
+			if(locate(/obj/structure/pig_spit) in loc)
+				to_chat(user, span_warning("The roasting spit is in the way."))
+				return TRUE
+			// TA eddit start - check crafting for turnin (important for pig-spit)
 			playsound(get_turf(user), 'sound/foley/dropsound/shovel_drop.ogg', 40, TRUE, -1)
 			attachment = W
 			user.doUnEquip(W)
