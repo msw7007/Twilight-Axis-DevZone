@@ -72,9 +72,9 @@
 			rules += "Цель: первым избавиться от всех карт после окончания колоды."
 			rules += "Атакующий кладет карту, защитник бьет старшей той же масти или козырем."
 			if(fool_variant == CARD_TABLE_FOOL_THROW_IN || fool_variant == CARD_TABLE_FOOL_THROW_TRANSFER)
-				rules += "Этруский вариант: дополнительные карты можно подкидывать по рангу уже лежащих карт. В первом бою максимум 5 атак, дальше можно подкидывать, пока у защитника есть карты на руке."
+				rules += "Этруский вариант: дополнительные карты можно подкидывать по рангу уже лежащих карт. Не больше карт, чем защитник может отбить: в первом бою максимум 5 атак, далее 6."
 			if(fool_variant == CARD_TABLE_FOOL_TRANSFER || fool_variant == CARD_TABLE_FOOL_THROW_TRANSFER)
-				rules += "Отаванский вариант: защитник может перевести ход картой того же ранга."
+				rules += "Отаванский вариант: защитник может перевести ход картой того же ранга только до первой отбитой карты и если у следующего игрока хватает карт для защиты."
 			if(fool_variant == CARD_TABLE_FOOL_CLASSIC)
 				rules += "Хаммерхолдский вариант: одна атака и одна защита за ход."
 		if(CARD_TABLE_GAME_BLACKJACK)
@@ -147,6 +147,7 @@
 		"game_type" = game_type,
 		"game_label" = game_label(),
 		"fool_variant" = fool_variant,
+		"fool_can_transfer" = fool_is_playing && fool_can_transfer(),
 		"fool_variant_label" = fool_variant_label(),
 		"poker_variant" = poker_variant,
 		"poker_variant_label" = poker_variant_label(),

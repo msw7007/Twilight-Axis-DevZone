@@ -121,10 +121,27 @@
 
 /datum/card_table_session/proc/fool_pair_limit()
 	var/datum/card_table_player/defender = fool_current_defender()
-	var/limit = table_pairs.len + (defender ? defender.hand.len : 0)
-	if(fool_first_bout)
-		limit = min(limit, 5)
-	return limit
+	var/limit = defender ? defender.hand.len : 0
+	// Only defended attacks have already consumed a card from the defender's hand.
+	for(var/list/pair in table_pairs)
+		if(pair["defense"])
+			limit++
+	return min(limit, fool_first_bout ? 5 : 6)
+
+/datum/card_table_session/proc/fool_can_transfer()
+	if(!table_attack || table_defense || !table_pairs.len)
+		return FALSE
+	if(fool_variant != CARD_TABLE_FOOL_TRANSFER && fool_variant != CARD_TABLE_FOOL_THROW_TRANSFER)
+		return FALSE
+	for(var/list/pair in table_pairs)
+		if(pair["defense"])
+			return FALSE
+	var/next_defender_index = fool_next_active_index(defender_index + 1, defender_index)
+	if(!next_defender_index)
+		return FALSE
+	var/datum/card_table_player/next_defender = players[next_defender_index]
+	var/transfer_limit = min(next_defender.hand.len, fool_first_bout ? 5 : 6)
+	return table_pairs.len + 1 <= transfer_limit
 
 /datum/card_table_session/proc/fool_table_ranks()
 	var/list/ranks = list()
@@ -359,7 +376,7 @@
 	var/datum/card_table_player/player = player_for_user(user)
 	if(stage != CARD_TABLE_STAGE_PLAYING || game_type != CARD_TABLE_GAME_FOOL || player != fool_current_defender() || !table_attack || table_defense)
 		return FALSE
-	if(fool_variant != CARD_TABLE_FOOL_TRANSFER && fool_variant != CARD_TABLE_FOOL_THROW_TRANSFER)
+	if(!fool_can_transfer())
 		return FALSE
 	var/transfer_index = text2num("[card_index]")
 	if(transfer_index < 1 || transfer_index > player.hand.len)

@@ -63,6 +63,7 @@ type Data = {
   game_type: 'none' | 'fool' | 'blackjack' | 'poker' | 'solitaire';
   game_label: string;
   fool_variant: string;
+  fool_can_transfer: boolean;
   fool_variant_label: string;
   poker_variant: string;
   poker_variant_label: string;
@@ -1175,6 +1176,7 @@ export const CardTable = () => {
     game_type === 'blackjack' || game_type === 'poker';
   const canTransfer =
     game_type === 'fool' &&
+    data.fool_can_transfer &&
     (fool_variant === 'transfer' || fool_variant === 'throw_transfer');
   const canActInPoker =
     game_type === 'poker' &&
