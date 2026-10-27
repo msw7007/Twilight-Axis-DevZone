@@ -43,6 +43,9 @@
 		if("require_same_tile")
 			A.require_same_tile = !!value
 			return TRUE
+		if("require_grab")
+			A.require_grab = !!value
+			return TRUE
 		if("allow_when_restrained")
 			A.allow_when_restrained = !!value
 			return TRUE

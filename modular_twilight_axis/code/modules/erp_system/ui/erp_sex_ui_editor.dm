@@ -45,11 +45,10 @@
 			return TRUE
 
 		if("update_action")
-			C.update_custom_action(ui.actor, params)
+			if(!C.update_custom_action(ui.actor, params))
+				return FALSE
 			mark_dirty()
-			_select_action(C, params)
-			ui.request_update()
-			return TRUE
+			return _select_action(C, list("mode" = "custom", "key" = params["id"]))
 
 		if("delete_action")
 			C.delete_custom_action(ui.actor, params["id"])

@@ -1660,7 +1660,7 @@ const FieldControl: React.FC<{
   );
 };
 
-const EditorTab: React.FC<{
+export const EditorTab: React.FC<{
   templates: EditorTemplateEntry[];
   customActions: EditorCustomAction[];
   selected?: EditorSelectedPayload | null;
@@ -1694,6 +1694,7 @@ const EditorTab: React.FC<{
   }, [selectedMode, selectedKey, selected?.name, (selected as any)?.fields]);
 
   const selectionKey = selectedMode && selectedKey ? `${selectedMode}:${selectedKey}` : 'none';
+  const sourceFieldsKey = JSON.stringify(source?.fields ?? null);
   const lastSelectionKey = useRef<string>('none');
 
   const getFieldValue = (id: string) => {
@@ -1739,8 +1740,6 @@ const EditorTab: React.FC<{
     }
 
     setFormFields(fieldsWithName.map((f) => ({ ...f })));
-    setRawMode(false);
-    setRawText('');
   };
 
   // При смене выбранного в backend — гидрим форму, но НЕ перетираем локальные правки.
@@ -1749,6 +1748,8 @@ const EditorTab: React.FC<{
     lastSelectionKey.current = selectionKey;
 
     setIsDirty(false);
+    setRawMode(false);
+    setRawText('');
     hydrateFromSelected();
   }, [selectionKey]);
 
@@ -1758,7 +1759,7 @@ const EditorTab: React.FC<{
     if (isDirty) return;
     // если не менялся selectionKey — но поля обновились, мы всё равно можем перезалить.
     hydrateFromSelected();
-  }, [source?.name, (source as any)?.fields]);
+  }, [source?.name, sourceFieldsKey]);
 
   const payloadFields = () => formFields.map((f) => ({ id: f.id, value: f.value }));
 
@@ -1812,7 +1813,8 @@ const EditorTab: React.FC<{
       }
     }
 
-    const nameVal = safeString(getFieldValue('name'));
+    const nameField = Array.isArray(fields) ? fields.find((field) => field?.id === 'name') : undefined;
+    const nameVal = safeString(nameField ? nameField.value : getFieldValue('name'));
     setIsDirty(false);
     onUpdate({
       id: selectedKey, // custom.id
